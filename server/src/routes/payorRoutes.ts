@@ -9,8 +9,8 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/', authorize('SUPER_ADMIN', 'ADMIN', 'INDEMNITY'), getPayors);
-router.get('/:id', authorize('SUPER_ADMIN', 'ADMIN', 'INDEMNITY'), getPayorById);
+router.get('/', authorize('SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE'), getPayors);
+router.get('/:id', authorize('SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE'), getPayorById);
 router.post('/', authorize('SUPER_ADMIN'), createPayor);
 router.put('/:id', authorize('SUPER_ADMIN', 'ADMIN'), updatePayor);
 router.delete('/:id', authorize('SUPER_ADMIN'), deletePayor);
