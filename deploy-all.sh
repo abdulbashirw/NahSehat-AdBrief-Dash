@@ -322,6 +322,9 @@ if [ "$DEPLOY_FRONTEND" = true ]; then
   FRONTEND_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${FRONTEND_SERVICE}:${IMAGE_TAG}"
 
   # Determine backend URL for VITE_BE_API
+  # VITE_BE_API must include the /api/v1 suffix because the frontend code
+  # builds endpoint URLs like `${VITE_BE_API}/auth` and uses VITE_BE_API
+  # directly as the CMS base URL.
   if [ -n "$BACKEND_URL_OVERRIDE" ]; then
     FRONTEND_API_URL="${BACKEND_URL_OVERRIDE}"
   elif [ -n "$BACKEND_URL" ]; then
@@ -337,6 +340,11 @@ if [ "$DEPLOY_FRONTEND" = true ]; then
       echo "   Deploy backend first, or use --backend-url <url>"
       exit 1
     fi
+  fi
+
+  # Append /api/v1 if not already present — Cloud Run status.url has no path.
+  if [[ "${FRONTEND_API_URL}" != */api/v1 ]]; then
+    FRONTEND_API_URL="${FRONTEND_API_URL%/}/api/v1"
   fi
 
   echo "============================================"

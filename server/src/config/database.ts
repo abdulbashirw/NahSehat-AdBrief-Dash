@@ -4,17 +4,10 @@
 import mysql from 'mysql2/promise';
 import { dbConfig } from './index';
 
-export const pool = mysql.createPool({
-  host: dbConfig.host,
-  port: dbConfig.port,
-  user: dbConfig.user,
-  password: dbConfig.password,
-  database: dbConfig.database,
-  waitForConnections: dbConfig.waitForConnections,
-  connectionLimit: dbConfig.connectionLimit,
-  queueLimit: dbConfig.queueLimit,
-  timezone: dbConfig.timezone,
-});
+// Use the full dbConfig (including socketPath) so this pool behaves
+// identically to the pool in models/db.ts. Without socketPath, Cloud Run
+// with Cloud SQL Unix socket would fail at startup testConnection().
+export const pool = mysql.createPool(dbConfig);
 
 /** Test the database connection on startup. */
 export async function testConnection(): Promise<void> {
