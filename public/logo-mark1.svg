@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Linear Gradient for A leg -->
+    <linearGradient id="blueGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0052CC"/>
+      <stop offset="50%" stop-color="#0066FF"/>
+      <stop offset="100%" stop-color="#00C8FF"/>
+    </linearGradient>
+    
+    <!-- Linear Gradient for B loops -->
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D2FF"/>
+      <stop offset="60%" stop-color="#00E5D9"/>
+      <stop offset="100%" stop-color="#00F0B5"/>
+    </linearGradient>
+
+    <!-- Linear Gradient for Bar Chart inside B -->
+    <linearGradient id="barGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#0088FF"/>
+      <stop offset="100%" stop-color="#00F0B5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Main AB Symbol Group -->
+  <g transform="translate(10, 10)">
+    <!-- A Left Stem & Top Arch -->
+    <path d="M 70 420 
+             L 160 420 
+             L 240 160 
+             C 255 110, 275 90, 310 85 
+             L 245 85 
+             C 210 85, 185 110, 165 160 
+             Z" 
+          fill="url(#blueGrad)"/>
+
+    <!-- Dynamic A-to-B Outer Loop -->
+    <path d="M 175 420 
+             L 245 420 
+             C 320 420, 370 380, 370 310 
+             C 370 260, 340 230, 290 220 
+             C 340 210, 360 180, 360 140 
+             C 360 80, 310 40, 230 40 
+             L 140 210 
+             L 195 210 
+             C 240 120, 275 90, 305 90 
+             C 330 90, 345 105, 345 130 
+             C 345 160, 320 185, 260 190 
+             L 220 190 
+             L 200 240 
+             L 270 240 
+             C 335 240, 360 270, 360 320 
+             C 360 375, 315 405, 230 405 
+             L 180 405 Z" 
+          fill="url(#cyanGrad)"/>
+
+    <!-- Bar Chart Lines Inside Lower Loop of B -->
+    <rect x="250" y="320" width="14" height="60" rx="7" fill="url(#barGrad)"/>
+    <rect x="274" y="295" width="14" height="85" rx="7" fill="url(#barGrad)"/>
+    <rect x="298" y="270" width="14" height="110" rx="7" fill="url(#barGrad)"/>
+    <rect x="322" y="305" width="14" height="75" rx="7" fill="url(#barGrad)"/>
+  </g>
+</svg>

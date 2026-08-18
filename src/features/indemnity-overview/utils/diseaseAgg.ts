@@ -1,0 +1,43 @@
+/**
+ * Page-local aggregation: rollup of claims by ICD-10 disease group.
+ * Preserved from original AdBrief business logic.
+ */
+import type { Claim, Icd10 } from '@/shared/types';
+
+export interface DiseaseGroupRow {
+  group: string;
+  claimants: number;
+  transactions: number;
+  billing: number;
+  approved: number;
+  avgLos: number;
+}
+
+export function byDiseaseGroup(claims: Claim[], icd10: Icd10[]): DiseaseGroupRow[] {
+  const groupOf = new Map(icd10.map((d) => [d.code, d.group]));
+  const map = new Map<string, { set: Set<string>; txn: number; bill: number; app: number; los: number }>();
+  for (const c of claims) {
+    if (!c.FDIAGNOSIS) continue;
+    const group = groupOf.get(c.FDIAGNOSIS) ?? 'Other';
+    let row = map.get(group);
+    if (!row) {
+      row = { set: new Set(), txn: 0, bill: 0, app: 0, los: 0 };
+      map.set(group, row);
+    }
+    row.set.add(c.MEMBERNO);
+    row.txn += 1;
+    row.bill += c.INCURRED;
+    row.app += c.APPROVED;
+    row.los += Number(c.DURATION) || 0;
+  }
+  return [...map.entries()]
+    .map(([group, r]) => ({
+      group,
+      claimants: r.set.size,
+      transactions: r.txn,
+      billing: r.bill,
+      approved: r.app,
+      avgLos: r.txn ? r.los / r.txn : 0,
+    }))
+    .sort((a, b) => b.claimants - a.claimants);
+}

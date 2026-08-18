@@ -1,0 +1,287 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 600" fill="none">
+  <defs>
+    <!-- Light gradient background -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1920" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EBF2FC"/>
+      <stop offset="0.3" stop-color="#F0F5FD"/>
+      <stop offset="0.6" stop-color="#F5F8FE"/>
+      <stop offset="1" stop-color="#EDF4FC"/>
+    </linearGradient>
+
+    <!-- Wave line gradients -->
+    <linearGradient id="waveGrad1" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#5BA3F5" stop-opacity="0.1"/>
+      <stop offset="0.2" stop-color="#5BA3F5" stop-opacity="0.5"/>
+      <stop offset="0.5" stop-color="#3B82F6" stop-opacity="0.7"/>
+      <stop offset="0.8" stop-color="#60A5FA" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#93C5FD" stop-opacity="0.15"/>
+    </linearGradient>
+
+    <linearGradient id="waveGrad2" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#60A5FA" stop-opacity="0.05"/>
+      <stop offset="0.25" stop-color="#3B82F6" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#2563EB" stop-opacity="0.55"/>
+      <stop offset="0.75" stop-color="#60A5FA" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#93C5FD" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <linearGradient id="waveGrad3" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#93C5FD" stop-opacity="0.08"/>
+      <stop offset="0.3" stop-color="#60A5FA" stop-opacity="0.25"/>
+      <stop offset="0.6" stop-color="#3B82F6" stop-opacity="0.4"/>
+      <stop offset="0.85" stop-color="#5BA3F5" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#93C5FD" stop-opacity="0.05"/>
+    </linearGradient>
+
+    <linearGradient id="waveGrad4" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#BFDBFE" stop-opacity="0.1"/>
+      <stop offset="0.35" stop-color="#93C5FD" stop-opacity="0.3"/>
+      <stop offset="0.65" stop-color="#60A5FA" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#BFDBFE" stop-opacity="0.08"/>
+    </linearGradient>
+
+    <!-- Filled wave area gradients -->
+    <linearGradient id="waveFillGrad1" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#3B82F6" stop-opacity="0.06"/>
+      <stop offset="0.5" stop-color="#60A5FA" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#93C5FD" stop-opacity="0.01"/>
+    </linearGradient>
+
+    <linearGradient id="waveFillGrad2" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#2563EB" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#60A5FA" stop-opacity="0.01"/>
+    </linearGradient>
+
+    <!-- Cube face gradients -->
+    <linearGradient id="cubeTop" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#DBEAFE"/>
+      <stop offset="1" stop-color="#BFDBFE"/>
+    </linearGradient>
+    <linearGradient id="cubeLeft" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#93C5FD"/>
+      <stop offset="1" stop-color="#60A5FA"/>
+    </linearGradient>
+    <linearGradient id="cubeRight" x1="1" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#BFDBFE"/>
+      <stop offset="1" stop-color="#93C5FD"/>
+    </linearGradient>
+
+    <!-- Small cube gradients -->
+    <linearGradient id="cubeTopSm" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#E0EFFE"/>
+      <stop offset="1" stop-color="#C8DDFB"/>
+    </linearGradient>
+    <linearGradient id="cubeLeftSm" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#A5C9F8"/>
+      <stop offset="1" stop-color="#7AB3F5"/>
+    </linearGradient>
+    <linearGradient id="cubeRightSm" x1="1" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#C8DDFB"/>
+      <stop offset="1" stop-color="#A5C9F8"/>
+    </linearGradient>
+
+    <!-- AB logo gradient -->
+    <linearGradient id="abGrad" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#D5E3F7" stop-opacity="0.5"/>
+      <stop offset="0.5" stop-color="#C8DAF2" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#DBEAFE" stop-opacity="0.25"/>
+    </linearGradient>
+
+    <!-- Dot grid pattern -->
+    <pattern id="dotGridLight" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="10" cy="10" r="1.2" fill="#93C5FD" fill-opacity="0.35"/>
+    </pattern>
+
+    <!-- Fine line pattern for wave area -->
+    <pattern id="linePattern" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#3B82F6" stroke-width="0.3" stroke-opacity="0.08"/>
+    </pattern>
+
+    <!-- Soft glow filter -->
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="20"/>
+    </filter>
+
+    <filter id="cubeGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8"/>
+    </filter>
+
+    <filter id="sparkleGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+    </filter>
+  </defs>
+
+  <!-- LAYER 0: Soft light background -->
+  <rect width="1920" height="600" fill="url(#bgGrad)"/>
+
+  <!-- LAYER 1: Subtle radial highlights -->
+  <ellipse cx="300" cy="300" rx="500" ry="350" fill="#DBEAFE" opacity="0.3" filter="url(#softGlow)"/>
+  <ellipse cx="1400" cy="200" rx="400" ry="250" fill="#E0F2FE" opacity="0.25" filter="url(#softGlow)"/>
+  <ellipse cx="960" cy="100" rx="600" ry="200" fill="#EFF6FF" opacity="0.4" filter="url(#softGlow)"/>
+
+  <!-- LAYER 2: AB Watermark Logo (large, semi-transparent) -->
+  <g transform="translate(200, 80) scale(1.4)" opacity="0.12">
+    <!-- Letter A -->
+    <path d="M80,350 L180,80 L280,350 M120,260 L240,260" stroke="url(#abGrad)" stroke-width="45" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Letter B -->
+    <path d="M320,80 L320,350 M320,80 L410,80 C460,80 490,110 490,145 C490,180 460,210 410,215 L320,215 M320,215 L420,215 C475,215 510,245 510,285 C510,325 475,350 420,350 L320,350" stroke="url(#abGrad)" stroke-width="45" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- LAYER 3: Line pattern fill on lower-left (mimicking the reference's hatched wave area) -->
+  <path d="M-50,450 C150,380 350,350 550,400 C750,450 900,500 1100,480 C1300,460 1500,420 1700,450 L1920,470 L1920,600 L-50,600 Z" fill="url(#linePattern)" opacity="0.5"/>
+
+  <!-- LAYER 4: Flowing wave lines -->
+  <!-- Wave set 1: Main flowing curves (bottom-left sweeping to right) -->
+  <path d="M-50,520 C100,480 250,400 450,380 C650,360 800,420 1000,380 C1200,340 1400,250 1600,200 C1750,170 1850,160 1970,150"
+        stroke="url(#waveGrad1)" stroke-width="1.8" fill="none" opacity="0.8"/>
+  <path d="M-50,530 C100,490 250,410 450,390 C650,370 800,430 1000,390 C1200,350 1400,260 1600,210 C1750,180 1850,170 1970,160"
+        stroke="url(#waveGrad1)" stroke-width="1.2" fill="none" opacity="0.5"/>
+
+  <!-- Wave set 2: Sweeping S-curves -->
+  <path d="M-100,480 C50,440 200,350 400,300 C600,250 750,320 950,280 C1150,240 1350,150 1550,120 C1700,100 1820,110 1970,90"
+        stroke="url(#waveGrad2)" stroke-width="1.5" fill="none" opacity="0.7"/>
+  <path d="M-100,490 C50,450 200,360 400,310 C600,260 750,330 950,290 C1150,250 1350,160 1550,130 C1700,110 1820,120 1970,100"
+        stroke="url(#waveGrad2)" stroke-width="1" fill="none" opacity="0.4"/>
+
+  <!-- Wave set 3: Upper elegant curves -->
+  <path d="M-50,400 C150,380 300,320 500,270 C700,220 850,280 1050,240 C1250,200 1450,120 1650,80 C1780,60 1870,70 1970,55"
+        stroke="url(#waveGrad3)" stroke-width="1.3" fill="none" opacity="0.6"/>
+
+  <!-- Wave set 4: Fine detail lines -->
+  <path d="M-50,550 C100,520 300,460 500,430 C700,400 850,450 1050,420 C1250,390 1450,320 1650,280 C1800,260 1880,250 1970,240"
+        stroke="url(#waveGrad4)" stroke-width="0.8" fill="none" opacity="0.45"/>
+
+  <path d="M-50,560 C100,530 300,470 500,440 C700,410 850,460 1050,430 C1250,400 1450,330 1650,290 C1800,270 1880,260 1970,250"
+        stroke="url(#waveGrad4)" stroke-width="0.6" fill="none" opacity="0.3"/>
+
+  <!-- Wave filled area under main wave -->
+  <path d="M-50,520 C100,480 250,400 450,380 C650,360 800,420 1000,380 C1200,340 1400,250 1600,200 C1750,170 1850,160 1970,150 L1970,600 L-50,600 Z"
+        fill="url(#waveFillGrad1)" opacity="0.6"/>
+
+  <path d="M-100,480 C50,440 200,350 400,300 C600,250 750,320 950,280 C1150,240 1350,150 1550,120 C1700,100 1820,110 1970,90 L1970,600 L-100,600 Z"
+        fill="url(#waveFillGrad2)" opacity="0.4"/>
+
+  <!-- LAYER 5: Multi-line wave bundles (mimicking the densely packed flowing lines in the reference) -->
+  <!-- Bottom-left bundle -->
+  <g opacity="0.3">
+    <path d="M-20,570 C80,550 200,510 350,480 C500,450 600,470 700,460" stroke="#5BA3F5" stroke-width="0.5" fill="none"/>
+    <path d="M-20,574 C80,554 200,514 350,484 C500,454 600,474 700,464" stroke="#5BA3F5" stroke-width="0.4" fill="none"/>
+    <path d="M-20,578 C80,558 200,518 350,488 C500,458 600,478 700,468" stroke="#5BA3F5" stroke-width="0.4" fill="none"/>
+    <path d="M-20,582 C80,562 200,522 350,492 C500,462 600,482 700,472" stroke="#5BA3F5" stroke-width="0.3" fill="none"/>
+    <path d="M-20,586 C80,566 200,526 350,496 C500,466 600,486 700,476" stroke="#5BA3F5" stroke-width="0.3" fill="none"/>
+    <path d="M-20,566 C80,546 200,506 350,476 C500,446 600,466 700,456" stroke="#5BA3F5" stroke-width="0.5" fill="none"/>
+  </g>
+
+  <!-- Right-side bundle -->
+  <g opacity="0.25">
+    <path d="M1200,300 C1350,260 1500,230 1650,180 C1780,145 1870,130 1970,120" stroke="#3B82F6" stroke-width="0.5" fill="none"/>
+    <path d="M1200,304 C1350,264 1500,234 1650,184 C1780,149 1870,134 1970,124" stroke="#3B82F6" stroke-width="0.4" fill="none"/>
+    <path d="M1200,308 C1350,268 1500,238 1650,188 C1780,153 1870,138 1970,128" stroke="#3B82F6" stroke-width="0.35" fill="none"/>
+    <path d="M1200,312 C1350,272 1500,242 1650,192 C1780,157 1870,142 1970,132" stroke="#3B82F6" stroke-width="0.3" fill="none"/>
+    <path d="M1200,296 C1350,256 1500,226 1650,176 C1780,141 1870,126 1970,116" stroke="#3B82F6" stroke-width="0.4" fill="none"/>
+  </g>
+
+  <!-- LAYER 6: Dot grid (top-right area like in the reference) -->
+  <rect x="1100" y="30" width="500" height="250" fill="url(#dotGridLight)" opacity="0.5" rx="8"/>
+
+  <!-- LAYER 7: 3D Isometric Cubes -->
+  <!-- Large cube top-left -->
+  <g transform="translate(80, 50)">
+    <g opacity="0.7" filter="url(#cubeGlow)">
+      <polygon points="40,0 80,20 40,40 0,20" fill="url(#cubeTop)" opacity="0.9"/>
+    </g>
+    <!-- Top face -->
+    <polygon points="40,0 80,20 40,40 0,20" fill="url(#cubeTop)" stroke="#93C5FD" stroke-width="0.5" opacity="0.85"/>
+    <!-- Left face -->
+    <polygon points="0,20 40,40 40,80 0,60" fill="url(#cubeLeft)" stroke="#93C5FD" stroke-width="0.5" opacity="0.65"/>
+    <!-- Right face -->
+    <polygon points="80,20 40,40 40,80 80,60" fill="url(#cubeRight)" stroke="#93C5FD" stroke-width="0.5" opacity="0.75"/>
+    <!-- Edge highlights -->
+    <line x1="40" y1="0" x2="40" y2="40" stroke="white" stroke-width="0.5" opacity="0.4"/>
+    <line x1="40" y1="40" x2="40" y2="80" stroke="white" stroke-width="0.3" opacity="0.2"/>
+  </g>
+
+  <!-- Medium cube right side -->
+  <g transform="translate(1700, 180)">
+    <g opacity="0.6" filter="url(#cubeGlow)">
+      <polygon points="35,0 70,17 35,35 0,17" fill="url(#cubeTop)" opacity="0.8"/>
+    </g>
+    <polygon points="35,0 70,17 35,35 0,17" fill="url(#cubeTop)" stroke="#93C5FD" stroke-width="0.5" opacity="0.8"/>
+    <polygon points="0,17 35,35 35,70 0,52" fill="url(#cubeLeft)" stroke="#93C5FD" stroke-width="0.5" opacity="0.6"/>
+    <polygon points="70,17 35,35 35,70 70,52" fill="url(#cubeRight)" stroke="#93C5FD" stroke-width="0.5" opacity="0.7"/>
+    <line x1="35" y1="0" x2="35" y2="35" stroke="white" stroke-width="0.4" opacity="0.35"/>
+    <line x1="35" y1="35" x2="35" y2="70" stroke="white" stroke-width="0.25" opacity="0.15"/>
+  </g>
+
+  <!-- Small cube near top-left -->
+  <g transform="translate(180, 30)">
+    <polygon points="15,0 30,8 15,16 0,8" fill="url(#cubeTopSm)" stroke="#A5C9F8" stroke-width="0.4" opacity="0.7"/>
+    <polygon points="0,8 15,16 15,30 0,22" fill="url(#cubeLeftSm)" stroke="#A5C9F8" stroke-width="0.4" opacity="0.5"/>
+    <polygon points="30,8 15,16 15,30 30,22" fill="url(#cubeRightSm)" stroke="#A5C9F8" stroke-width="0.4" opacity="0.6"/>
+  </g>
+
+  <!-- Tiny cube bottom-right -->
+  <g transform="translate(1600, 320)">
+    <polygon points="12,0 24,6 12,12 0,6" fill="url(#cubeTopSm)" stroke="#A5C9F8" stroke-width="0.3" opacity="0.6"/>
+    <polygon points="0,6 12,12 12,22 0,16" fill="url(#cubeLeftSm)" stroke="#A5C9F8" stroke-width="0.3" opacity="0.45"/>
+    <polygon points="24,6 12,12 12,22 24,16" fill="url(#cubeRightSm)" stroke="#A5C9F8" stroke-width="0.3" opacity="0.55"/>
+  </g>
+
+  <!-- LAYER 8: Sparkle/diamond decorations -->
+  <!-- Main sparkle cluster (center area like reference) -->
+  <g transform="translate(950, 200)" opacity="0.7">
+    <!-- Central diamond -->
+    <polygon points="0,-8 4,0 0,8 -4,0" fill="#60A5FA" opacity="0.6"/>
+    <!-- Cross arms -->
+    <line x1="0" y1="-12" x2="0" y2="12" stroke="#60A5FA" stroke-width="0.8" opacity="0.5"/>
+    <line x1="-12" y1="0" x2="12" y2="0" stroke="#60A5FA" stroke-width="0.8" opacity="0.5"/>
+  </g>
+
+  <!-- Secondary sparkle -->
+  <g transform="translate(980, 220)" opacity="0.5">
+    <polygon points="0,-5 2.5,0 0,5 -2.5,0" fill="#3B82F6" opacity="0.5"/>
+    <line x1="0" y1="-8" x2="0" y2="8" stroke="#3B82F6" stroke-width="0.6" opacity="0.4"/>
+    <line x1="-8" y1="0" x2="8" y2="0" stroke="#3B82F6" stroke-width="0.6" opacity="0.4"/>
+  </g>
+
+  <!-- Small sparkles scattered -->
+  <g transform="translate(930, 230)" opacity="0.4">
+    <polygon points="0,-4 2,0 0,4 -2,0" fill="#93C5FD"/>
+    <line x1="0" y1="-6" x2="0" y2="6" stroke="#93C5FD" stroke-width="0.5"/>
+    <line x1="-6" y1="0" x2="6" y2="0" stroke="#93C5FD" stroke-width="0.5"/>
+  </g>
+
+  <g transform="translate(1000, 190)" opacity="0.35">
+    <polygon points="0,-3 1.5,0 0,3 -1.5,0" fill="#60A5FA"/>
+  </g>
+
+  <g transform="translate(960, 240)" opacity="0.3">
+    <polygon points="0,-3 1.5,0 0,3 -1.5,0" fill="#3B82F6"/>
+  </g>
+
+  <!-- Sparkle near dot grid -->
+  <g transform="translate(1150, 100)" opacity="0.45">
+    <polygon points="0,-5 2.5,0 0,5 -2.5,0" fill="#60A5FA" opacity="0.6"/>
+    <line x1="0" y1="-7" x2="0" y2="7" stroke="#60A5FA" stroke-width="0.5" opacity="0.4"/>
+    <line x1="-7" y1="0" x2="7" y2="0" stroke="#60A5FA" stroke-width="0.5" opacity="0.4"/>
+  </g>
+
+  <!-- LAYER 9: Floating particles -->
+  <circle cx="400" cy="300" r="2" fill="#60A5FA" opacity="0.2" filter="url(#sparkleGlow)"/>
+  <circle cx="800" cy="150" r="1.5" fill="#3B82F6" opacity="0.15"/>
+  <circle cx="1300" cy="350" r="2" fill="#93C5FD" opacity="0.2"/>
+  <circle cx="600" cy="450" r="1.5" fill="#60A5FA" opacity="0.15"/>
+  <circle cx="1500" cy="100" r="1.8" fill="#3B82F6" opacity="0.18"/>
+  <circle cx="200" cy="400" r="1.3" fill="#93C5FD" opacity="0.12"/>
+  <circle cx="1100" cy="250" r="1.5" fill="#60A5FA" opacity="0.2" filter="url(#sparkleGlow)"/>
+  <circle cx="1650" cy="400" r="1.8" fill="#3B82F6" opacity="0.15"/>
+  <circle cx="350" cy="180" r="1" fill="#60A5FA" opacity="0.12"/>
+  <circle cx="750" cy="350" r="1.2" fill="#93C5FD" opacity="0.15"/>
+
+  <!-- LAYER 10: Large sweeping arc (bottom-right, like the reference) -->
+  <path d="M1200,600 C1300,450 1500,350 1920,300" stroke="#60A5FA" stroke-width="1.5" fill="none" opacity="0.2"/>
+  <path d="M1200,600 C1300,450 1500,350 1920,300 L1920,600 Z" fill="#EFF6FF" opacity="0.3"/>
+
+  <!-- LAYER 11: Top edge subtle vignette -->
+  <rect width="1920" height="100" fill="url(#bgGrad)" opacity="0.5"/>
+</svg>
