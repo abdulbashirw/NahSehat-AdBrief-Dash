@@ -5,10 +5,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
+  host: process.env.DB_HOST || '10.250.16.5',
   port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+  user: process.env.DB_USER || 'bashir',
+  password: process.env.DB_PASSWORD || '0xEp8duI*iL(kLJ&',
   database: process.env.DB_NAME || 'nahsehat_analytics_dash',
   // Only use Unix socket if explicitly set; otherwise fall back to TCP (host/port).
   // Local XAMPP: set DB_SOCKET_PATH in server/.env
