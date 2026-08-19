@@ -1,45 +1,18 @@
 /**
- * Permission Management API — RTK Query endpoints with fallback mock data.
+ * Permission Management API — RTK Query endpoints.
+ *
+ * All endpoints call the real backend API directly.
  */
 import { api, API_URLS } from '@/shared/store/api';
-import type { RoleWithPermissions, Role, Permission } from '@/shared/types';
-import type { PermissionGroup, UpdatePermissionsPayload, PermissionAction } from '../model/permissionTypes';
-
-const allActions: PermissionAction[] = ['create', 'read', 'update', 'delete', 'export'];
-
-const MOCK_PERMISSION_GROUPS: PermissionGroup[] = [
-  { menu: 'dashboard', label: 'Dashboard Overview', actions: allActions },
-  { menu: 'indemnity-overview', label: 'Utilization Overview', actions: allActions },
-  { menu: 'indemnity-claims-map', label: 'Claims Map', actions: allActions },
-  { menu: 'indemnity-demographics', label: 'Demographics', actions: allActions },
-  { menu: 'indemnity-diseases', label: 'Diseases Analysis', actions: allActions },
-  { menu: 'managecare-daily-monitoring', label: 'Daily Monitoring', actions: allActions },
-  { menu: 'cms-users', label: 'User Management', actions: allActions },
-  { menu: 'cms-roles', label: 'Role Management', actions: allActions },
-  { menu: 'cms-payors', label: 'Payor Management', actions: allActions },
-  { menu: 'cms-permissions', label: 'Permission Matrix', actions: allActions },
-  { menu: 'settings', label: 'System Settings', actions: allActions },
-];
-
-const MOCK_ROLE_PERMISSIONS: Record<string, PermissionAction[]> = {
-  dashboard: ['read', 'export'],
-  'indemnity-overview': ['read', 'export'],
-  'indemnity-claims-map': ['read'],
-  'indemnity-demographics': ['read'],
-  'indemnity-diseases': ['read'],
-  'managecare-daily-monitoring': ['read', 'update'],
-  'cms-users': ['create', 'read', 'update', 'delete'],
-  'cms-roles': ['create', 'read', 'update'],
-  'cms-payors': ['create', 'read', 'update'],
-  'cms-permissions': ['read', 'update'],
-  settings: ['read', 'update'],
-};
+import type { RoleWithPermissions } from '@/shared/types';
+import type { PermissionGroup, UpdatePermissionsPayload } from '../model/permissionTypes';
 
 export const permissionApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getPermissionGroups: builder.query<PermissionGroup[], void>({
       async queryFn(_arg, _queryApi, _extraOptions, fetchWithBQ) {
         const result = await fetchWithBQ(`${API_URLS.cms}/permissions/groups`);
+
         if (result.data) {
           const res = result.data as any;
           if (Array.isArray(res.data) && res.data.length > 0) {
@@ -49,7 +22,13 @@ export const permissionApi = api.injectEndpoints({
             return { data: res };
           }
         }
-        return { data: MOCK_PERMISSION_GROUPS };
+
+        if (result.error) {
+          return { error: result.error };
+        }
+
+        // API returned empty — return empty array
+        return { data: [] };
       },
       providesTags: ['Permission'],
     }),
@@ -57,6 +36,7 @@ export const permissionApi = api.injectEndpoints({
     getRolePermissions: builder.query<RoleWithPermissions, string>({
       async queryFn(roleId, _queryApi, _extraOptions, fetchWithBQ) {
         const result = await fetchWithBQ(`${API_URLS.cms}/permissions/roles/${roleId}`);
+
         if (result.data) {
           const res = result.data as any;
           if (res && res.permissions) {
@@ -64,17 +44,18 @@ export const permissionApi = api.injectEndpoints({
           }
         }
 
-        const permList: Permission[] = Object.entries(MOCK_ROLE_PERMISSIONS).flatMap(([menu, actions], i) =>
-          actions.map((action, j) => ({ id: `p_${i}_${j}`, menu, action })),
-        );
+        if (result.error) {
+          return { error: result.error };
+        }
 
+        // API returned empty — return empty permissions object
         return {
           data: {
             id: roleId,
-            name: (roleId as Role) || 'ADMIN',
-            description: `Permissions for ${roleId}`,
-            accessibleMenus: Object.keys(MOCK_ROLE_PERMISSIONS),
-            permissions: permList,
+            name: 'ADMIN',
+            description: '',
+            accessibleMenus: [],
+            permissions: [],
           },
         };
       },
@@ -82,23 +63,17 @@ export const permissionApi = api.injectEndpoints({
     }),
 
     updatePermissions: builder.mutation<RoleWithPermissions, UpdatePermissionsPayload>({
-      async queryFn({ roleId, permissions }) {
-        permissions.forEach((p) => {
-          MOCK_ROLE_PERMISSIONS[p.menu] = p.actions;
+      async queryFn({ roleId, permissions }, _queryApi, _extraOptions, fetchWithBQ) {
+        const result = await fetchWithBQ({
+          url: `${API_URLS.cms}/permissions/roles/${roleId}`,
+          method: 'PUT',
+          body: { permissions },
         });
-        const permList: Permission[] = Object.entries(MOCK_ROLE_PERMISSIONS).flatMap(([menu, actions], i) =>
-          actions.map((action, j) => ({ id: `p_${i}_${j}`, menu, action })),
-        );
 
-        return {
-          data: {
-            id: roleId,
-            name: (roleId as Role) || 'ADMIN',
-            description: `Permissions for ${roleId}`,
-            accessibleMenus: Object.keys(MOCK_ROLE_PERMISSIONS),
-            permissions: permList,
-          },
-        };
+        if (result.data) {
+          return { data: result.data as RoleWithPermissions };
+        }
+        return { error: result.error! };
       },
       invalidatesTags: (_result, _error, { roleId }) => [{ type: 'Permission', id: roleId }, 'Permission', 'Role'],
     }),

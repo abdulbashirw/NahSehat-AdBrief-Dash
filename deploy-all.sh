@@ -371,7 +371,6 @@ if [ "$DEPLOY_FRONTEND" = true ]; then
     --build-arg "VITE_NAHSEHAT_ADBRIEF_API_V3=${NAHSEHAT_ADBRIEF_API_V3}" \
     --build-arg "VITE_APP_NAME=NahSehat Dashboard" \
     --build-arg "VITE_ENV=production" \
-    --build-arg "VITE_ENABLE_MOCK=false" \
     --build-arg "VITE_ENABLE_DEVTOOLS=false" \
     "${SCRIPT_DIR}"
   echo "✅ Frontend image built"

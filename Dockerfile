@@ -22,7 +22,6 @@ ARG VITE_NAHSEHAT_API_V3
 ARG VITE_NAHSEHAT_ADBRIEF_API_V3
 ARG VITE_APP_NAME
 ARG VITE_ENV
-ARG VITE_ENABLE_MOCK
 ARG VITE_ENABLE_DEVTOOLS
 
 # Write provided build args to .env.production.local (overrides .env.production).
@@ -33,7 +32,6 @@ RUN touch .env.production.local && \
     if [ -n "$VITE_NAHSEHAT_ADBRIEF_API_V3" ]; then echo "VITE_NAHSEHAT_ADBRIEF_API_V3=$VITE_NAHSEHAT_ADBRIEF_API_V3" >> .env.production.local; fi && \
     if [ -n "$VITE_APP_NAME" ]; then echo "VITE_APP_NAME=$VITE_APP_NAME" >> .env.production.local; fi && \
     if [ -n "$VITE_ENV" ]; then echo "VITE_ENV=$VITE_ENV" >> .env.production.local; fi && \
-    if [ -n "$VITE_ENABLE_MOCK" ]; then echo "VITE_ENABLE_MOCK=$VITE_ENABLE_MOCK" >> .env.production.local; fi && \
     if [ -n "$VITE_ENABLE_DEVTOOLS" ]; then echo "VITE_ENABLE_DEVTOOLS=$VITE_ENABLE_DEVTOOLS" >> .env.production.local; fi
 
 # Build the application
