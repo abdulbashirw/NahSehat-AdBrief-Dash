@@ -407,6 +407,62 @@ if [ "$DEPLOY_FRONTEND" = true ]; then
   echo ""
 fi
 
+# ─── Auto-Update Backend CORS ────────────────────────
+# After the frontend is deployed, automatically update the backend's
+# CORS_ORIGIN env var to include the frontend URL. This eliminates the
+# manual step of updating env.cloud-run.yaml and redeploying the backend.
+if [ "$DEPLOY_FRONTEND" = true ] && [ -n "$FRONTEND_URL" ]; then
+  # Determine the backend service name to update
+  if [ -n "$BACKEND_URL_OVERRIDE" ] || [ "$DEPLOY_BACKEND" = true ] || [ -n "$BACKEND_URL" ]; then
+    echo "============================================"
+    echo "🔄 Auto-updating backend CORS_ORIGIN..."
+    echo "============================================"
+
+    # Get current CORS_ORIGIN from the deployed backend service
+    CURRENT_CORS=$(gcloud run services describe "${BACKEND_SERVICE}" \
+      --region "${REGION}" \
+      --project "${PROJECT_ID}" \
+      --format "value(spec.template.spec.containers[0].env[?name=='CORS_ORIGIN'].value)" 2>/dev/null || echo "")
+
+    # Also check if CORS_ALLOW_CLOUD_RUN is already set
+    CURRENT_ALLOW_CR=$(gcloud run services describe "${BACKEND_SERVICE}" \
+      --region "${REGION}" \
+      --project "${PROJECT_ID}" \
+      --format "value(spec.template.spec.containers[0].env[?name=='CORS_ALLOW_CLOUD_RUN'].value)" 2>/dev/null || echo "")
+
+    # If CORS_ALLOW_CLOUD_RUN is already 'true', the backend auto-allows all
+    # *.run.app origins — no need to update CORS_ORIGIN.
+    if [ "${CURRENT_ALLOW_CR}" = "true" ]; then
+      echo "   ✅ CORS_ALLOW_CLOUD_RUN=true — backend already allows all Cloud Run origins."
+      echo "   No CORS update needed."
+    else
+      # Append frontend URL to existing CORS_ORIGIN (if not already present)
+      if [[ "${CURRENT_CORS}" == *"${FRONTEND_URL}"* ]]; then
+        echo "   ✅ CORS_ORIGIN already includes frontend URL."
+      else
+        if [ -n "$CURRENT_CORS" ]; then
+          NEW_CORS="${CURRENT_CORS},${FRONTEND_URL}"
+        else
+          NEW_CORS="${FRONTEND_URL}"
+        fi
+
+        echo "   Current CORS_ORIGIN: ${CURRENT_CORS:-<not set>}"
+        echo "   New CORS_ORIGIN:     ${NEW_CORS}"
+
+        # Update the backend env var using --update-env-vars.
+        # Use ^@^ delimiter to handle commas in the value correctly.
+        gcloud run services update "${BACKEND_SERVICE}" \
+          --region "${REGION}" \
+          --project "${PROJECT_ID}" \
+          --update-env-vars "^@^CORS_ORIGIN=${NEW_CORS}"
+
+        echo "   ✅ Backend CORS_ORIGIN updated — new revision deploying."
+      fi
+    fi
+    echo ""
+  fi
+fi
+
 # ─── Summary ─────────────────────────────────────────
 echo "============================================"
 echo "✨ Deployment Complete!"
@@ -423,10 +479,15 @@ if [ "$DEPLOY_FRONTEND" = true ]; then
 fi
 echo "============================================"
 echo ""
-echo "📋 Next Steps:"
-echo "   1. Update CORS_ORIGIN in env.cloud-run.yaml with the frontend URL"
-echo "      (if not already set), then redeploy backend:"
-echo "      ./deploy-all.sh --backend-only"
+echo "📋 CORS Status:"
+if [ "$DEPLOY_FRONTEND" = true ] && [ -n "$FRONTEND_URL}" ]; then
+  echo "   ✅ Backend CORS auto-updated to allow: ${FRONTEND_URL}"
+  echo "   (If still getting CORS errors, also set CORS_ALLOW_CLOUD_RUN=true"
+  echo "    on the backend to auto-allow all *.run.app origins)"
+else
+  echo "   ⚠️  Frontend not deployed — CORS not auto-updated."
+  echo "   If deploying frontend-only, run full deploy to auto-update CORS."
+fi
 echo ""
 echo "📋 Useful Commands:"
 echo "   View backend logs:  gcloud run logs read --service=${BACKEND_SERVICE} --region=${REGION} --limit=50"
