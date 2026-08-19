@@ -38,7 +38,7 @@ CLEAN_BUILD=false
 SETUP_REPO=false
 
 # Backend config
-BACKEND_SERVICE="adbriefai"
+BACKEND_SERVICE="adbriefns-backend"
 BACKEND_MEMORY="512Mi"
 BACKEND_CPU="1"
 BACKEND_MIN_INSTANCES="0"
@@ -49,7 +49,7 @@ VPC_CONNECTOR="${VPC_CONNECTOR:-}"
 VPC_EGRESS="private-ranges-only"
 
 # Frontend config
-FRONTEND_SERVICE="adbriefai-frontend"
+FRONTEND_SERVICE="adbriefns"
 FRONTEND_MEMORY="256Mi"
 FRONTEND_CPU="1"
 FRONTEND_MIN_INSTANCES="0"
