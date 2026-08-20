@@ -20,6 +20,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { testConnection } from './config/database';
+import { corsConfig } from './config';
 import { startBlacklistSweep } from './models/tokenBlacklist';
 import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/authRoutes';
@@ -34,24 +35,13 @@ const PORT = process.env.PORT || 3001;
 
 /* ─── Global Middleware ─── */
 app.use(helmet());
-// CORS origins from env var (comma-separated), with localhost fallbacks for dev.
-// Cloud Run: set CORS_ORIGIN to the frontend URL in env.cloud-run.yaml,
-// OR set CORS_ALLOW_CLOUD_RUN=true to auto-allow any https://*.run.app origin.
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174,http://localhost:3000,http://localhost:3001')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
-
-// When true, allow any https://*.run.app origin (for Cloud Run deployments).
-// JWT auth still protects all endpoints — CORS is not the security boundary.
-const allowCloudRun = process.env.CORS_ALLOW_CLOUD_RUN === 'true';
-
+// CORS — origins & Cloud Run auto-allow configured centrally in config/index.ts.
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no Origin header (curl, server-to-server, same-origin)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    if (allowCloudRun && /^https:\/\/[^/]+\.run\.app$/.test(origin)) return callback(null, true);
+    if (corsConfig.origins.includes(origin)) return callback(null, true);
+    if (corsConfig.allowCloudRun && /^https:\/\/[^/]+\.run\.app$/.test(origin)) return callback(null, true);
     callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,

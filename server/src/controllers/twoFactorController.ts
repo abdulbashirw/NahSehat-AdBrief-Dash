@@ -18,13 +18,13 @@ import { pool } from '../models/db';
 import { verifyToken, signToken, buildAuthUser } from '../utils/jwt';
 import { createError } from '../middleware/errorHandler';
 import type { AuthRequest } from '../middleware/auth';
-import { jwtConfig } from '../config';
+import { twoFactorConfig } from '../config';
 
 /** TOTP instance configured with crypto + base32 plugins (otplib v13 API). */
 const totp = new TOTP({ crypto: new NobleCryptoPlugin(), base32: new ScureBase32Plugin() });
 
 /** Encryption key for storing 2FA secrets at rest (AES-256-GCM, 32-byte key). */
-const ENCRYPTION_KEY_RAW = process.env.TWO_FACTOR_ENCRYPTION_KEY || jwtConfig.secret;
+const ENCRYPTION_KEY_RAW = twoFactorConfig.encryptionKey;
 const KEY_BUFFER = crypto.createHash('sha256').update(ENCRYPTION_KEY_RAW).digest();
 
 /** Encrypt a plaintext secret for storage. */
