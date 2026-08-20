@@ -44,10 +44,10 @@ export const dbConfig = socketPath
     }
   : {
       // ── TCP mode (GCP Cloud SQL public IP / Docker) ──
-      host: env.DB_HOST || 'localhost',
+    host: env.DB_HOST || '10.250.16.5',
       port: Number(env.DB_PORT) || 3306,
-      user: env.DB_USER ?? 'root',
-      password: env.DB_PASSWORD ?? '',
+    user: env.DB_USER ?? 'bashir',
+    password: env.DB_PASSWORD ?? '0xEp8duI*iL(kLJ&',
       database: env.DB_NAME || 'nahsehat_analytics_dash',
       waitForConnections: true,
       connectionLimit: 10,
