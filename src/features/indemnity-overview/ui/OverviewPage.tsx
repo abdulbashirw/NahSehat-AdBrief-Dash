@@ -62,7 +62,7 @@ function ChartSkeleton({ height = 260 }: { height?: number }) {
 }
 
 export default function Overview() {
-  const { data, isLoading, isError, refetch } = useIndemnityData();
+  const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
 
   const filteredClaims = data?.claims ?? [];
   const members = data?.members ?? [];
@@ -103,7 +103,7 @@ export default function Overview() {
     return (
       <div className="space-y-6">
         <PageTitle />
-        <PeriodFilter />
+        <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
         <SectionCard title="Utilization Overview">
           <EmptyState />
         </SectionCard>
@@ -121,8 +121,13 @@ export default function Overview() {
       variants={{ show: { transition: { staggerChildren: 0.06 } } }}
     >
       <PageTitle />
-      <PeriodFilter />
+      <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
 
+      {/* Content area — subtle dim during background refetch (not initial load) */}
+      <div
+        className="space-y-6 transition-opacity duration-300"
+        style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}
+      >
       {/* Section 1 — KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <KpiCard index={0} loading={isLoading} label="Member Active" accent="#2563EB" value={kpis.memberActive} format={formatNumber} delta={deltas.memberActive} />
@@ -405,6 +410,7 @@ export default function Overview() {
           })}
         />
       </motion.div>
+      </div>
     </motion.div>
   );
 }

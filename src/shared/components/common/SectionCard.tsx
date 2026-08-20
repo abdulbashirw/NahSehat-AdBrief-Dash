@@ -8,6 +8,7 @@ import { cn } from '@/shared/lib/utils';
 
 export interface SectionCardProps {
   title: string;
+  subtitle?: string;
   right?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -18,6 +19,7 @@ export interface SectionCardProps {
 
 export default function SectionCard({
   title,
+  subtitle,
   right,
   children,
   className,
@@ -35,7 +37,10 @@ export default function SectionCard({
       className,
     )}>
       <div className="flex h-10 items-center justify-between gap-4 px-5 bg-gradient-to-r from-[#1E3A6E] via-[#2563EB] to-[#06B6D4]">
-        <h2 className="text-[13px] font-bold uppercase tracking-[0.04em] text-white md:text-sm">{title}</h2>
+        <div className="flex flex-col justify-center">
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.04em] text-white md:text-sm">{title}</h2>
+          {subtitle && <p className="text-[10.5px] font-medium text-white/70">{subtitle}</p>}
+        </div>
         {right}
       </div>
       <div className={cn(

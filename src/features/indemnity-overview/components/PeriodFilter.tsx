@@ -28,6 +28,7 @@ import {
 import { useGetPayorsQuery } from '@/entities/payor/api/payorApi';
 import { useAppSelector } from '@/shared/store';
 import { cn } from '@/shared/lib/utils';
+import RefreshProgress from '@/shared/components/loading/RefreshProgress';
 
 const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
   { value: 'w1', label: 'W1' },
@@ -38,7 +39,14 @@ const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ];
 
-export default function PeriodFilter() {
+interface PeriodFilterProps {
+  /** True while a background refetch is in-flight (RTK Query `isFetching`). */
+  isFetching?: boolean;
+  /** Timestamp of the most recent successful fetch — shown as "Updated HH:mm:ss". */
+  lastUpdated?: Date | null;
+}
+
+export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterProps) {
   const filter = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const rangeLabel = getDateRangeLabel(filter);
   const isCustom = filter.periodType === 'custom';
@@ -200,6 +208,11 @@ export default function PeriodFilter() {
               <span className="text-[12px] font-medium text-red-600">{rangeValidation.message}</span>
             </div>
           )}
+
+          {/* Refresh status — bottom-right, aligned with month dropdown */}
+          <div className="ml-auto">
+            <RefreshProgress isFetching={!!isFetching} lastUpdated={lastUpdated} />
+          </div>
         </div>
       </div>
     </div>

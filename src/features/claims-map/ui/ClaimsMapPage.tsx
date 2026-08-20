@@ -60,7 +60,7 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 }
 
 export default function ClaimsMap() {
-  const { data, isLoading, isError, refetch } = useIndemnityData();
+  const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
 
   const filteredClaims = data?.claims ?? [];
   const members = data?.members ?? [];
@@ -123,7 +123,6 @@ export default function ClaimsMap() {
         value: (r) => r.providerName,
         render: (r) => (
           <span className="flex items-center gap-2">
-            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold uppercase text-[#4B5563]">{r.type}</span>
             <span className="font-semibold">{r.providerName}</span>
             {!r.inNetwork && <span className="rounded bg-[#F2C230]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#8a6d00]">Non Provider</span>}
           </span>
@@ -158,7 +157,7 @@ export default function ClaimsMap() {
     return (
       <div className="space-y-6">
         <PageTitle />
-        <PeriodFilter />
+        <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
         <SectionCard title="Where Claimants Made Claims">
           <EmptyState />
         </SectionCard>
@@ -176,8 +175,10 @@ export default function ClaimsMap() {
   return (
     <motion.div className="space-y-6" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
       <PageTitle />
-      <PeriodFilter />
+      <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
 
+      {/* Content area — subtle dim during background refetch (not initial load) */}
+      <div className="space-y-6 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
       {/* Section 1 — KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <KpiCard index={0} loading={isLoading} label="Claimants" accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
@@ -371,6 +372,7 @@ export default function ClaimsMap() {
           })}
         />
       </motion.div>
+      </div>
     </motion.div>
   );
 }

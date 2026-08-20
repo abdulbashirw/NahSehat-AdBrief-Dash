@@ -9,7 +9,7 @@
  * Client-side filtering (additional):
  *   - coverageId, claimType, status, search
  */
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 import { useSyncExternalStore } from 'react';
 import { useGetDCSehatQuery } from '@/entities/claim/api/claimApi';
 import type { AdmDailyClaimRequest } from '@/entities/claim/api/claimApi';
@@ -94,9 +94,29 @@ export function useIndemnityData(filters?: IndemnityFilters) {
     };
   }, [periodFilter, payorCode, rangeValidation.valid]);
 
-  const { data, isLoading, isError, error, refetch } = useGetDCSehatQuery(requestBody!, {
+  const { data, isLoading, isFetching, isError, error, refetch } = useGetDCSehatQuery(requestBody!, {
     skip: !requestBody,
   });
+
+  // ── Auto-refresh: refetch every 10 minutes (matches Manage Care Daily Monitoring) ──
+  useEffect(() => {
+    if (!requestBody) return; // Don't poll until we have a valid request
+    const interval = setInterval(() => {
+      refetch();
+    }, 600000); // 10 minutes
+    return () => clearInterval(interval);
+  }, [refetch, requestBody]);
+
+  // ── Track last successful fetch timestamp (for "Updated HH:mm:ss" badge) ──
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const prevFetching = useRef(false);
+  useEffect(() => {
+    // Transition: fetching → done with data = successful fetch
+    if (prevFetching.current && !isFetching && data) {
+      setLastUpdated(new Date());
+    }
+    prevFetching.current = isFetching;
+  }, [isFetching, data]);
 
   // ── Client-side filters (coverage, claim type, status, search) ──
   const filtered = useMemo(() => {
@@ -134,6 +154,8 @@ export function useIndemnityData(filters?: IndemnityFilters) {
   return {
     data: filtered,
     isLoading,
+    isFetching,
+    lastUpdated,
     isError,
     error,
     refetch,

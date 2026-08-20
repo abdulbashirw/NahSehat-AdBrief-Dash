@@ -1,8 +1,13 @@
 /**
  * Indemnity — Demographics (Member & Claimants Demographics)
  *
- * Migrated from the original Demographics page to use RTK Query data.
- * All business logic (aggregation, KPIs, charts, tables) preserved.
+ * Age and gender composition of active members versus claimants within
+ * the currently selected period (W1–W4 / Month / Custom, max 31 days).
+ *
+ * %Growth is computed as first-half → second-half of the selected period
+ * (same midpoint-split approach as the KPI delta cards).
+ *
+ * Data comes from the AdmDailyClaim API response — no year-based splitting.
  */
 import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
@@ -17,7 +22,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { TrendingDown, TrendingUp } from "lucide-react";
 import KpiCard from "@/shared/components/common/KpiCard";
 import SectionCard from "@/shared/components/common/SectionCard";
 import ExportButton from "@/shared/components/common/ExportButton";
@@ -28,10 +32,13 @@ import { useIndemnityData } from "@/features/indemnity-overview/hooks/useIndemni
 import PeriodFilter from "@/features/indemnity-overview/components/PeriodFilter";
 import { AGE_BUCKETS, byMonth, kpiDeltas, kpiSummary } from "@/entities/claim/lib/aggregate";
 import type { MonthRow } from "@/entities/claim/lib/aggregate";
-import { claimantAgeGenderByYear, growth, memberAgeGenderByYear } from "@/features/indemnity-overview/utils/demoAgg";
-import type { YearGenderCell } from "@/features/indemnity-overview/utils/demoAgg";
+import {
+  claimantAgeGenderGrowth,
+  memberAgeGenderGrowth,
+} from "@/features/indemnity-overview/utils/demoAgg";
+import type { AgeGenderGrowthCell } from "@/features/indemnity-overview/utils/demoAgg";
 import { cn } from "@/shared/lib/utils";
-import { formatCompactIDR, formatIDR, formatMonthShort, formatNumber, formatPct, formatRatioPct } from "@/shared/lib/format";
+import { formatCompactIDR, formatIDR, formatMonthShort, formatNumber, formatRatioPct } from "@/shared/lib/format";
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 12 },
@@ -48,22 +55,22 @@ function heatColor(v: number, max: number): string {
   return HEAT_SCALE[Math.min(HEAT_SCALE.length - 1, Math.floor(t * HEAT_SCALE.length))];
 }
 
-const formatDecimal = (n: number) =>
-  n.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-function GrowthCell({ g }: { g: number | null }) {
-  if (g === null) return <span className="text-[#9CA3AF]">—</span>;
-  const up = g >= 0;
+function growthBadge(growth: number | null): ReactElement {
+  if (growth === null) return <span className="text-[#9CA3AF]">—</span>;
+  const pct = Math.abs(growth * 100);
+  const up = growth >= 0;
   return (
-    <span className={cn("inline-flex items-center gap-1 font-semibold tabular-nums", up ? "text-[#16A34A]" : "text-[#DC2626]")}>
-      {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-      {formatPct(Math.abs(g) * 100)}
+    <span className={cn("inline-flex items-center gap-0.5 font-bold tabular-nums", up ? "text-[#16A34A]" : "text-[#DC2626]")}>
+      {up ? "▲" : "▼"} {pct.toFixed(1)}%
     </span>
   );
 }
 
+const formatDecimal = (n: number) =>
+  n.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 export default function Demographics() {
-  const { data, isLoading, isError, refetch } = useIndemnityData();
+  const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
 
   const filteredClaims = data?.claims ?? [];
   const members = data?.members ?? [];
@@ -72,33 +79,28 @@ export default function Demographics() {
   const deltas = useMemo(() => kpiDeltas(filteredClaims, members), [filteredClaims, members]);
   const monthly = useMemo(() => byMonth(filteredClaims), [filteredClaims]);
 
-  const member25 = useMemo(() => memberAgeGenderByYear(members, 2025), [members]);
-  const member26 = useMemo(() => memberAgeGenderByYear(members, 2026), [members]);
-  const claimant25 = useMemo(() => claimantAgeGenderByYear(members, filteredClaims, 2025), [members, filteredClaims]);
-  const claimant26 = useMemo(() => claimantAgeGenderByYear(members, filteredClaims, 2026), [members, filteredClaims]);
+  // Age × gender matrices with first-half → second-half growth
+  const memberMatrix = useMemo(
+    () => memberAgeGenderGrowth(members, filteredClaims),
+    [members, filteredClaims],
+  );
+  const claimantMatrix = useMemo(
+    () => claimantAgeGenderGrowth(members, filteredClaims),
+    [members, filteredClaims],
+  );
 
-  const [period, setPeriod] = useState<"2025" | "2026" | "both">("both");
   const [showBilling, setShowBilling] = useState(true);
+  // Butterfly view: "current" (full period) | "split" (1st-half ghost + 2nd-half solid)
+  const [view, setView] = useState<"current" | "split">("current");
 
   const memberMax = useMemo(
-    () => Math.max(1, ...[...member25, ...member26].flatMap((r) => [r.female, r.male])),
-    [member25, member26],
+    () => Math.max(1, ...memberMatrix.flatMap((r) => [r.female, r.male])),
+    [memberMatrix],
   );
   const claimantMax = useMemo(
-    () => Math.max(1, ...[...claimant25, ...claimant26].flatMap((r) => [r.female, r.male])),
-    [claimant25, claimant26],
+    () => Math.max(1, ...claimantMatrix.flatMap((r) => [r.female, r.male])),
+    [claimantMatrix],
   );
-
-  const topMovers = useMemo(() => {
-    const movers: { label: string; g: number }[] = [];
-    AGE_BUCKETS.forEach((b, i) => {
-      const gf = growth(claimant25[i].female, claimant26[i].female);
-      const gm = growth(claimant25[i].male, claimant26[i].male);
-      if (gf !== null && claimant26[i].female > 5) movers.push({ label: `${b} F`, g: gf });
-      if (gm !== null && claimant26[i].male > 5) movers.push({ label: `${b} M`, g: gm });
-    });
-    return movers.sort((a, b) => b.g - a.g).slice(0, 3);
-  }, [claimant25, claimant26]);
 
   if (isError) return <ApiError onRetry={refetch} />;
 
@@ -106,7 +108,7 @@ export default function Demographics() {
     return (
       <div className="space-y-6">
         <PageTitle />
-        <PeriodFilter />
+        <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
         <SectionCard title="Member & Claimants Demographics">
           <EmptyState />
         </SectionCard>
@@ -115,7 +117,16 @@ export default function Demographics() {
   }
 
   const periode = "demographics";
-  const sumOf = (rows: YearGenderCell[], key: "female" | "male") => rows.reduce((s, r) => s + r[key], 0);
+  const sumOf = (rows: AgeGenderGrowthCell[], key: "female" | "male") => rows.reduce((s, r) => s + r[key], 0);
+  const sumTotal = (rows: AgeGenderGrowthCell[]) => rows.reduce((s, r) => s + r.total, 0);
+  const sumFirst = (rows: AgeGenderGrowthCell[]) => rows.reduce((s, r) => s + r.firstHalf, 0);
+  const sumSecond = (rows: AgeGenderGrowthCell[]) => rows.reduce((s, r) => s + r.secondHalf, 0);
+  const totalGrowth = (rows: AgeGenderGrowthCell[]): number | null => {
+    const f = sumFirst(rows);
+    const s = sumSecond(rows);
+    if (f === 0) return s > 0 ? 1 : null;
+    return (s - f) / f;
+  };
 
   const chartData = monthly.map((m: MonthRow) => ({
     ...m,
@@ -123,15 +134,13 @@ export default function Demographics() {
     rate: m.billing ? m.approved / m.billing : 0,
   }));
 
-  const current = period === "2025" ? claimant25 : claimant26;
-  const ghost = period === "both" ? claimant25 : null;
-  const showGhost = period === "both";
-
   return (
     <motion.div className="space-y-6" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
       <PageTitle />
-      <PeriodFilter />
+      <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
 
+      {/* Content area — subtle dim during background refetch (not initial load) */}
+      <div className="space-y-6 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
       {/* Section 1 — KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard index={0} loading={isLoading} label="Claimants" accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
@@ -142,30 +151,31 @@ export default function Demographics() {
         <KpiCard index={5} loading={isLoading} label="Approved (IDR)" accent="#0F9488" value={kpis.approved} format={formatIDR} delta={deltas.approved} subline={`${formatRatioPct(kpis.approvedPct)} of billing`} spark={monthly.map((m) => m.approved)} />
       </div>
 
-      {/* Section 2 — Member heatmap table */}
+      {/* Section 2 — Member heatmap table with %Growth */}
       <motion.div variants={sectionVariants}>
-        <SectionCard title="Member by Age Group by Gender">
+        <SectionCard
+          title="Member by Age Group by Gender"
+          subtitle="Distinct members per age bucket — %Growth compares 1st-half → 2nd-half of the selected period"
+        >
           {isLoading ? (
-            <Skeleton className="h-[320px] w-full" />
+            <Skeleton className="h-[360px] w-full" />
           ) : (
             <div className="overflow-auto rounded-lg border border-[#E5E8EC]">
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="bg-[#F1F3F5] text-[11.5px] font-bold uppercase tracking-wide text-[#4B5563]">
-                    <th rowSpan={2} className="px-4 py-2 text-left">Age Group</th>
-                    <th colSpan={3} className="border-l border-[#E5E8EC] px-4 py-2 text-center" style={{ color: F_PINK }}>Female</th>
-                    <th colSpan={3} className="border-l border-[#E5E8EC] px-4 py-2 text-center" style={{ color: M_BLUE }}>Male</th>
-                  </tr>
-                  <tr className="bg-[#F1F3F5] text-[11.5px] font-bold uppercase tracking-wide text-[#4B5563]">
-                    {["2025", "2026", "%Growth", "2025", "2026", "%Growth"].map((h, i) => (
-                      <th key={i} className={cn("px-4 py-2 text-right", (i === 0 || i === 3) && "border-l border-[#E5E8EC]")}>{h}</th>
-                    ))}
+                    <th className="px-4 py-2 text-left">Age Group</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center" style={{ color: F_PINK }}>Female</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center" style={{ color: M_BLUE }}>Male</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">Total</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">1st Half</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">2nd Half</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">%Growth</th>
                   </tr>
                 </thead>
                 <tbody>
                   {AGE_BUCKETS.map((b, i) => {
-                    const f25 = member25[i].female, f26 = member26[i].female;
-                    const m25 = member25[i].male, m26 = member26[i].male;
+                    const row = memberMatrix[i];
                     const cell = (v: number) => (
                       <motion.span
                         initial={{ opacity: 0 }}
@@ -180,12 +190,12 @@ export default function Demographics() {
                     return (
                       <tr key={b} className="border-t border-[#E5E8EC] hover:bg-[#F8FAFB]">
                         <td className="px-4 py-2 font-semibold text-[#1F2A37]">{b}</td>
-                        <td className="border-l border-[#E5E8EC] px-2 py-1.5">{cell(f25)}</td>
-                        <td className="px-2 py-1.5">{cell(f26)}</td>
-                        <td className="px-4 py-2 text-right"><GrowthCell g={growth(f25, f26)} /></td>
-                        <td className="border-l border-[#E5E8EC] px-2 py-1.5">{cell(m25)}</td>
-                        <td className="px-2 py-1.5">{cell(m26)}</td>
-                        <td className="px-4 py-2 text-right"><GrowthCell g={growth(m25, m26)} /></td>
+                        <td className="border-l border-[#E5E8EC] px-2 py-1.5">{cell(row.female)}</td>
+                        <td className="border-l border-[#E5E8EC] px-2 py-1.5">{cell(row.male)}</td>
+                        <td className="border-l border-[#E5E8EC] px-4 py-2 text-right font-bold tabular-nums text-[#1F2A37]">{formatNumber(row.total)}</td>
+                        <td className="border-l border-[#E5E8EC] px-4 py-2 text-right tabular-nums text-[#6B7280]">{formatNumber(row.firstHalf)}</td>
+                        <td className="border-l border-[#E5E8EC] px-4 py-2 text-right tabular-nums text-[#6B7280]">{formatNumber(row.secondHalf)}</td>
+                        <td className="border-l border-[#E5E8EC] px-4 py-2 text-center text-[12px]">{growthBadge(row.growth)}</td>
                       </tr>
                     );
                   })}
@@ -193,12 +203,12 @@ export default function Demographics() {
                 <tfoot>
                   <tr className="border-t-2 border-[#E5E8EC] font-bold text-[#1F2A37]">
                     <td className="px-4 py-2.5">Total</td>
-                    <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums">{formatNumber(sumOf(member25, "female"))}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{formatNumber(sumOf(member26, "female"))}</td>
-                    <td className="px-4 py-2.5 text-right"><GrowthCell g={growth(sumOf(member25, "female"), sumOf(member26, "female"))} /></td>
-                    <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums">{formatNumber(sumOf(member25, "male"))}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{formatNumber(sumOf(member26, "male"))}</td>
-                    <td className="px-4 py-2.5 text-right"><GrowthCell g={growth(sumOf(member25, "male"), sumOf(member26, "male"))} /></td>
+                    <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums">{formatNumber(sumOf(memberMatrix, "female"))}</td>
+                    <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums">{formatNumber(sumOf(memberMatrix, "male"))}</td>
+                    <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums">{formatNumber(sumTotal(memberMatrix))}</td>
+                    <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums text-[#6B7280]">{formatNumber(sumFirst(memberMatrix))}</td>
+                    <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums text-[#6B7280]">{formatNumber(sumSecond(memberMatrix))}</td>
+                    <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-center text-[12px]">{growthBadge(totalGrowth(memberMatrix))}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -207,34 +217,26 @@ export default function Demographics() {
         </SectionCard>
       </motion.div>
 
-      {/* Section 3 — Butterfly chart */}
+      {/* Section 3 — Butterfly chart with split view */}
       <motion.div variants={sectionVariants}>
         <SectionCard
           title="Claimants by Age Group by Gender"
+          subtitle="Distinct claimants per age bucket — toggle to compare 1st-half vs 2nd-half of the period"
           right={
-            <span className="flex items-center gap-3">
-              <span className="hidden items-center gap-2 lg:flex">
-                {topMovers.map((t) => (
-                  <span key={t.label} className="rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] font-semibold text-white tabular-nums">
-                    {t.label} {t.g >= 0 ? "↑" : "↓"} {formatPct(Math.abs(t.g) * 100)}
-                  </span>
-                ))}
-              </span>
-              <span className="flex overflow-hidden rounded-md bg-white/15">
-                {(["2025", "2026", "both"] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPeriod(p)}
-                    className={cn(
-                      "px-2.5 py-1 text-[11px] font-semibold capitalize text-white/80 transition-colors hover:text-white",
-                      period === p && "bg-white text-[#2E7D5B] hover:text-[#2E7D5B]",
-                    )}
-                  >
-                    {p === "both" ? "Both" : p}
-                  </button>
-                ))}
-              </span>
-            </span>
+            <div className="inline-flex rounded-[8px] bg-white/15 p-[3px]">
+              {(["current", "split"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={cn(
+                    "rounded-[6px] px-2.5 py-1 text-[11px] font-semibold transition-all",
+                    view === v ? "bg-white text-[#1F2A37] shadow-sm" : "text-white/70 hover:text-white",
+                  )}
+                >
+                  {v === "current" ? "Full Period" : "1st vs 2nd Half"}
+                </button>
+              ))}
+            </div>
           }
         >
           {isLoading ? (
@@ -244,22 +246,32 @@ export default function Demographics() {
               <div className="mb-3 flex items-center justify-center gap-6 text-[11.5px] font-semibold text-[#4B5563]">
                 <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: F_PINK }} /> Female</span>
                 <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: M_BLUE }} /> Male</span>
-                {showGhost && <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border-2 border-[#9CA3AF]" /> 2025 (ghost)</span>}
+                {view === "split" && (
+                  <>
+                    <span className="mx-2 text-[#9CA3AF]">|</span>
+                    <span className="flex items-center gap-1.5 text-[#9CA3AF]"><span className="h-2.5 w-2.5 rounded-sm border border-[#9CA3AF] bg-[#E5E7EB]" /> 1st Half (ghost)</span>
+                    <span className="flex items-center gap-1.5 text-[#9CA3AF]"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: "#C4B5FD" }} /> 2nd Half (solid)</span>
+                  </>
+                )}
               </div>
               {AGE_BUCKETS.map((b, i) => {
-                const f = current[i].female;
-                const m = current[i].male;
-                const gf = ghost ? ghost[i].female : 0;
-                const gm = ghost ? ghost[i].male : 0;
-                const bar = (v: number, color: string, ghostV: number, side: "l" | "r") => (
+                const row = claimantMatrix[i];
+                // In "split" mode, use secondHalf as the solid bar and firstHalf as ghost
+                const fVal = view === "split" ? row.secondHalf : row.female;
+                const mVal = view === "split" ? row.secondHalf : row.male;
+                const fGhost = view === "split" ? row.firstHalf : 0;
+                const mGhost = view === "split" ? row.firstHalf : 0;
+                const fColor = view === "split" ? "#C4B5FD" : F_PINK;
+                const mColor = view === "split" ? "#93C5FD" : M_BLUE;
+                const splitMax = view === "split"
+                  ? Math.max(1, ...claimantMatrix.flatMap((r) => [r.firstHalf, r.secondHalf]))
+                  : claimantMax;
+                const bar = (v: number, ghost: number, color: string, side: "l" | "r") => (
                   <div className={cn("relative flex h-7 flex-1 items-center", side === "l" ? "justify-end" : "justify-start")}>
-                    {showGhost && ghostV > 0 && (
-                      <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.4 + i * 0.04, duration: 0.3 }}
-                        className={cn("absolute h-7 rounded-md border-2", side === "l" ? "right-0 rounded-r-none" : "left-0 rounded-l-none")}
-                        style={{ width: `${(ghostV / claimantMax) * 100}%`, borderColor: color, borderStyle: "dashed" }}
+                    {ghost > 0 && (
+                      <span
+                        className={cn("absolute h-7 rounded-md border border-[#9CA3AF]/40 bg-[#E5E7EB]", side === "l" ? "origin-right rounded-r-none" : "origin-left rounded-l-none")}
+                        style={{ width: `${Math.max(1, (ghost / splitMax) * 100)}%` }}
                       />
                     )}
                     <motion.span
@@ -267,7 +279,7 @@ export default function Demographics() {
                       animate={{ scaleX: 1 }}
                       transition={{ delay: 0.1 + Math.abs(3 - i) * 0.06, duration: 0.5, ease: "easeOut" }}
                       className={cn("relative h-7 rounded-md", side === "l" ? "origin-right rounded-r-none" : "origin-left rounded-l-none")}
-                      style={{ width: `${Math.max(1, (v / claimantMax) * 100)}%`, backgroundColor: color }}
+                      style={{ width: `${Math.max(1, (v / splitMax) * 100)}%`, backgroundColor: color }}
                     />
                     <span className={cn("absolute text-[11.5px] font-bold tabular-nums text-[#1F2A37]", side === "l" ? "-left-0.5 -translate-x-full pr-1" : "-right-0.5 translate-x-full pl-1")}>
                       {formatNumber(v)}
@@ -276,9 +288,16 @@ export default function Demographics() {
                 );
                 return (
                   <div key={b} className="group grid grid-cols-[1fr_64px_1fr] items-center gap-1 rounded-md px-1 py-0.5 hover:bg-[#F8FAFB]">
-                    {bar(f, F_PINK, gf, "l")}
-                    <div className="text-center text-[12px] font-bold text-[#4B5563]">{b}</div>
-                    {bar(m, M_BLUE, gm, "r")}
+                    {bar(fVal, fGhost, fColor, "l")}
+                    <div className="flex flex-col items-center">
+                      <span className="text-[12px] font-bold text-[#4B5563]">{b}</span>
+                      {view === "split" && row.growth !== null && (
+                        <span className={cn("text-[9.5px] font-bold", row.growth >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+                          {row.growth >= 0 ? "▲" : "▼"} {Math.abs(row.growth * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
+                    {bar(mVal, mGhost, mColor, "r")}
                   </div>
                 );
               })}
@@ -366,16 +385,29 @@ export default function Demographics() {
         <ExportButton
           filename={`adbrief-demographics-${periode}.csv`}
           getPayload={() => ({
-            headers: ["Age Group", "F 2025", "F 2026", "F %Growth", "M 2025", "M 2026", "M %Growth", "Claimants F 2025", "Claimants F 2026", "Claimants M 2025", "Claimants M 2026"],
-            rows: AGE_BUCKETS.map((b, i) => [
-              b,
-              member25[i].female, member26[i].female, growth(member25[i].female, member26[i].female) ?? "",
-              member25[i].male, member26[i].male, growth(member25[i].male, member26[i].male) ?? "",
-              claimant25[i].female, claimant26[i].female, claimant25[i].male, claimant26[i].male,
-            ] as (string | number)[]),
+            headers: [
+              "Age Group",
+              "Member Female", "Member Male", "Member Total",
+              "Member 1st Half", "Member 2nd Half", "Member %Growth",
+              "Claimants Female", "Claimants Male", "Claimants Total",
+              "Claimants 1st Half", "Claimants 2nd Half", "Claimants %Growth",
+            ],
+            rows: AGE_BUCKETS.map((b, i) => {
+              const m = memberMatrix[i];
+              const c = claimantMatrix[i];
+              const fmtGrowth = (g: number | null) => (g === null ? "—" : `${(g * 100).toFixed(1)}%`);
+              return [
+                b,
+                m.female, m.male, m.total,
+                m.firstHalf, m.secondHalf, fmtGrowth(m.growth),
+                c.female, c.male, c.total,
+                c.firstHalf, c.secondHalf, fmtGrowth(c.growth),
+              ] as (string | number)[];
+            }),
           })}
         />
       </motion.div>
+      </div>
     </motion.div>
   );
 }
@@ -385,7 +417,7 @@ function PageTitle() {
     <div>
       <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">Member &amp; Claimants Demographics</h1>
       <p className="mt-1 text-sm italic text-[#9CA3AF]">
-        Age and gender composition of active members versus claimants, with growth against the previous period
+        Age and gender composition of active members versus claimants within the selected period
       </p>
     </div>
   );

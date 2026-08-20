@@ -288,7 +288,7 @@ export function byProvider(claims: Claim[], providers: Provider[]): ProviderRow[
       return {
         providerId: pid,
         providerName: p?.providerName ?? pid,
-        type: p?.type ?? "-",
+        type: p?.type || "-",
         city: p?.city ?? "-",
         province: p?.province ?? "-",
         inNetwork: p?.inNetwork ?? true,
@@ -401,7 +401,7 @@ export function byDiagnosis(claims: Claim[], icd10: Icd10[]): DiagnosisRow[] {
     .map(([code, r]) => ({
       code,
       description: dict.get(code)?.description ?? code,
-      group: dict.get(code)?.group ?? "Other",
+      group: dict.get(code)?.description || code,
       claimants: r.set.size,
       transactions: r.txn,
       billing: r.bill,
