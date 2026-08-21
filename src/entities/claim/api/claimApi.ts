@@ -70,7 +70,7 @@ interface DCSehatHeader {
   PROVIDERNAME?: string;
   STATE?: string;
   CITY?: string;
-  COORDINATES?: string;
+  COORDINATE?: string;
   created_at?: string;
 }
 
@@ -192,7 +192,7 @@ function transformDCSehat(entries: DCSehatEntry[]): ClaimsApiResponse {
 
     // Provider — only fields from API response; type not returned → empty
     if (providerId && !providerMap.has(providerId)) {
-      const coords = (h.COORDINATES ?? '').split(',');
+      const coords = (h.COORDINATE ?? '').split(',');
       const lat = parseFloat(coords[0]) || 0;
       const lng = parseFloat(coords[1]) || 0;
       providerMap.set(providerId, {

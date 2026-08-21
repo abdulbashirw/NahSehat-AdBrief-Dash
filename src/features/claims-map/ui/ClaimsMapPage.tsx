@@ -16,7 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Search, X } from "lucide-react";
+import { MapPin, Search, X } from "lucide-react";
 import KpiCard from "@/shared/components/common/KpiCard";
 import SectionCard from "@/shared/components/common/SectionCard";
 import DataTable from "@/shared/components/common/DataTable";
@@ -29,7 +29,7 @@ import type { MapMetric } from "@/features/claims-map/components/IndonesiaMap";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { useIndemnityData } from "@/features/indemnity-overview/hooks/useIndemnityData";
 import PeriodFilter from "@/features/indemnity-overview/components/PeriodFilter";
-import { byCity, byMonth, byProvider, byProvince, kpiDeltas, kpiSummary } from "@/entities/claim/lib/aggregate";
+import { byCity, byMonth, byProvider, byProvince, kpiDeltas, kpiSummary, providerLocations } from "@/entities/claim/lib/aggregate";
 import type { CityRow, MonthRow, ProviderRow } from "@/entities/claim/lib/aggregate";
 import { cn } from "@/shared/lib/utils";
 import { formatCompactIDR, formatIDR, formatMonthShort, formatNumber, formatRatioPct } from "@/shared/lib/format";
@@ -72,9 +72,11 @@ export default function ClaimsMap() {
   const cities = useMemo(() => byCity(filteredClaims, providers), [filteredClaims, providers]);
   const providerRows = useMemo(() => byProvider(filteredClaims, providers), [filteredClaims, providers]);
   const provinceMap = useMemo(() => byProvince(filteredClaims, providers), [filteredClaims, providers]);
+  const locations = useMemo(() => providerLocations(filteredClaims, providers), [filteredClaims, providers]);
 
   const [metric, setMetric] = useState<MapMetric>("claimants");
   const [pinned, setPinned] = useState<string | null>(null);
+  const [showLocations, setShowLocations] = useState(true);
   const [lineMetric, setLineMetric] = useState<"claimants" | "transactions">("claimants");
   const [citySearch, setCitySearch] = useState("");
   const [providerSearch, setProviderSearch] = useState("");
@@ -211,6 +213,28 @@ export default function ClaimsMap() {
                   </button>
                 ))}
               </span>
+              <button
+                onClick={() => locations.length > 0 && setShowLocations((v) => !v)}
+                disabled={locations.length === 0}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                  locations.length === 0
+                    ? "cursor-not-allowed bg-white/5 text-white/30"
+                    : showLocations
+                      ? "bg-white/25 text-white"
+                      : "bg-white/10 text-white/60 hover:text-white/90",
+                )}
+                title={
+                  locations.length === 0
+                    ? "No provider coordinates available"
+                    : showLocations
+                      ? "Hide provider locations"
+                      : "Show provider locations"
+                }
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                {locations.length === 0 ? "Locations Off" : showLocations ? "Locations On" : "Locations Off"}
+              </button>
             </span>
           }
         >
@@ -228,7 +252,14 @@ export default function ClaimsMap() {
                   </button>
                 </div>
               )}
-              <IndonesiaMap data={provinceMap} metric={metric} pinned={pinned} onPin={setPinned} />
+              <IndonesiaMap
+                data={provinceMap}
+                metric={metric}
+                pinned={pinned}
+                onPin={setPinned}
+                locations={locations}
+                showLocations={showLocations && locations.length > 0}
+              />
             </>
           )}
         </SectionCard>

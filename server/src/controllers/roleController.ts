@@ -122,9 +122,24 @@ export async function updateRole(req: AuthRequest, res: Response, next: NextFunc
     if ((existing as any[]).length === 0) throw createError(404, 'Role not found');
     const role = (existing as any[])[0];
 
+    // Prevent renaming the system-critical SUPER_ADMIN role
+    if (role.name === 'SUPER_ADMIN' && body.name !== undefined && body.name !== 'SUPER_ADMIN') {
+      throw createError(403, 'SUPER_ADMIN role name cannot be changed');
+    }
+
+    // Check name uniqueness when the name is being changed
+    if (body.name !== undefined && body.name !== role.name) {
+      const [dupCheck] = await pool.execute(
+        'SELECT id FROM roles WHERE name = ? AND id != ?',
+        [body.name, id],
+      );
+      if ((dupCheck as any[]).length > 0) throw createError(409, 'Role name already exists');
+    }
+
     const updates: string[] = [];
     const values: any[] = [];
-    if (body.description) { updates.push('description = ?'); values.push(body.description); }
+    if (body.name !== undefined) { updates.push('name = ?'); values.push(body.name); }
+    if (body.description !== undefined) { updates.push('description = ?'); values.push(body.description); }
 
     if (updates.length > 0) {
       values.push(id);
@@ -146,8 +161,8 @@ export async function updateRole(req: AuthRequest, res: Response, next: NextFunc
 
     res.json({
       id: String(role.id),
-      name: role.name as Role,
-      description: body.description || role.description,
+      name: (body.name !== undefined ? body.name : role.name) as Role,
+      description: body.description !== undefined ? body.description : role.description,
       accessibleMenus,
       permissions,
     });

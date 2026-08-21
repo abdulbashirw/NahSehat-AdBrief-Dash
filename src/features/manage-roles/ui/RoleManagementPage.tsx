@@ -69,21 +69,39 @@ export default function RoleManagement() {
 
   const openEditDialog = (role: RoleWithPermissions) => {
     setEditingRole(role);
+    // Extract unique actions from existing permissions.
+    // The `menu` is a placeholder here — it will be expanded into a
+    // cross-product of accessibleMenus × actions at save time (handleSubmit).
+    const uniqueActions = Array.from(new Set(role.permissions.map((p) => p.action))) as PermissionPayload['action'][];
     setForm({
       name: role.name,
       description: role.description,
       accessibleMenus: role.accessibleMenus,
-      permissions: role.permissions.map((p) => ({ menu: p.menu, action: p.action })),
+      permissions: uniqueActions.map((action) => ({ menu: '', action })),
     });
     setDialogOpen(true);
   };
 
   const handleSubmit = async () => {
     try {
+      // Expand the selected action privileges across every accessible menu
+      // to form proper per-menu { menu, action } permission pairs — this is
+      // the shape the backend expects (role_permissions table). The backend
+      // derives `accessibleMenus` from DISTINCT menu of these rows.
+      const selectedActions = form.permissions.map((p) => p.action);
+      const expandedPermissions = form.accessibleMenus.flatMap((menu) =>
+        selectedActions.map((action) => ({ menu, action })),
+      );
+      const payload = {
+        name: form.name,
+        description: form.description,
+        accessibleMenus: form.accessibleMenus,
+        permissions: expandedPermissions,
+      };
       if (editingRole) {
-        await updateRole({ id: editingRole.id, body: form }).unwrap();
+        await updateRole({ id: editingRole.id, body: payload }).unwrap();
       } else {
-        await createRole(form).unwrap();
+        await createRole(payload).unwrap();
       }
       setDialogOpen(false);
       refetch();
@@ -118,7 +136,7 @@ export default function RoleManagement() {
         ...f,
         permissions: exists
           ? f.permissions.filter((p) => p.action !== action)
-          : [...f.permissions, { menu: f.name || 'general', action }],
+          : [...f.permissions, { menu: '', action }],
       };
     });
   };

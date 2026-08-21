@@ -4,6 +4,7 @@
  */
 import type { Claim, Icd10, Member, Provider } from "@/shared/types";
 import { parseDDMMYYYY } from "@/shared/lib/format";
+import { normalizeProvinceName } from "@/shared/lib/geo";
 
 export interface KpiSummary {
   memberActive: number;
@@ -13,6 +14,7 @@ export interface KpiSummary {
   healthcare: number;
   billing: number;
   approved: number;
+  unapproved: number;
   approvedPct: number; // 0..1
   avgTxnPerClaimant: number;
   avgApprovedPerClaimant: number;
@@ -24,6 +26,7 @@ export interface CoverageRow {
   transactions: number;
   billing: number;
   approved: number;
+  unapproved: number;
   approvedPct: number; // 0..1
 }
 
@@ -111,6 +114,7 @@ export function kpiSummary(claims: Claim[], members: Member[]): KpiSummary {
   const claimants = claimantSet.size;
   const billing = sum(claims.map((c) => c.INCURRED));
   const approved = sum(claims.map((c) => c.APPROVED));
+  const unapproved = sum(claims.map((c) => c.UNAPPROVED));
   return {
     memberActive,
     claimants,
@@ -119,6 +123,7 @@ export function kpiSummary(claims: Claim[], members: Member[]): KpiSummary {
     healthcare: new Set(claims.map((c) => c.PROVIDERID)).size,
     billing,
     approved,
+    unapproved,
     approvedPct: billing ? approved / billing : 0,
     avgTxnPerClaimant: claimants ? claims.length / claimants : 0,
     avgApprovedPerClaimant: claimants ? approved / claimants : 0,
@@ -127,17 +132,18 @@ export function kpiSummary(claims: Claim[], members: Member[]): KpiSummary {
 
 /** Per-coverage utilization (distinct claimants per COVERAGEID). */
 export function byCoverage(claims: Claim[]): CoverageRow[] {
-  const map = new Map<string, { set: Set<string>; txn: number; bill: number; app: number }>();
+  const map = new Map<string, { set: Set<string>; txn: number; bill: number; app: number; unapp: number }>();
   for (const c of claims) {
     let row = map.get(c.COVERAGEID);
     if (!row) {
-      row = { set: new Set(), txn: 0, bill: 0, app: 0 };
+      row = { set: new Set(), txn: 0, bill: 0, app: 0, unapp: 0 };
       map.set(c.COVERAGEID, row);
     }
     row.set.add(c.MEMBERNO);
     row.txn += 1;
     row.bill += c.INCURRED;
     row.app += c.APPROVED;
+    row.unapp += c.UNAPPROVED;
   }
   return [...map.entries()]
     .map(([coverage, r]) => ({
@@ -146,6 +152,7 @@ export function byCoverage(claims: Claim[]): CoverageRow[] {
       transactions: r.txn,
       billing: r.bill,
       approved: r.app,
+      unapproved: r.unapp,
       approvedPct: r.bill ? r.app / r.bill : 0,
     }))
     .sort((a, b) => b.claimants - a.claimants);
@@ -223,7 +230,7 @@ export function byCity(claims: Claim[], providers: Provider[]): CityRow[] {
     if (!p) continue;
     let row = map.get(p.city);
     if (!row) {
-      row = { province: p.province, set: new Set(), txn: 0, bill: 0, app: 0 };
+      row = { province: normalizeProvinceName(p.province), set: new Set(), txn: 0, bill: 0, app: 0 };
       map.set(p.city, row);
     }
     row.set.add(c.MEMBERNO);
@@ -243,17 +250,20 @@ export function byCity(claims: Claim[], providers: Provider[]): CityRow[] {
     .sort((a, b) => b.billing - a.billing);
 }
 
-/** Per-province rollup for the choropleth map. */
+/** Per-province rollup for the choropleth map.
+ *  Province names are normalized to match the SVG `data-province` attributes,
+ *  handling case inconsistencies from the API STATE field. */
 export function byProvince(claims: Claim[], providers: Provider[]): Map<string, CityRow> {
   const provById = new Map(providers.map((p) => [p.PROVIDERID, p]));
   const map = new Map<string, CityRow & { set: Set<string> }>();
   for (const c of claims) {
     const p = provById.get(c.PROVIDERID);
     if (!p) continue;
-    let row = map.get(p.province);
+    const provName = normalizeProvinceName(p.province);
+    let row = map.get(provName);
     if (!row) {
-      row = { city: "", province: p.province, claimants: 0, transactions: 0, billing: 0, approved: 0, set: new Set() };
-      map.set(p.province, row);
+      row = { city: "", province: provName, claimants: 0, transactions: 0, billing: 0, approved: 0, set: new Set() };
+      map.set(provName, row);
     }
     row.set.add(c.MEMBERNO);
     row.transactions += 1;
@@ -265,6 +275,63 @@ export function byProvince(claims: Claim[], providers: Provider[]): Map<string, 
     out.set(k, { city: "", province: k, claimants: r.set.size, transactions: r.transactions, billing: r.billing, approved: r.approved });
   }
   return out;
+}
+
+/** Provider geo-locations for scatter overlay on the choropleth map.
+ *  Uses COORDINATES from the API response (parsed as Provider.lat / Provider.lng).
+ *  Providers without API coordinates (lat=0, lng=0) are excluded — no fallback. */
+export interface ProviderLocation {
+  providerId: string;
+  providerName: string;
+  city: string;
+  province: string;
+  lat: number;
+  lng: number;
+  claimants: number;
+  transactions: number;
+  billing: number;
+  approved: number;
+}
+
+/** Group claims by provider and join with lat/lng from COORDINATES.
+ *  Providers with empty API coordinates (lat=0, lng=0) are excluded. */
+export function providerLocations(claims: Claim[], providers: Provider[]): ProviderLocation[] {
+  const provById = new Map(providers.map((p) => [p.PROVIDERID, p]));
+  const map = new Map<string, { p: Provider; set: Set<string>; txn: number; bill: number; app: number }>();
+  for (const c of claims) {
+    const p = provById.get(c.PROVIDERID);
+    if (!p) continue;
+    let row = map.get(c.PROVIDERID);
+    if (!row) {
+      row = { p, set: new Set(), txn: 0, bill: 0, app: 0 };
+      map.set(c.PROVIDERID, row);
+    }
+    row.set.add(c.MEMBERNO);
+    row.txn += 1;
+    row.bill += c.INCURRED;
+    row.app += c.APPROVED;
+  }
+  return [...map.entries()]
+    .map(([pid, r]) => {
+      // Use API coordinates only (Provider.lat / Provider.lng from COORDINATES field).
+      // Providers with empty coordinates (lat=0, lng=0) are filtered out below.
+      const lat = r.p.lat;
+      const lng = r.p.lng;
+      return {
+        providerId: pid,
+        providerName: r.p.providerName,
+        city: r.p.city,
+        province: normalizeProvinceName(r.p.province),
+        lat,
+        lng,
+        claimants: r.set.size,
+        transactions: r.txn,
+        billing: r.bill,
+        approved: r.app,
+      };
+    })
+    .filter((r) => r.lat !== 0 || r.lng !== 0)
+    .sort((a, b) => b.claimants - a.claimants);
 }
 
 /** Per-provider utilization table rows. */
@@ -290,7 +357,7 @@ export function byProvider(claims: Claim[], providers: Provider[]): ProviderRow[
         providerName: p?.providerName ?? pid,
         type: p?.type || "-",
         city: p?.city ?? "-",
-        province: p?.province ?? "-",
+        province: normalizeProvinceName(p?.province ?? "-"),
         inNetwork: p?.inNetwork ?? true,
         claimants: r.set.size,
         transactions: r.txn,
