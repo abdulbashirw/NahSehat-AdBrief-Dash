@@ -14,6 +14,7 @@ import ApiError from '@/shared/components/error/ApiError';
 import DashboardBackground from '@/shared/components/common/DashboardBackground';
 import { useIndemnityData } from '@/features/indemnity-overview/hooks/useIndemnityData';
 import { formatIDR, formatNumber } from '@/shared/lib/format';
+import { useTranslation } from 'react-i18next';
 import {
   Activity,
   ArrowRight,
@@ -25,6 +26,7 @@ import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isSuperAdmin = useHasRole('SUPER_ADMIN');
   const isIndemnity = useHasRole('INDEMNITY');
@@ -58,10 +60,10 @@ export default function Dashboard() {
         {/* ── Header ── */}
         <div className="animate-fade-in-up mb-8">
           <h1 className="text-2xl font-bold text-[#1E293B] sm:text-3xl">
-            Welcome, {user?.fullName || 'User'}
+            {t('dashboard.welcome', { name: user?.fullName || 'User' })}
           </h1>
           <p className="mt-1 text-sm text-[#64748B]">
-            Here&apos;s an overview of your NahSehat Dashboard
+            {t('dashboard.overview')}
           </p>
         </div>
 
@@ -69,7 +71,7 @@ export default function Dashboard() {
         {showIndemnity && (
           <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <SectionCard
-            title="Indemnity Overview"
+            title={t('dashboard.indemnityOverview')}
             variant="light"
           >
             {indemnityError ? (
@@ -84,7 +86,7 @@ export default function Dashboard() {
               <>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <KpiCard
-                    label="TOTAL CLAIMS"
+                    label={t('dashboard.totalClaims')}
                     accent="#06B6D4"
                     value={kpis.totalClaims}
                     format={formatNumber}
@@ -92,7 +94,7 @@ export default function Dashboard() {
                     variant="light"
                   />
                   <KpiCard
-                    label="TOTAL INCURRED"
+                    label={t('dashboard.totalIncurred')}
                     accent="#2563EB"
                     value={kpis.totalIncurred}
                     format={formatIDR}
@@ -100,7 +102,7 @@ export default function Dashboard() {
                     variant="light"
                   />
                   <KpiCard
-                    label="TOTAL APPROVED"
+                    label={t('dashboard.totalApproved')}
                     accent="#14B8A6"
                     value={kpis.totalApproved}
                     format={formatIDR}
@@ -108,7 +110,7 @@ export default function Dashboard() {
                     variant="light"
                   />
                   <KpiCard
-                    label="APPROVAL RATE"
+                    label={t('dashboard.approvalRate')}
                     accent="#06B6D4"
                     value={kpis.approvalRate / 100}
                     format={(n) => `${(n * 100).toFixed(1)}%`}
@@ -117,7 +119,7 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-4">
                   <KpiCard
-                    label="UNIQUE MEMBERS"
+                    label={t('dashboard.uniqueMembers')}
                     accent="#2563EB"
                     value={kpis.uniqueMembers}
                     format={formatNumber}
@@ -129,7 +131,7 @@ export default function Dashboard() {
                     to="/indemnity/overview"
                     className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(37,99,235,0.25)] transition-all hover:bg-[#1D4ED8] hover:shadow-[0_4px_20px_rgba(37,99,235,0.35)]"
                   >
-                    View Full Indemnity Dashboard <ArrowRight className="h-4 w-4" />
+                    {t('dashboard.viewFullIndemnity')} <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </>
@@ -151,8 +153,8 @@ export default function Dashboard() {
                   <BarChart3 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-[#1E293B]">Indemnity Analytics</h3>
-                  <p className="text-sm text-[#64748B]">Claims analysis & demographics</p>
+                  <h3 className="font-semibold text-[#1E293B]">{t('dashboard.indemnityAnalytics')}</h3>
+                  <p className="text-sm text-[#64748B]">{t('dashboard.claimsAnalysis')}</p>
                 </div>
               </div>
             </Link>
@@ -169,8 +171,8 @@ export default function Dashboard() {
                   <Activity className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-[#1E293B]">Manage Care</h3>
-                  <p className="text-sm text-[#64748B]">Daily monitoring & DMO</p>
+                  <h3 className="font-semibold text-[#1E293B]">{t('dashboard.manageCare')}</h3>
+                  <p className="text-sm text-[#64748B]">{t('dashboard.dailyMonitoring')}</p>
                 </div>
               </div>
             </Link>
@@ -187,8 +189,8 @@ export default function Dashboard() {
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-[#1E293B]">CMS</h3>
-                  <p className="text-sm text-[#64748B]">Users, roles & permissions</p>
+                  <h3 className="font-semibold text-[#1E293B]">{t('dashboard.cms')}</h3>
+                  <p className="text-sm text-[#64748B]">{t('dashboard.usersRoles')}</p>
                 </div>
               </div>
             </Link>
@@ -204,8 +206,8 @@ export default function Dashboard() {
                 <Settings className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-[#1E293B]">Settings</h3>
-                <p className="text-sm text-[#64748B]">{isSuperAdmin || isAdmin ? 'Application configuration' : 'Account settings'}</p>
+                  <h3 className="font-semibold text-[#1E293B]">{t('dashboard.settings')}</h3>
+                <p className="text-sm text-[#64748B]">{t('dashboard.appConfig')}</p>
               </div>
             </div>
           </Link>

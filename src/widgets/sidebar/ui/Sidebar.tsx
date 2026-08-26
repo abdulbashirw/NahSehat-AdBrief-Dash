@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/entities/auth';
 import { useHasAnyRole } from '@/entities/auth';
@@ -71,6 +72,7 @@ export default function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const location = useLocation();
   const hasAnyRole = useHasAnyRole();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -228,7 +230,7 @@ export default function Sidebar({
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#DC2626] transition-colors hover:bg-red-50"
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && 'Logout'}
+            {!collapsed && t('nav.logout')}
           </button>
         </div>
       </aside>
@@ -245,6 +247,7 @@ interface NavItemProps {
 }
 
 function NavItem({ route, collapsed, expanded, onToggle, currentPath }: NavItemProps) {
+  const { t } = useTranslation();
   const hasChildren = route.children && route.children.length > 0;
   const isActive = currentPath === route.path || currentPath.startsWith(route.path + '/');
   const Icon = ICON_MAP[route.icon ?? ''] ?? LayoutDashboard;
@@ -264,7 +267,7 @@ function NavItem({ route, collapsed, expanded, onToggle, currentPath }: NavItemP
           <Icon className="h-4 w-4 shrink-0" />
           {!collapsed && (
             <>
-              <span className="flex-1 text-left">{route.label}</span>
+              <span className="flex-1 text-left">{t(route.label)}</span>
               {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </>
           )}
@@ -284,7 +287,7 @@ function NavItem({ route, collapsed, expanded, onToggle, currentPath }: NavItemP
                     )
                   }
                 >
-                  {child.label}
+                  {t(child.label)}
                 </NavLink>
               </li>
             ))}
@@ -308,7 +311,7 @@ function NavItem({ route, collapsed, expanded, onToggle, currentPath }: NavItemP
         }
       >
         <Icon className="h-4 w-4 shrink-0" />
-        {!collapsed && <span>{route.label}</span>}
+        {!collapsed && <span>{t(route.label)}</span>}
       </NavLink>
     </li>
   );

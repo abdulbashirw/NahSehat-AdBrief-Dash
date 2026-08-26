@@ -1,7 +1,7 @@
 /**
  * Route configuration for sidebar and tab navigation.
  *
- * Each route has a path, label, icon name, and allowed roles.
+ * Each route has a path, label (i18n key), icon name, and allowed roles.
  * Routes with children render as expandable groups in sidebar
  * or as tab items in the tab layout.
  *
@@ -15,7 +15,7 @@ export const ROUTES: RouteConfig[] = [
   // ── Dashboard — all authenticated users ──
   {
     path: '/dashboard',
-    label: 'Dashboard',
+    label: 'nav.dashboard',
     icon: 'LayoutDashboard',
     roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE'],
   },
@@ -23,21 +23,21 @@ export const ROUTES: RouteConfig[] = [
   // ── Indemnity ──
   {
     path: '/indemnity',
-    label: 'Indemnity',
+    label: 'nav.indemnity',
     icon: 'BarChart3',
     roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY'],
     children: [
-      { path: '/indemnity/overview', label: 'Utilization Overview', icon: 'Eye', roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY'] },
-      { path: '/indemnity/claims-map', label: 'Claims Map', icon: 'Map', roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY'] },
-      { path: '/indemnity/demographics', label: 'Demographics', icon: 'Users', roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY'] },
-      { path: '/indemnity/diseases', label: 'Diseases', icon: 'Heart', roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY'] },
+      { path: '/indemnity/overview', label: 'nav.utilizationOverview', icon: 'Eye', roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY'] },
+      { path: '/indemnity/claims-map', label: 'nav.claimsMap', icon: 'Map', roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY'] },
+      { path: '/indemnity/demographics', label: 'nav.demographics', icon: 'Users', roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY'] },
+      { path: '/indemnity/diseases', label: 'nav.diseases', icon: 'Heart', roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY'] },
     ],
   },
 
   // ── Manage Care ──
   {
     path: '/managecare',
-    label: 'Manage Care',
+    label: 'nav.manageCare',
     icon: 'Activity',
     roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGECARE'],
   },
@@ -45,21 +45,21 @@ export const ROUTES: RouteConfig[] = [
   // ── CMS ──
   {
     path: '/cms',
-    label: 'CMS',
+    label: 'nav.cms',
     icon: 'Settings',
     roles: ['SUPER_ADMIN', 'ADMIN'],
     children: [
-      { path: '/cms/users', label: 'User Management', icon: 'UserCog', roles: ['SUPER_ADMIN', 'ADMIN'] },
-      { path: '/cms/roles', label: 'Role Management', icon: 'Shield', roles: ['SUPER_ADMIN'] },
-      { path: '/cms/payors', label: 'Payor Management', icon: 'Building', roles: ['SUPER_ADMIN', 'ADMIN'] },
-      { path: '/cms/permissions', label: 'Permissions', icon: 'Key', roles: ['SUPER_ADMIN'] },
+      { path: '/cms/users', label: 'nav.userManagement', icon: 'UserCog', roles: ['SUPER_ADMIN', 'ADMIN'] },
+      { path: '/cms/roles', label: 'nav.roleManagement', icon: 'Shield', roles: ['SUPER_ADMIN'] },
+      { path: '/cms/payors', label: 'nav.payorManagement', icon: 'Building', roles: ['SUPER_ADMIN', 'ADMIN'] },
+      { path: '/cms/permissions', label: 'nav.permissions', icon: 'Key', roles: ['SUPER_ADMIN'] },
     ],
   },
 
   // ── Settings — all authenticated users ──
   {
     path: '/settings',
-    label: 'Settings',
+    label: 'nav.settings',
     icon: 'Cog',
     roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE'],
   },

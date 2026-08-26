@@ -2,6 +2,7 @@
  * Daily Monitoring Page — Manage Care dashboard based on design_managecare.tsx layout.
  */
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGetDailyMonitoringQuery, type DailyMonitoringItem } from '@/entities/monitoring/api/monitoringApi';
 import { useGetPayorsQuery } from '@/entities/payor/api/payorApi';
 import { useAppSelector } from '@/shared/store';
@@ -80,6 +81,7 @@ function RollingCounter({ value }: { value: string | number }) {
 }
 
 export default function DailyMonitoring() {
+  const { t } = useTranslation();
   // ── Auth & RBAC ──
   const user = useAppSelector((s) => s.auth.user);
   const isManageCare = useHasRole('MANAGECARE') || useHasRole('SUPER_ADMIN') || useHasRole('ADMIN');
@@ -248,35 +250,35 @@ export default function DailyMonitoring() {
   const cards = [
     {
       id: 'C1',
-      label: 'Monitoring Pasien',
+      label: t('dailyMonitoring.monitoringPasien'),
       value: stats.totalDMO,
       icon: UserCheck,
       bgGradient: 'from-[#11998e] to-[#38ef7d]',
     },
     {
       id: 'C3',
-      label: 'Total Admission',
+      label: t('dailyMonitoring.totalAdmission'),
       value: stats.totalAdmissionValid,
       icon: PlusCircle,
       bgGradient: 'from-[#0072ff] to-[#00c6ff]',
     },
     {
       id: 'C4',
-      label: 'Total Discharge',
+      label: t('dailyMonitoring.totalDischarge'),
       value: stats.totalDHC,
       icon: LogOut,
       bgGradient: 'from-[#ff4b1f] to-[#ff9068]',
     },
     {
       id: 'C2',
-      label: 'Total Provider',
+      label: t('dailyMonitoring.totalProvider'),
       value: stats.totalProviderDHC,
       icon: Building2,
       bgGradient: 'from-[#0072ff] to-[#00c6ff]',
     },
     {
       id: 'C5',
-      label: 'Total Rejected',
+      label: t('dailyMonitoring.totalRejected'),
       value: stats.totalReject,
       icon: ShieldAlert,
       bgGradient: 'from-[#c0392b] to-[#e74c3c]',
@@ -297,19 +299,19 @@ export default function DailyMonitoring() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-extrabold text-[#1F2A37]">Daily Monitoring</h1>
+              <h1 className="text-2xl font-extrabold text-[#1F2A37]">{t('dailyMonitoring.title')}</h1>
               <span className="rounded-full bg-[#E7F4EE] px-2.5 py-0.5 text-xs font-semibold text-[#2E7D5B]">
-                30 days
+                {t('dailyMonitoring.thirtyDays')}
               </span>
             </div>
-            <p className="text-xs text-[#6B7280]">Real-time patient monitoring & hospital admission trends</p>
+            <p className="text-xs text-[#6B7280]">{t('dailyMonitoring.subtitle')}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 rounded-lg bg-[#F4F6F8] px-3.5 py-2 text-xs font-medium text-[#4B5563]">
             <Clock className="h-4 w-4 text-[#2E7D5B]" />
-            <span>Last Update: {currentTime || 'Loading...'}</span>
+            <span>{t('dailyMonitoring.lastUpdate')}: {currentTime || t('dailyMonitoring.loading')}</span>
           </div>
         </div>
       </div>
@@ -363,7 +365,7 @@ export default function DailyMonitoring() {
 
         {/* Trend Diagnosa (5 cols on lg) */}
         <div ref={rightColRef} className="lg:col-span-5 flex flex-col overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-[#E5E8EC]">
-          <h2 className="mb-3 shrink-0 text-center text-lg font-bold text-[#1F2A37]">Trend Diagnosa</h2>
+          <h2 className="mb-3 shrink-0 text-center text-lg font-bold text-[#1F2A37]">{t('dailyMonitoring.trendDiagnosa')}</h2>
           <div
             ref={tableContainerRef}
             className="flex-1 overflow-y-auto rounded-lg border border-[#E5E8EC]"
@@ -371,8 +373,8 @@ export default function DailyMonitoring() {
             <table className="w-full text-left text-sm border-collapse">
               <thead className="sticky top-0 bg-gradient-to-r from-[#10B981] to-[#3B82F6] text-white">
                 <tr>
-                  <th className="px-4 py-2.5 font-bold">Diagnosa</th>
-                  <th className="px-4 py-2.5 font-bold text-center whitespace-nowrap">Total Pasien</th>
+                  <th className="px-4 py-2.5 font-bold">{t('dailyMonitoring.diagnosa')}</th>
+                  <th className="px-4 py-2.5 font-bold text-center whitespace-nowrap">{t('dailyMonitoring.totalPasien')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -394,7 +396,7 @@ export default function DailyMonitoring() {
                 ) : (
                   <tr>
                     <td colSpan={2} className="px-4 py-8 text-center text-sm text-[#9CA3AF]">
-                      No diagnosis data available
+                      {t('dailyMonitoring.noDiagnosisData')}
                     </td>
                   </tr>
                 )}
@@ -414,26 +416,26 @@ export default function DailyMonitoring() {
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-[#2E7D5B]" />
-            <h2 className="text-xl font-bold text-[#1F2A37]">Pasien List</h2>
+            <h2 className="text-xl font-bold text-[#1F2A37]">{t('dailyMonitoring.pasienList')}</h2>
             <span className="rounded-full bg-[#E7F4EE] px-2.5 py-0.5 text-xs font-semibold text-[#2E7D5B]">
-              {patientList.length} DMO Patients
+              {patientList.length} {t('dailyMonitoring.dmoPatients')}
             </span>
           </div>
 
           <button
             onClick={() => setIsMainTableFullscreen((prev) => !prev)}
             className="flex items-center gap-1.5 rounded-lg border border-[#E5E8EC] px-3 py-1.5 text-xs font-semibold text-[#4B5563] hover:bg-[#F4F6F8] hover:text-[#1F2A37] transition"
-            title={isMainTableFullscreen ? 'Exit Fullscreen' : 'Show Fullscreen'}
+            title={isMainTableFullscreen ? t('dailyMonitoring.exitFullscreen') : t('dailyMonitoring.fullscreen')}
           >
             {isMainTableFullscreen ? (
               <>
                 <Minimize2 className="h-4 w-4" />
-                <span>Exit Fullscreen</span>
+                <span>{t('dailyMonitoring.exitFullscreen')}</span>
               </>
             ) : (
               <>
                 <Maximize2 className="h-4 w-4" />
-                <span>Fullscreen</span>
+                <span>{t('dailyMonitoring.fullscreen')}</span>
               </>
             )}
           </button>
@@ -450,19 +452,19 @@ export default function DailyMonitoring() {
           <table className="w-full text-left text-sm border-collapse">
             <thead className="sticky top-0 bg-gradient-to-r from-[#10B981] to-[#3B82F6] text-white z-10">
               <tr>
-                <th className="px-4 py-3 font-bold text-center">NPP</th>
-                <th className="px-4 py-3 font-bold">Nama Pasien</th>
-                <th className="px-4 py-3 font-bold text-center">Principle/Dependent</th>
-                <th className="px-4 py-3 font-bold text-center">Nama Provider</th>
-                <th className="px-4 py-3 font-bold text-center">Tanggal Masuk</th>
-                <th className="px-4 py-3 font-bold text-center">Lama Ranap</th>
+                <th className="px-4 py-3 font-bold text-center">{t('dailyMonitoring.npp')}</th>
+                <th className="px-4 py-3 font-bold">{t('dailyMonitoring.namaPasien')}</th>
+                <th className="px-4 py-3 font-bold text-center">{t('dailyMonitoring.principleDependent')}</th>
+                <th className="px-4 py-3 font-bold text-center">{t('dailyMonitoring.namaProvider')}</th>
+                <th className="px-4 py-3 font-bold text-center">{t('dailyMonitoring.tanggalMasuk')}</th>
+                <th className="px-4 py-3 font-bold text-center">{t('dailyMonitoring.lamaRanap')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E8EC]">
               {patientList.length > 0 ? (
                 patientList.map((item: DailyMonitoringItem, idx: number) => {
                   const h = item.header;
-                  const pdText = h.PD === 'P' ? 'Principle' : h.PD === 'D' ? 'Dependent' : '-';
+                  const pdText = h.PD === 'P' ? t('dailyMonitoring.principle') : h.PD === 'D' ? t('dailyMonitoring.dependent') : '-';
                   return (
                     <tr
                       key={idx}
@@ -491,7 +493,7 @@ export default function DailyMonitoring() {
                         {h.AdmissionDate || '-'}
                       </td>
                       <td className="px-4 py-3 text-center font-bold text-[#2E7D5B]">
-                        {h.Days != null ? `${h.Days} hari` : '-'}
+                        {h.Days != null ? `${h.Days} ${t('dailyMonitoring.hari')}` : '-'}
                       </td>
                     </tr>
                   );
@@ -499,7 +501,7 @@ export default function DailyMonitoring() {
               ) : (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-sm text-[#9CA3AF]">
-                    No active DMO patients found
+                    {t('dailyMonitoring.noActiveDmo')}
                   </td>
                 </tr>
               )}
@@ -510,7 +512,7 @@ export default function DailyMonitoring() {
 
       {/* Footer */}
       <footer className="mt-2 rounded-xl bg-[#1F2A37] py-3 text-center text-xs text-gray-400">
-        © 2025 Dashboard Daily Monitoring — AdMedika Manage Care.
+        {t('dailyMonitoring.footer')}
       </footer>
     </div>
   );

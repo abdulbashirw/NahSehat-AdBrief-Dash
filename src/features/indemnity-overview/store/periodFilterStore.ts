@@ -32,7 +32,13 @@ export interface PeriodFilterState {
 
 // ── Helpers ──────────────────────────────────────────────────────
 
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** Locale-aware short month names — defaults to English, overridden by _setFormatLang */
+let MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Update month names when language changes (called from LanguageSync) */
+export function setPeriodMonthNames(names: string[]) {
+  MONTHS_SHORT = names;
+}
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -196,18 +202,18 @@ export const MAX_CUSTOM_RANGE_DAYS = 31;
  * Returns { valid: true } when OK, or { valid: false, message } with an
  * human-readable error message.
  */
-export function validateCustomRange(filter: PeriodFilterState): { valid: boolean; message?: string } {
+export function validateCustomRange(filter: PeriodFilterState, t?: (key: string) => string): { valid: boolean; message?: string } {
   if (filter.periodType !== 'custom') return { valid: true };
 
   if (!filter.customStartDate || !filter.customEndDate) {
-    return { valid: false, message: 'Please select both start and end dates.' };
+    return { valid: false, message: t ? t('periodFilter.selectBothDates') : 'Please select both start and end dates.' };
   }
 
   const start = new Date(filter.customStartDate);
   const end = new Date(filter.customEndDate);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    return { valid: false, message: 'Invalid date format.' };
+    return { valid: false, message: t ? t('periodFilter.invalidDateFormat') : 'Invalid date format.' };
   }
 
   // Strip time portion for accurate day diff
@@ -216,12 +222,12 @@ export function validateCustomRange(filter: PeriodFilterState): { valid: boolean
 
   const diffMs = end.getTime() - start.getTime();
   if (diffMs < 0) {
-    return { valid: false, message: 'End date must be on or after start date.' };
+    return { valid: false, message: t ? t('periodFilter.endDateAfterStart') : 'End date must be on or after start date.' };
   }
 
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1; // inclusive
   if (diffDays > MAX_CUSTOM_RANGE_DAYS) {
-    return { valid: false, message: `Date range cannot exceed ${MAX_CUSTOM_RANGE_DAYS} days (1 month). Current range: ${diffDays} days.` };
+    return { valid: false, message: t ? t('periodFilter.rangeExceedsMax') : `Date range cannot exceed ${MAX_CUSTOM_RANGE_DAYS} days (1 month). Current range: ${diffDays} days.` };
   }
 
   return { valid: true };
@@ -237,7 +243,7 @@ export function getRequestBody(filter: PeriodFilterState, payorCode: string): { 
   };
 }
 
-/** Get a human-readable date range label */
+/** Get a human-readable date range label — month names are locale-aware via setPeriodMonthNames */
 export function getDateRangeLabel(filter: PeriodFilterState): string {
   const { startDate, endDate } = getDateRange(filter);
   const startLabel = `${startDate.getDate()} ${MONTHS_SHORT[startDate.getMonth()]} ${startDate.getFullYear()}`;
@@ -248,18 +254,18 @@ export function getDateRangeLabel(filter: PeriodFilterState): string {
 }
 
 /** Get a short period label like "W1 · Jul 2025" or "Custom · Jul 2025" */
-export function getPeriodLabel(filter: PeriodFilterState): string {
+export function getPeriodLabel(filter: PeriodFilterState, t?: (key: string) => string): string {
   const [year, month] = filter.selectedMonth.split('-').map(Number);
   const monthIdx = month - 1;
   const monthYear = `${MONTHS_SHORT[monthIdx]} ${year}`;
 
   const labels: Record<string, string> = {
-    w1: `W1 · ${monthYear}`,
-    w2: `W2 · ${monthYear}`,
-    w3: `W3 · ${monthYear}`,
-    w4: `W4 · ${monthYear}`,
+    w1: `${t ? t('periodFilter.w1') : 'W1'} · ${monthYear}`,
+    w2: `${t ? t('periodFilter.w2') : 'W2'} · ${monthYear}`,
+    w3: `${t ? t('periodFilter.w3') : 'W3'} · ${monthYear}`,
+    w4: `${t ? t('periodFilter.w4') : 'W4'} · ${monthYear}`,
     month: monthYear,
-    custom: 'Custom',
+    custom: t ? t('periodFilter.custom') : 'Custom',
   };
 
   return labels[filter.periodType] ?? monthYear;

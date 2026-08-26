@@ -10,6 +10,7 @@
  */
 import { useMemo, useEffect } from 'react';
 import { useSyncExternalStore } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   subscribe,
   getSnapshot,
@@ -30,14 +31,7 @@ import { useAppSelector } from '@/shared/store';
 import { cn } from '@/shared/lib/utils';
 import RefreshProgress from '@/shared/components/loading/RefreshProgress';
 
-const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
-  { value: 'w1', label: 'W1' },
-  { value: 'w2', label: 'W2' },
-  { value: 'w3', label: 'W3' },
-  { value: 'w4', label: 'W4' },
-  { value: 'month', label: 'Month' },
-  { value: 'custom', label: 'Custom' },
-];
+const PERIOD_OPTIONS: PeriodType[] = ['w1', 'w2', 'w3', 'w4', 'month', 'custom'];
 
 interface PeriodFilterProps {
   /** True while a background refetch is in-flight (RTK Query `isFetching`). */
@@ -47,10 +41,11 @@ interface PeriodFilterProps {
 }
 
 export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterProps) {
+  const { t } = useTranslation();
   const filter = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const rangeLabel = getDateRangeLabel(filter);
   const isCustom = filter.periodType === 'custom';
-  const rangeValidation = validateCustomRange(filter);
+  const rangeValidation = validateCustomRange(filter, t);
 
   // Compute max end date = start date + (MAX_CUSTOM_RANGE_DAYS - 1) days
   const maxEndDate = useMemo(() => {
@@ -92,19 +87,20 @@ export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterPr
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-[#94A3B8]">
-              Period
+              {t('periodFilter.period')}
             </span>
             <div className="inline-flex rounded-[10px] bg-[#F1F5F9] p-[3px]">
               {PERIOD_OPTIONS.map((opt, i) => {
-                const isActive = filter.periodType === opt.value;
+                const isActive = filter.periodType === opt;
                 const isSeparator = i === 4; // before 'Month'
+                const labelKey = `periodFilter.${opt}` as const;
                 return (
-                  <span key={opt.value} className="contents">
+                  <span key={opt} className="contents">
                     {isSeparator && (
                       <span className="mx-[2px] my-1 w-px bg-[#CBD5E1]" />
                     )}
                     <button
-                      onClick={() => setPeriodType(opt.value)}
+                      onClick={() => setPeriodType(opt)}
                       className={cn(
                         'rounded-[8px] px-3 py-[6px] text-[13px] font-medium transition-all duration-150 whitespace-nowrap',
                         isActive
@@ -112,7 +108,7 @@ export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterPr
                           : 'text-[#64748B] hover:text-[#334155] hover:bg-white/60',
                       )}
                     >
-                      {opt.label}
+                      {t(labelKey)}
                     </button>
                   </span>
                 );
@@ -173,7 +169,7 @@ export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterPr
             /* Custom date range inputs */
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5">
-                <label className="text-[11px] font-medium text-[#64748B]">Start</label>
+                <label className="text-[11px] font-medium text-[#64748B]">{t('periodFilter.start')}</label>
                 <input
                   type="date"
                   value={filter.customStartDate}
@@ -185,7 +181,7 @@ export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterPr
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               <div className="flex items-center gap-1.5">
-                <label className="text-[11px] font-medium text-[#64748B]">End</label>
+                <label className="text-[11px] font-medium text-[#64748B]">{t('periodFilter.end')}</label>
                 <input
                   type="date"
                   value={filter.customEndDate}

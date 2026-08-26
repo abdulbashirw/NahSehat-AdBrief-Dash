@@ -18,7 +18,7 @@ interface RefreshProgressProps {
   lastUpdated?: Date | null;
 }
 
-/** Format a Date as "HH:mm:ss" in id-ID locale */
+/** Format a Date as "HH:mm:ss" (locale-agnostic) */
 function formatTime(d: Date): string {
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');

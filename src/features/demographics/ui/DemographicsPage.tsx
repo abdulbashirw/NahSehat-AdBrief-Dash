@@ -38,7 +38,8 @@ import {
 } from "@/features/indemnity-overview/utils/demoAgg";
 import type { AgeGenderGrowthCell } from "@/features/indemnity-overview/utils/demoAgg";
 import { cn } from "@/shared/lib/utils";
-import { formatCompactIDR, formatIDR, formatMonthShort, formatNumber, formatRatioPct } from "@/shared/lib/format";
+import { formatCompactIDR, formatDecimal, formatIDR, formatMonthShort, formatNumber, formatRatioPct } from "@/shared/lib/format";
+import { useTranslation } from "react-i18next";
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 12 },
@@ -66,10 +67,8 @@ function growthBadge(growth: number | null): ReactElement {
   );
 }
 
-const formatDecimal = (n: number) =>
-  n.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
 export default function Demographics() {
+  const { t } = useTranslation();
   const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
 
   const filteredClaims = data?.claims ?? [];
@@ -109,7 +108,7 @@ export default function Demographics() {
       <div className="space-y-6">
         <PageTitle />
         <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
-        <SectionCard title="Member & Claimants Demographics">
+        <SectionCard title={t("demographics.title")}>
           <EmptyState />
         </SectionCard>
       </div>
@@ -143,19 +142,19 @@ export default function Demographics() {
       <div className="space-y-6 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
       {/* Section 1 — KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <KpiCard index={0} loading={isLoading} label="Claimants" accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
-        <KpiCard index={1} loading={isLoading} label="Transactions" accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
-        <KpiCard index={2} loading={isLoading} label="Avg. Transactions / Claimant" accent="#2563EB" value={kpis.avgTxnPerClaimant} format={formatDecimal} />
-        <KpiCard index={3} loading={isLoading} label="Avg. Approved Bills / Claimant (IDR)" accent="#7C3AED" value={kpis.avgApprovedPerClaimant} format={formatIDR} />
-        <KpiCard index={4} loading={isLoading} label="Billing (IDR)" accent="#9B2226" value={kpis.billing} format={formatIDR} delta={deltas.billing} spark={monthly.map((m) => m.billing)} />
-        <KpiCard index={5} loading={isLoading} label="Approved (IDR)" accent="#0F9488" value={kpis.approved} format={formatIDR} delta={deltas.approved} subline={`${formatRatioPct(kpis.approvedPct)} of billing`} spark={monthly.map((m) => m.approved)} />
+        <KpiCard index={0} loading={isLoading} label={t("demographics.claimants")} accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
+        <KpiCard index={1} loading={isLoading} label={t("demographics.transactions")} accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
+        <KpiCard index={2} loading={isLoading} label={t("demographics.avgTxnPerClaimant")} accent="#2563EB" value={kpis.avgTxnPerClaimant} format={formatDecimal} />
+        <KpiCard index={3} loading={isLoading} label={t("demographics.avgApprovedPerClaimant")} accent="#7C3AED" value={kpis.avgApprovedPerClaimant} format={formatIDR} />
+        <KpiCard index={4} loading={isLoading} label={t("demographics.billing")} accent="#9B2226" value={kpis.billing} format={formatIDR} delta={deltas.billing} spark={monthly.map((m) => m.billing)} />
+        <KpiCard index={5} loading={isLoading} label={t("demographics.approved")} accent="#0F9488" value={kpis.approved} format={formatIDR} delta={deltas.approved} subline={`${formatRatioPct(kpis.approvedPct)} ${t("demographics.ofBilling")}`} spark={monthly.map((m) => m.approved)} />
       </div>
 
       {/* Section 2 — Member heatmap table with %Growth */}
       <motion.div variants={sectionVariants}>
         <SectionCard
-          title="Member by Age Group by Gender"
-          subtitle="Distinct members per age bucket — %Growth compares 1st-half → 2nd-half of the selected period"
+          title={t("demographics.memberByAgeGender")}
+          subtitle={t("demographics.memberByAgeGenderSubtitle")}
         >
           {isLoading ? (
             <Skeleton className="h-[360px] w-full" />
@@ -164,13 +163,13 @@ export default function Demographics() {
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="bg-[#F1F3F5] text-[11.5px] font-bold uppercase tracking-wide text-[#4B5563]">
-                    <th className="px-4 py-2 text-left">Age Group</th>
-                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center" style={{ color: F_PINK }}>Female</th>
-                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center" style={{ color: M_BLUE }}>Male</th>
-                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">Total</th>
-                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">1st Half</th>
-                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">2nd Half</th>
-                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">%Growth</th>
+                    <th className="px-4 py-2 text-left">{t("demographics.ageGroup")}</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center" style={{ color: F_PINK }}>{t("demographics.female")}</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center" style={{ color: M_BLUE }}>{t("demographics.male")}</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">{t("demographics.total")}</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">{t("demographics.firstHalf")}</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">{t("demographics.secondHalf")}</th>
+                    <th className="border-l border-[#E5E8EC] px-4 py-2 text-center">{t("demographics.growth")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -202,7 +201,7 @@ export default function Demographics() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-[#E5E8EC] font-bold text-[#1F2A37]">
-                    <td className="px-4 py-2.5">Total</td>
+                    <td className="px-4 py-2.5">{t("demographics.total")}</td>
                     <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums">{formatNumber(sumOf(memberMatrix, "female"))}</td>
                     <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums">{formatNumber(sumOf(memberMatrix, "male"))}</td>
                     <td className="border-l border-[#E5E8EC] px-4 py-2.5 text-right tabular-nums">{formatNumber(sumTotal(memberMatrix))}</td>
@@ -220,8 +219,8 @@ export default function Demographics() {
       {/* Section 3 — Butterfly chart with split view */}
       <motion.div variants={sectionVariants}>
         <SectionCard
-          title="Claimants by Age Group by Gender"
-          subtitle="Distinct claimants per age bucket — toggle to compare 1st-half vs 2nd-half of the period"
+          title={t("demographics.claimantsByAgeGender")}
+          subtitle={t("demographics.claimantsByAgeGenderSubtitle")}
           right={
             <div className="inline-flex rounded-[8px] bg-white/15 p-[3px]">
               {(["current", "split"] as const).map((v) => (
@@ -233,7 +232,7 @@ export default function Demographics() {
                     view === v ? "bg-white text-[#1F2A37] shadow-sm" : "text-white/70 hover:text-white",
                   )}
                 >
-                  {v === "current" ? "Full Period" : "1st vs 2nd Half"}
+                  {v === "current" ? t("demographics.fullPeriod") : t("demographics.firstVsSecondHalf")}
                 </button>
               ))}
             </div>
@@ -244,13 +243,13 @@ export default function Demographics() {
           ) : (
             <div className="space-y-1.5">
               <div className="mb-3 flex items-center justify-center gap-6 text-[11.5px] font-semibold text-[#4B5563]">
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: F_PINK }} /> Female</span>
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: M_BLUE }} /> Male</span>
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: F_PINK }} /> {t("demographics.female")}</span>
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: M_BLUE }} /> {t("demographics.male")}</span>
                 {view === "split" && (
                   <>
                     <span className="mx-2 text-[#9CA3AF]">|</span>
-                    <span className="flex items-center gap-1.5 text-[#9CA3AF]"><span className="h-2.5 w-2.5 rounded-sm border border-[#9CA3AF] bg-[#E5E7EB]" /> 1st Half (ghost)</span>
-                    <span className="flex items-center gap-1.5 text-[#9CA3AF]"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: "#C4B5FD" }} /> 2nd Half (solid)</span>
+                    <span className="flex items-center gap-1.5 text-[#9CA3AF]"><span className="h-2.5 w-2.5 rounded-sm border border-[#9CA3AF] bg-[#E5E7EB]" /> {t("demographics.firstHalfGhost")}</span>
+                    <span className="flex items-center gap-1.5 text-[#9CA3AF]"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: "#C4B5FD" }} /> {t("demographics.secondHalfSolid")}</span>
                   </>
                 )}
               </div>
@@ -309,13 +308,13 @@ export default function Demographics() {
       {/* Section 4 — Trend Monthly Total Approved */}
       <motion.div variants={sectionVariants}>
         <SectionCard
-          title="Trend Monthly Total Approved"
+          title={t("demographics.trendMonthlyApproved")}
           right={
             <button
               onClick={() => setShowBilling((s) => !s)}
               className={cn("rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors", showBilling ? "bg-white text-[#2E7D5B]" : "bg-white/15 text-white/80 hover:text-white")}
             >
-              Billing line {showBilling ? "on" : "off"}
+              {t("demographics.billingLine")} {showBilling ? t("demographics.billingLineOn") : t("demographics.billingLineOff")}
             </button>
           }
         >
@@ -341,9 +340,9 @@ export default function Demographics() {
                     return (
                       <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[12px] font-medium shadow-md tabular-nums">
                         <div className="mb-1 font-bold text-[#1F2A37]">{formatMonthShort(m.month)}</div>
-                        <div>Approved: IDR {formatIDR(m.approved)}</div>
-                        <div>Billing: IDR {formatIDR(m.billing)}</div>
-                        <div>Rate: {formatRatioPct(m.rate)}</div>
+                        <div>{t("demographics.approvedTooltip")}: IDR {formatIDR(m.approved)}</div>
+                        <div>{t("demographics.billingTooltip")}: IDR {formatIDR(m.billing)}</div>
+                        <div>{t("demographics.rateTooltip")}: {formatRatioPct(m.rate)}</div>
                       </div>
                     );
                   }}
@@ -386,11 +385,11 @@ export default function Demographics() {
           filename={`adbrief-demographics-${periode}.csv`}
           getPayload={() => ({
             headers: [
-              "Age Group",
-              "Member Female", "Member Male", "Member Total",
-              "Member 1st Half", "Member 2nd Half", "Member %Growth",
-              "Claimants Female", "Claimants Male", "Claimants Total",
-              "Claimants 1st Half", "Claimants 2nd Half", "Claimants %Growth",
+              t("demographics.ageGroup"),
+              t("demographics.memberFemale"), t("demographics.memberMale"), t("demographics.memberTotal"),
+              t("demographics.member1stHalf"), t("demographics.member2ndHalf"), t("demographics.memberGrowth"),
+              t("demographics.claimantsFemale"), t("demographics.claimantsMale"), t("demographics.claimantsTotal"),
+              t("demographics.claimants1stHalf"), t("demographics.claimants2ndHalf"), t("demographics.claimantsGrowth"),
             ],
             rows: AGE_BUCKETS.map((b, i) => {
               const m = memberMatrix[i];
@@ -413,11 +412,12 @@ export default function Demographics() {
 }
 
 function PageTitle() {
+  const { t } = useTranslation();
   return (
     <div>
-      <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">Member &amp; Claimants Demographics</h1>
+      <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">{t("demographics.title")}</h1>
       <p className="mt-1 text-sm italic text-[#9CA3AF]">
-        Age and gender composition of active members versus claimants within the selected period
+        {t("demographics.subtitle")}
       </p>
     </div>
   );

@@ -8,6 +8,7 @@
  */
 import { Suspense } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/entities/auth';
 import { ROUTES } from '@/app/routes/routes';
@@ -42,7 +43,7 @@ const TAB_ROUTES: Record<string, RouteConfig[]> = {
   MANAGECARE: [
     {
       path: '/managecare/daily-monitoring',
-      label: 'Daily Monitoring',
+      label: 'nav.dailyMonitoring',
       icon: 'Activity',
       roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGECARE'],
     },
@@ -51,12 +52,13 @@ const TAB_ROUTES: Record<string, RouteConfig[]> = {
 
 export default function TabLayout() {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
   // Determine which tab set to show based on role
   const tabItems = user?.role ? TAB_ROUTES[user.role] ?? [] : [];
-  const moduleName = user?.role === 'INDEMNITY' ? 'Indemnity' : user?.role === 'MANAGECARE' ? 'Manage Care' : '';
+  const moduleName = user?.role === 'INDEMNITY' ? t('nav.indemnityModule') : user?.role === 'MANAGECARE' ? t('nav.manageCareModule') : '';
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
@@ -100,7 +102,7 @@ export default function TabLayout() {
                 )}
               >
                 <Icon className="h-4 w-4" />
-                <span>{tab.label}</span>
+                <span>{t(tab.label)}</span>
               </NavLink>
             );
           })}
@@ -126,7 +128,7 @@ export default function TabLayout() {
             className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-[#DC2626] transition-colors hover:bg-red-50/80"
           >
             <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="hidden sm:inline">{t('tabLayout.logout')}</span>
           </button>
         </div>
       </header>

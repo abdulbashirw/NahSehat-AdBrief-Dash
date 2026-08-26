@@ -10,6 +10,8 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { persistLanguageChange, localeToLang, langToLocale } from '@/shared/i18n';
 import {
   useGetSettingsQuery,
   useUpdateSettingMutation,
@@ -45,6 +47,7 @@ import type { AuthUser } from '@/shared/types';
 type TabKey = 'general' | 'application' | 'profile' | 'security';
 
 export default function Settings() {
+  const { t } = useTranslation();
   const hasAnyRole = useHasAnyRole();
   const { user } = useAuth();
   const dispatch = useAppDispatch();
@@ -86,7 +89,7 @@ export default function Settings() {
 
   const [general, setGeneral] = useState({
     appName: 'NahSehat Dashboard',
-    language: 'id',
+    language: 'en',
   });
 
   const [application, setApplication] = useState({
@@ -137,7 +140,7 @@ export default function Settings() {
     if (settingsMap && Object.keys(settingsMap).length > 0) {
       setGeneral({
         appName: settingsMap['app.name'] ?? 'NahSehat Dashboard',
-        language: settingsMap['currency.locale'] ?? 'id-ID',
+        language: localeToLang(settingsMap['currency.locale'] ?? 'en-US'),
       });
       setApplication({
         maxLoginAttempts: settingsMap['maxLoginAttempts'] ?? '5',
@@ -165,11 +168,13 @@ export default function Settings() {
     try {
       await Promise.all([
         updateSetting({ id: keyToId['app.name'], value: general.appName }).unwrap(),
-        updateSetting({ id: keyToId['currency.locale'], value: general.language }).unwrap(),
+        updateSetting({ id: keyToId['currency.locale'], value: langToLocale(general.language as 'en' | 'id') }).unwrap(),
       ]);
-      toast.success('General settings saved successfully');
+      // Sync language change to i18next
+      await persistLanguageChange(general.language as 'id' | 'en');
+      toast.success(t('settings.generalSaved'));
     } catch {
-      toast.error('Failed to save general settings');
+      toast.error(t('settings.generalSaveFailed'));
     } finally {
       setSavingGeneral(false);
     }
@@ -183,9 +188,9 @@ export default function Settings() {
         updateSetting({ id: keyToId['passwordMinLength'], value: application.passwordMinLength }).unwrap(),
         updateSetting({ id: keyToId['enableExport'], value: String(application.enableExport) }).unwrap(),
       ]);
-      toast.success('Application settings saved successfully');
+      toast.success(t('settings.applicationSaved'));
     } catch {
-      toast.error('Failed to save application settings');
+      toast.error(t('settings.applicationSaveFailed'));
     } finally {
       setSavingApplication(false);
     }
@@ -203,9 +208,9 @@ export default function Settings() {
       if (result.user) {
         dispatch(updateUser(result.user as AuthUser));
       }
-      toast.success('Profile updated successfully');
+      toast.success(t('settings.profileSaved'));
     } catch {
-      toast.error('Failed to update profile');
+      toast.error(t('settings.profileSaveFailed'));
     } finally {
       setSavingProfile(false);
     }
@@ -214,19 +219,19 @@ export default function Settings() {
   const handleChangePassword = async () => {
     // ── Validation ──
     if (security.newPassword !== security.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(t('settings.passwordsDoNotMatch'));
       return;
     }
     if (security.newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
+      toast.error(t('settings.passwordTooShort'));
       return;
     }
     if (security.newPassword === security.currentPassword) {
-      toast.error('New password must be different from current password');
+      toast.error(t('settings.passwordSameAsOld'));
       return;
     }
     if (!/[A-Z]/.test(security.newPassword) || !/[a-z]/.test(security.newPassword) || !/\d/.test(security.newPassword)) {
-      toast.error('Password must contain uppercase, lowercase, and a number');
+      toast.error(t('settings.passwordRequirements'));
       return;
     }
     setSavingSecurity(true);
@@ -236,7 +241,7 @@ export default function Settings() {
         newPassword: security.newPassword,
       }).unwrap();
       setSecurity({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      toast.success('Password changed successfully');
+      toast.success(t('settings.passwordChanged'));
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message || 'Failed to change password';
       toast.error(message);
@@ -263,7 +268,7 @@ export default function Settings() {
   // ── 2FA: Verify code and enable ──
   const handleVerify2FA = async () => {
     if (twoFactorVerifyCode.length !== 6) {
-      toast.error('Please enter the 6-digit code');
+      toast.error(t('settings.enterCode'));
       return;
     }
     setTwoFactorLoading(true);
@@ -273,7 +278,7 @@ export default function Settings() {
       setTwoFactorDialogOpen(false);
       setTwoFactorSetupData(null);
       setTwoFactorVerifyCode('');
-      toast.success('Two-factor authentication enabled successfully');
+      toast.success(t('settings.twoFactorEnabled'));
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message || 'Invalid verification code';
       toast.error(message);
@@ -285,7 +290,7 @@ export default function Settings() {
   // ── 2FA: Disable ──
   const handleDisable2FA = async () => {
     if (!disable2FAPassword) {
-      toast.error('Please enter your current password');
+      toast.error(t('settings.enterCurrentPassword'));
       return;
     }
     setDisable2FALoading(true);
@@ -294,7 +299,7 @@ export default function Settings() {
       setTwoFactorEnabled(false);
       setDisable2FADialogOpen(false);
       setDisable2FAPassword('');
-      toast.success('Two-factor authentication disabled');
+      toast.success(t('settings.twoFactorDisabled'));
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message || 'Failed to disable 2FA';
       toast.error(message);
@@ -304,7 +309,7 @@ export default function Settings() {
   };
 
   // Show loading only for SUPER_ADMIN on admin tabs
-  if (isSuperAdmin && isLoading) return <LoadingSpinner message="Loading settings..." />;
+  if (isSuperAdmin && isLoading) return <LoadingSpinner message={t('settings.loading')} />;
 
   const settingsError = isSuperAdmin && isError;
 
@@ -312,17 +317,17 @@ export default function Settings() {
   const tabs: { key: TabKey; label: string; icon: typeof SettingsIcon }[] = [
     ...(isSuperAdmin
       ? [
-          { key: 'general' as const, label: 'General', icon: SettingsIcon },
-          { key: 'application' as const, label: 'Application', icon: Monitor },
+          { key: 'general' as const, label: t('settings.general'), icon: SettingsIcon },
+          { key: 'application' as const, label: t('settings.application'), icon: Monitor },
         ]
       : []),
-    { key: 'profile' as const, label: 'Profile', icon: User },
-    { key: 'security' as const, label: 'Security', icon: Shield },
+    { key: 'profile' as const, label: t('settings.profile'), icon: User },
+    { key: 'security' as const, label: t('settings.security'), icon: Shield },
   ];
 
   return (
     <div className="p-6">
-      <PageHeader title="Settings" description={isSuperAdmin ? 'Manage application and account settings' : 'Manage your account settings'} />
+      <PageHeader title={t('settings.title')} description={isSuperAdmin ? t('settings.descriptionAdmin') : t('settings.descriptionUser')} />
 
       <div className="mt-6 flex gap-6">
         {/* Sidebar tabs */}
@@ -351,11 +356,11 @@ export default function Settings() {
           {activeTab === 'general' && !settingsError && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg text-[#1F2A37]">General Settings</CardTitle>
+                <CardTitle className="text-lg text-[#1F2A37]">{t('settings.generalSettings')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 items-center gap-4">
-                  <label className="text-sm font-medium text-[#1F2A37]">Application Name</label>
+                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.appName')}</label>
                   <Input
                     value={general.appName}
                     onChange={(e) => setGeneral((g) => ({ ...g, appName: e.target.value }))}
@@ -363,7 +368,7 @@ export default function Settings() {
                   />
                 </div>
                 <div className="grid grid-cols-3 items-center gap-4">
-                  <label className="text-sm font-medium text-[#1F2A37]">Language</label>
+                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.language')}</label>
                   <Select value={general.language} onValueChange={(v) => setGeneral((g) => ({ ...g, language: v }))}>
                     <SelectTrigger className="col-span-2">
                       <SelectValue />
@@ -377,7 +382,7 @@ export default function Settings() {
                 <div className="flex justify-end pt-4">
                   <Button onClick={handleSaveGeneral} disabled={savingGeneral} className="bg-[#0066FF] hover:bg-[#0052E6]">
                     <Save className="mr-2 h-4 w-4" />
-                    {savingGeneral ? 'Saving...' : 'Save Changes'}
+                    {savingGeneral ? t('common.saving') : t('common.saveChanges')}
                   </Button>
                 </div>
               </CardContent>
@@ -389,11 +394,11 @@ export default function Settings() {
           {activeTab === 'application' && !settingsError && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg text-[#1F2A37]">Application Settings</CardTitle>
+                <CardTitle className="text-lg text-[#1F2A37]">{t('settings.applicationSettings')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 items-center gap-4">
-                  <label className="text-sm font-medium text-[#1F2A37]">Max Login Attempts</label>
+                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.maxLoginAttempts')}</label>
                   <Input
                     type="number"
                     value={application.maxLoginAttempts}
@@ -402,7 +407,7 @@ export default function Settings() {
                   />
                 </div>
                 <div className="grid grid-cols-3 items-center gap-4">
-                  <label className="text-sm font-medium text-[#1F2A37]">Min Password Length</label>
+                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.minPasswordLength')}</label>
                   <Input
                     type="number"
                     value={application.passwordMinLength}
@@ -418,13 +423,13 @@ export default function Settings() {
                       onCheckedChange={(checked) => setApplication((a) => ({ ...a, enableExport: checked }))}
                       className="data-[state=checked]:bg-[#0066FF]"
                     />
-                    <span className="text-sm text-[#6B7280]">Allow users to export data (CSV, PDF)</span>
+                    <span className="text-sm text-[#6B7280]">{t('settings.allowExport')}</span>
                   </div>
                 </div>
                 <div className="flex justify-end pt-4">
                   <Button onClick={handleSaveApplication} disabled={savingApplication} className="bg-[#0066FF] hover:bg-[#0052E6]">
                     <Save className="mr-2 h-4 w-4" />
-                    {savingApplication ? 'Saving...' : 'Save Changes'}
+                    {savingApplication ? t('common.saving') : t('common.saveChanges')}
                   </Button>
                 </div>
               </CardContent>
@@ -435,41 +440,41 @@ export default function Settings() {
           {activeTab === 'profile' && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg text-[#1F2A37]">Profile Settings</CardTitle>
+                <CardTitle className="text-lg text-[#1F2A37]">{t('settings.profileSettings')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 items-center gap-4">
-                  <label className="text-sm font-medium text-[#1F2A37]">Full Name</label>
+                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.fullName')}</label>
                   <Input
                     value={profile.fullName}
                     onChange={(e) => setProfile((p) => ({ ...p, fullName: e.target.value }))}
-                    placeholder="Enter your full name"
+                    placeholder={t('settings.enterFullName')}
                     className="col-span-2"
                   />
                 </div>
                 <div className="grid grid-cols-3 items-center gap-4">
-                  <label className="text-sm font-medium text-[#1F2A37]">Email</label>
+                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.email')}</label>
                   <Input
                     type="email"
                     value={profile.email}
                     onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
-                    placeholder="Enter your email"
+                    placeholder={t('settings.enterEmail')}
                     className="col-span-2"
                   />
                 </div>
                 <div className="grid grid-cols-3 items-center gap-4">
-                  <label className="text-sm font-medium text-[#1F2A37]">Phone</label>
+                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.phone')}</label>
                   <Input
                     value={profile.phone}
                     onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
-                    placeholder="Enter your phone number"
+                    placeholder={t('settings.enterPhone')}
                     className="col-span-2"
                   />
                 </div>
                 <div className="flex justify-end pt-4">
                   <Button onClick={handleSaveProfile} disabled={savingProfile} className="bg-[#0066FF] hover:bg-[#0052E6]">
                     <Save className="mr-2 h-4 w-4" />
-                    {savingProfile ? 'Saving...' : 'Save Profile'}
+                    {savingProfile ? t('common.saving') : t('settings.saveProfile')}
                   </Button>
                 </div>
               </CardContent>
@@ -482,17 +487,17 @@ export default function Settings() {
               {/* Change Password Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg text-[#1F2A37]">Change Password</CardTitle>
+                  <CardTitle className="text-lg text-[#1F2A37]">{t('settings.changePassword')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-sm font-medium text-[#1F2A37]">Current Password</label>
+                    <label className="text-sm font-medium text-[#1F2A37]">{t('settings.currentPassword')}</label>
                     <div className="col-span-2 relative">
                       <Input
                         type={showCurrentPassword ? 'text' : 'password'}
                         value={security.currentPassword}
                         onChange={(e) => setSecurity((s) => ({ ...s, currentPassword: e.target.value }))}
-                        placeholder="Enter current password"
+                        placeholder={t('settings.enterCurrentPassword')}
                         className="pr-10"
                       />
                       <button
@@ -505,13 +510,13 @@ export default function Settings() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-sm font-medium text-[#1F2A37]">New Password</label>
+                    <label className="text-sm font-medium text-[#1F2A37]">{t('settings.newPassword')}</label>
                     <div className="col-span-2 relative">
                       <Input
                         type={showNewPassword ? 'text' : 'password'}
                         value={security.newPassword}
                         onChange={(e) => setSecurity((s) => ({ ...s, newPassword: e.target.value }))}
-                        placeholder="Enter new password"
+                        placeholder={t('settings.enterNewPassword')}
                         className="pr-10"
                       />
                       <button
@@ -524,13 +529,13 @@ export default function Settings() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-sm font-medium text-[#1F2A37]">Confirm Password</label>
+                    <label className="text-sm font-medium text-[#1F2A37]">{t('settings.confirmPassword')}</label>
                     <div className="col-span-2 relative">
                       <Input
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={security.confirmPassword}
                         onChange={(e) => setSecurity((s) => ({ ...s, confirmPassword: e.target.value }))}
-                        placeholder="Confirm new password"
+                        placeholder={t('settings.confirmNewPassword')}
                         className="pr-10"
                       />
                       <button
@@ -543,12 +548,12 @@ export default function Settings() {
                     </div>
                   </div>
                   <div className="rounded-lg bg-[#F4F6F8] px-4 py-3 text-xs text-[#6B7280]">
-                    Password must be at least 8 characters and contain uppercase, lowercase, and a number.
+                    {t('settings.passwordRequirements')}
                   </div>
                   <div className="flex justify-end pt-2">
                     <Button onClick={handleChangePassword} disabled={savingSecurity} className="bg-[#0066FF] hover:bg-[#0052E6]">
                       <Save className="mr-2 h-4 w-4" />
-                      {savingSecurity ? 'Saving...' : 'Update Password'}
+                      {savingSecurity ? t('common.saving') : t('settings.updatePassword')}
                     </Button>
                   </div>
                 </CardContent>
@@ -559,7 +564,7 @@ export default function Settings() {
                 <CardHeader>
                   <CardTitle className="text-lg text-[#1F2A37] flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5 text-[#0066FF]" />
-                    Two-Factor Authentication (2FA)
+                    {t('settings.twoFactorAuth')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -570,12 +575,12 @@ export default function Settings() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-[#1F2A37]">
-                          {twoFactorEnabled ? '2FA is Enabled' : '2FA is Disabled'}
+                          {twoFactorEnabled ? t('settings.2faEnabled') : t('settings.2faDisabled')}
                         </p>
                         <p className="text-xs text-[#6B7280]">
                           {twoFactorEnabled
-                            ? 'Your account is protected with TOTP authenticator'
-                            : 'Protect your account with an authenticator app (Google Authenticator, Authy, etc.)'}
+                            ? t('settings.2faEnabledDesc')
+                            : t('settings.2faDisabledDesc')}
                         </p>
                       </div>
                     </div>
@@ -585,7 +590,7 @@ export default function Settings() {
                         onClick={() => setDisable2FADialogOpen(true)}
                         className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
                       >
-                        Disable
+                        {t('settings.disable')}
                       </Button>
                     ) : (
                       <Button
@@ -598,7 +603,7 @@ export default function Settings() {
                         ) : (
                           <QrCode className="mr-2 h-4 w-4" />
                         )}
-                        Enable 2FA
+                        {t('settings.enable2fa')}
                       </Button>
                     )}
                   </div>
@@ -615,10 +620,10 @@ export default function Settings() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-[#0066FF]" />
-              Set Up Two-Factor Authentication
+              {t('settings.setUp2fa')}
             </DialogTitle>
             <DialogDescription>
-              Scan the QR code with your authenticator app (Google Authenticator, Authy, Microsoft Authenticator), then enter the 6-digit verification code.
+              {t('settings.scanQrDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -636,7 +641,7 @@ export default function Settings() {
 
               {/* Manual entry key */}
               <div className="rounded-lg bg-[#F4F6F8] px-4 py-3">
-                <p className="text-xs font-medium text-[#6B7280] mb-1">Can't scan? Enter this key manually:</p>
+                <p className="text-xs font-medium text-[#6B7280] mb-1">{t('settings.cantScanManual')}</p>
                 <p className="font-mono text-sm text-[#1F2A37] break-all select-all">
                   {twoFactorSetupData.manualEntry}
                 </p>
@@ -644,14 +649,14 @@ export default function Settings() {
 
               {/* Verification code input */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[#1F2A37]">Verification Code</label>
+                <label className="text-sm font-medium text-[#1F2A37]">{t('settings.verificationCode')}</label>
                 <Input
                   type="text"
                   inputMode="numeric"
                   maxLength={6}
                   value={twoFactorVerifyCode}
                   onChange={(e) => setTwoFactorVerifyCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Enter 6-digit code"
+                  placeholder={t('settings.enter6DigitCode')}
                   className="text-center text-lg tracking-[0.3em] font-bold"
                 />
               </div>
@@ -667,7 +672,7 @@ export default function Settings() {
                 setTwoFactorVerifyCode('');
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleVerify2FA}
@@ -675,7 +680,7 @@ export default function Settings() {
               className="bg-[#0066FF] hover:bg-[#0052E6]"
             >
               {twoFactorLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {twoFactorLoading ? 'Verifying...' : 'Verify & Enable'}
+              {twoFactorLoading ? t('settings.verifying') : t('settings.verifyAndEnable')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -687,21 +692,21 @@ export default function Settings() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-red-500" />
-              Disable Two-Factor Authentication
+              {t('settings.disable2FADialogTitle')}
             </DialogTitle>
             <DialogDescription>
-              Enter your current password to disable 2FA. This will make your account less secure.
+              {t('settings.disable2FADialogDesc')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[#1F2A37]">Current Password</label>
+                <label className="text-sm font-medium text-[#1F2A37]">{t('settings.currentPassword')}</label>
             <div className="relative">
               <Input
                 type={showDisable2FAPassword ? 'text' : 'password'}
                 value={disable2FAPassword}
                 onChange={(e) => setDisable2FAPassword(e.target.value)}
-                placeholder="Enter your current password"
+                placeholder={t('settings.enterCurrentPassword')}
                 className="pr-10"
               />
               <button
@@ -722,7 +727,7 @@ export default function Settings() {
                 setDisable2FAPassword('');
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleDisable2FA}
@@ -730,7 +735,7 @@ export default function Settings() {
               className="bg-red-600 hover:bg-red-700"
             >
               {disable2FALoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {disable2FALoading ? 'Disabling...' : 'Disable 2FA'}
+              {disable2FALoading ? t('settings.disabling') : t('settings.disable2FA')}
             </Button>
           </DialogFooter>
         </DialogContent>

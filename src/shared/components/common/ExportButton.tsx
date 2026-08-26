@@ -5,9 +5,11 @@
 import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/lib/utils';
 import { useExportEnabled } from '@/entities/settings/model/useSettings';
+import { csvSeparator } from '@/shared/lib/format';
 
 export interface CsvPayload {
   headers: string[];
@@ -15,12 +17,12 @@ export interface CsvPayload {
 }
 
 export function downloadCsv(payload: CsvPayload, filename: string) {
+  const sep = csvSeparator();
   const escape = (v: string | number) => {
     const s = String(v);
-    return /[;\n"]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    return /[;\n",]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  // ";" separator: id-ID locale uses "," as decimal mark, so Excel-safe CSV uses ";"
-  const lines = [payload.headers.map(escape).join(';'), ...payload.rows.map((r) => r.map(escape).join(';'))];
+  const lines = [payload.headers.map(escape).join(sep), ...payload.rows.map((r) => r.map(escape).join(sep))];
   const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -44,15 +46,16 @@ export default function ExportButton({
   filename,
   className,
 }: ExportButtonProps) {
+  const { t } = useTranslation();
   const exportEnabled = useExportEnabled();
 
   const onClick = () => {
     if (!exportEnabled) {
-      toast.error('Data export is disabled by administrator');
+      toast.error(t('export.disabled'));
       return;
     }
     downloadCsv(getPayload(), filename);
-    toast.success('CSV exported', { description: filename });
+    toast.success(t('export.success'), { description: filename });
   };
 
   // If export is disabled, render nothing — the feature is gated app-wide.
@@ -70,7 +73,7 @@ export default function ExportButton({
         <motion.span variants={{ tap: { y: 3 } }} transition={{ type: 'spring', stiffness: 400, damping: 15 }}>
           <Download className="h-4 w-4" />
         </motion.span>
-        Export CSV
+        {t('export.csv')}
       </Button>
     </motion.div>
   );

@@ -1,5 +1,5 @@
 /**
- * App — root component with Redux Provider, Router, Auth Initializer, Error Boundary, and Suspense.
+ * App — root component with Redux Provider, Router, Auth Initializer, i18n, Error Boundary, and Suspense.
  */
 import { Suspense } from 'react';
 import { BrowserRouter, useRoutes } from 'react-router-dom';
@@ -9,6 +9,9 @@ import { routeConfig } from '@/app/routes';
 import AuthInitializer from '@/widgets/auth-initializer/ui/AuthInitializer';
 import ErrorBoundary from '@/shared/components/error/ErrorBoundary';
 import { Toaster } from '@/shared/ui/sonner';
+// i18n — must be imported so the instance is initialised before any render
+import '@/shared/i18n/i18n';
+import { LanguageSync } from '@/widgets/language-sync/ui/LanguageSync';
 
 function AppRoutes() {
   return useRoutes(routeConfig);
@@ -19,7 +22,8 @@ function App() {
     <Provider store={store}>
       <BrowserRouter>
         <AuthInitializer>
-            <Toaster position="top-center" richColors closeButton />
+          <LanguageSync />
+          <Toaster position="top-center" richColors closeButton />
           <ErrorBoundary>
             <Suspense
               fallback={

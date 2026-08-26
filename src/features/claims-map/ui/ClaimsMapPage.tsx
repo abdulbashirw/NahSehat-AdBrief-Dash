@@ -5,6 +5,7 @@
  * All business logic (aggregation, KPIs, charts, map, tables) preserved.
  */
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import {
   Bar,
@@ -24,7 +25,7 @@ import type { DataColumn } from "@/shared/components/common/DataTable";
 import ExportButton from "@/shared/components/common/ExportButton";
 import EmptyState from "@/shared/components/common/EmptyState";
 import ApiError from "@/shared/components/error/ApiError";
-import IndonesiaMap, { MAP_METRIC_OPTIONS } from "@/features/claims-map/components/IndonesiaMap";
+import IndonesiaMap, { MAP_METRIC_KEYS } from "@/features/claims-map/components/IndonesiaMap";
 import type { MapMetric } from "@/features/claims-map/components/IndonesiaMap";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { useIndemnityData } from "@/features/indemnity-overview/hooks/useIndemnityData";
@@ -32,7 +33,7 @@ import PeriodFilter from "@/features/indemnity-overview/components/PeriodFilter"
 import { byCity, byMonth, byProvider, byProvince, kpiDeltas, kpiSummary, providerLocations } from "@/entities/claim/lib/aggregate";
 import type { CityRow, MonthRow, ProviderRow } from "@/entities/claim/lib/aggregate";
 import { cn } from "@/shared/lib/utils";
-import { formatCompactIDR, formatIDR, formatMonthShort, formatNumber, formatRatioPct } from "@/shared/lib/format";
+import { formatCompactIDR, formatDecimal, formatIDR, formatMonthShort, formatNumber, formatRatioPct } from "@/shared/lib/format";
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 12 },
@@ -42,8 +43,6 @@ const sectionVariants = {
 const BILLING_RED = "#D64545";
 const APPROVED_YELLOW = "#F2C230";
 const CLAIMANT_BLUE = "#2563EB";
-
-const formatDecimal = (n: number) => n.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
@@ -60,6 +59,7 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 }
 
 export default function ClaimsMap() {
+  const { t } = useTranslation();
   const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
 
   const filteredClaims = data?.claims ?? [];
@@ -99,44 +99,44 @@ export default function ClaimsMap() {
 
   const cityColumns: DataColumn<CityRow>[] = useMemo(
     () => [
-      { key: "city", label: "City", value: (r) => r.city, render: (r) => <span className="font-semibold">{r.city}</span> },
-      { key: "transaction", label: "Transaction", align: "right", value: (r) => r.transactions, render: (r) => formatNumber(r.transactions) },
-      { key: "claimant", label: "Claimant", align: "right", value: (r) => r.claimants, render: (r) => formatNumber(r.claimants) },
-      { key: "billing", label: "Billing (IDR)", align: "right", value: (r) => r.billing, render: (r) => formatIDR(r.billing) },
-      { key: "approved", label: "Approved (IDR)", align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
+      { key: "city", label: t("claimsMap.city"), value: (r) => r.city, render: (r) => <span className="font-semibold">{r.city}</span> },
+      { key: "transaction", label: t("claimsMap.transaction"), align: "right", value: (r) => r.transactions, render: (r) => formatNumber(r.transactions) },
+      { key: "claimant", label: t("claimsMap.claimant"), align: "right", value: (r) => r.claimants, render: (r) => formatNumber(r.claimants) },
+      { key: "billing", label: t("claimsMap.billing"), align: "right", value: (r) => r.billing, render: (r) => formatIDR(r.billing) },
+      { key: "approved", label: t("claimsMap.approvedCol"), align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
       {
         key: "pct",
-        label: "%Approved",
+        label: t("claimsMap.pctApproved"),
         align: "right",
         value: (r) => (r.billing ? r.approved / r.billing : 0),
         render: (r) => formatRatioPct(r.billing ? r.approved / r.billing : 0),
         progressOf: (r) => (r.billing ? r.approved / r.billing : 0),
       },
-      { key: "avg", label: "Avg. Approved Bills / Claimant (IDR)", align: "right", value: avgApprovedCity, render: (r) => formatIDR(avgApprovedCity(r)) },
+      { key: "avg", label: t("claimsMap.avgApprovedPerClaimant"), align: "right", value: avgApprovedCity, render: (r) => formatIDR(avgApprovedCity(r)) },
     ],
-    [],
+    [t],
   );
 
   const providerColumns: DataColumn<ProviderRow>[] = useMemo(
     () => [
       {
         key: "provider",
-        label: "Provider Name",
+        label: t("claimsMap.providerName"),
         value: (r) => r.providerName,
         render: (r) => (
           <span className="flex items-center gap-2">
             <span className="font-semibold">{r.providerName}</span>
-            {!r.inNetwork && <span className="rounded bg-[#F2C230]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#8a6d00]">Non Provider</span>}
+            {!r.inNetwork && <span className="rounded bg-[#F2C230]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#8a6d00]">{t("claimsMap.nonProvider")}</span>}
           </span>
         ),
       },
-      { key: "transaction", label: "Transaction", align: "right", value: (r) => r.transactions, render: (r) => formatNumber(r.transactions) },
-      { key: "claimant", label: "Claimant", align: "right", value: (r) => r.claimants, render: (r) => formatNumber(r.claimants) },
-      { key: "billing", label: "Billing (IDR)", align: "right", value: (r) => r.billing, render: (r) => formatIDR(r.billing) },
-      { key: "approved", label: "Approved (IDR)", align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
+      { key: "transaction", label: t("claimsMap.transaction"), align: "right", value: (r) => r.transactions, render: (r) => formatNumber(r.transactions) },
+      { key: "claimant", label: t("claimsMap.claimant"), align: "right", value: (r) => r.claimants, render: (r) => formatNumber(r.claimants) },
+      { key: "billing", label: t("claimsMap.billing"), align: "right", value: (r) => r.billing, render: (r) => formatIDR(r.billing) },
+      { key: "approved", label: t("claimsMap.approvedCol"), align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
       {
         key: "pct",
-        label: "%Approved",
+        label: t("claimsMap.pctApproved"),
         align: "right",
         value: (r) => r.approvedPct,
         render: (r) => formatRatioPct(r.approvedPct),
@@ -144,13 +144,13 @@ export default function ClaimsMap() {
       },
       {
         key: "avg",
-        label: "Avg. Approved Bills / Claimant (IDR)",
+        label: t("claimsMap.avgApprovedPerClaimant"),
         align: "right",
         value: (r) => (r.claimants ? r.approved / r.claimants : 0),
         render: (r) => formatIDR(r.claimants ? r.approved / r.claimants : 0),
       },
     ],
-    [],
+    [t],
   );
 
   if (isError) return <ApiError onRetry={refetch} />;
@@ -160,7 +160,7 @@ export default function ClaimsMap() {
       <div className="space-y-6">
         <PageTitle />
         <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
-        <SectionCard title="Where Claimants Made Claims">
+        <SectionCard title={t("claimsMap.title")}>
           <EmptyState />
         </SectionCard>
       </div>
@@ -183,33 +183,33 @@ export default function ClaimsMap() {
       <div className="space-y-6 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
       {/* Section 1 — KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        <KpiCard index={0} loading={isLoading} label="Claimants" accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
-        <KpiCard index={1} loading={isLoading} label="Transactions" accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
-        <KpiCard index={2} loading={isLoading} label="Healthcare" accent="#16A34A" value={kpis.healthcare} format={formatNumber} delta={deltas.healthcare} />
-        <KpiCard index={3} loading={isLoading} label="Avg. Transactions / Claimant" accent="#2563EB" value={kpis.avgTxnPerClaimant} format={formatDecimal} />
-        <KpiCard index={4} loading={isLoading} label="Avg. Approved / Claimant (IDR)" accent="#7C3AED" value={kpis.avgApprovedPerClaimant} format={formatIDR} />
-        <KpiCard index={5} loading={isLoading} label="Billing (IDR)" accent="#9B2226" value={kpis.billing} format={formatIDR} delta={deltas.billing} spark={monthly.map((m) => m.billing)} />
-        <KpiCard index={6} loading={isLoading} label="Approved (IDR)" accent="#0F9488" value={kpis.approved} format={formatIDR} delta={deltas.approved} subline={`${formatRatioPct(kpis.approvedPct)} of billing`} spark={monthly.map((m) => m.approved)} />
+        <KpiCard index={0} loading={isLoading} label={t("claimsMap.claimants")} accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
+        <KpiCard index={1} loading={isLoading} label={t("claimsMap.transactions")} accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
+        <KpiCard index={2} loading={isLoading} label={t("claimsMap.healthcare")} accent="#16A34A" value={kpis.healthcare} format={formatNumber} delta={deltas.healthcare} />
+        <KpiCard index={3} loading={isLoading} label={t("claimsMap.avgTxnPerClaimant")} accent="#2563EB" value={kpis.avgTxnPerClaimant} format={formatDecimal} />
+        <KpiCard index={4} loading={isLoading} label={t("claimsMap.avgApprovedPerClaimant")} accent="#7C3AED" value={kpis.avgApprovedPerClaimant} format={formatIDR} />
+        <KpiCard index={5} loading={isLoading} label={t("claimsMap.billingIdr")} accent="#9B2226" value={kpis.billing} format={formatIDR} delta={deltas.billing} spark={monthly.map((m) => m.billing)} />
+        <KpiCard index={6} loading={isLoading} label={t("claimsMap.approvedIdr")} accent="#0F9488" value={kpis.approved} format={formatIDR} delta={deltas.approved} subline={`${formatRatioPct(kpis.approvedPct)} ${t("claimsMap.ofBilling")}`} spark={monthly.map((m) => m.approved)} />
       </div>
 
       {/* Section 2 — Choropleth */}
       <motion.div variants={sectionVariants}>
         <SectionCard
-          title="Claimants Distribution by Province"
+          title={t("claimsMap.claimantsDistribution")}
           right={
             <span className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-white/90">Most by:</span>
+              <span className="text-[11px] font-semibold text-white/90">{t("claimsMap.mostBy")}:</span>
               <span className="flex overflow-hidden rounded-md bg-white/15">
-                {MAP_METRIC_OPTIONS.map((o) => (
+                {MAP_METRIC_KEYS.map((key) => (
                   <button
-                    key={o.key}
-                    onClick={() => setMetric(o.key)}
+                    key={key}
+                    onClick={() => setMetric(key)}
                     className={cn(
                       "px-2.5 py-1 text-[11px] font-semibold text-white/80 transition-colors hover:text-white",
-                      metric === o.key && "bg-white text-[#1D4ED8] hover:text-[#1D4ED8]",
+                      metric === key && "bg-white text-[#1D4ED8] hover:text-[#1D4ED8]",
                     )}
                   >
-                    {o.label}
+                    {t(key === 'claimants' ? 'claimsMap.mapMetricTotalClaimant' : key === 'transactions' ? 'claimsMap.mapMetricTotalTransaction' : key === 'approved' ? 'claimsMap.mapMetricTotalApproved' : 'claimsMap.mapMetricBilling')}
                   </button>
                 ))}
               </span>
@@ -226,14 +226,14 @@ export default function ClaimsMap() {
                 )}
                 title={
                   locations.length === 0
-                    ? "No provider coordinates available"
+                    ? t("claimsMap.noProviderCoordinates")
                     : showLocations
-                      ? "Hide provider locations"
-                      : "Show provider locations"
+                      ? t("claimsMap.hideProviderLocations")
+                      : t("claimsMap.showProviderLocations")
                 }
               >
                 <MapPin className="h-3.5 w-3.5" />
-                {locations.length === 0 ? "Locations Off" : showLocations ? "Locations On" : "Locations Off"}
+                {locations.length === 0 ? t("claimsMap.locationsOff") : showLocations ? t("claimsMap.locationsOn") : t("claimsMap.locationsOff")}
               </button>
             </span>
           }
@@ -268,8 +268,8 @@ export default function ClaimsMap() {
       {/* Section 3 — City table */}
       <motion.div variants={sectionVariants}>
         <SectionCard
-          title={pinned ? `Detail Distribution by City — ${pinned}` : "Detail Distribution by City"}
-          right={<SearchBox value={citySearch} onChange={setCitySearch} placeholder="Search city…" />}
+          title={pinned ? `${t("claimsMap.detailDistributionByCityPinned")} — ${pinned}` : t("claimsMap.detailDistributionByCity")}
+          right={<SearchBox value={citySearch} onChange={setCitySearch} placeholder={t("claimsMap.searchCity")} />}
         >
           {isLoading ? (
             <Skeleton className="h-[300px] w-full" />
@@ -280,7 +280,7 @@ export default function ClaimsMap() {
               rowKey={(r) => r.city}
               maxHeight={420}
               footer={[
-                "Total",
+                t("common.total"),
                 formatNumber(kpis.transactions),
                 formatNumber(kpis.claimants),
                 formatIDR(kpis.billing),
@@ -296,7 +296,7 @@ export default function ClaimsMap() {
       {/* Section 4 — Monthly trend */}
       <motion.div variants={sectionVariants}>
         <SectionCard
-          title="Monthly Trend Health Benefit Utilization"
+          title={t("claimsMap.monthlyTrendHealthBenefit")}
           right={
             <span className="flex overflow-hidden rounded-md bg-white/15">
               {(["claimants", "transactions"] as const).map((k) => (
@@ -308,7 +308,7 @@ export default function ClaimsMap() {
                     lineMetric === k && "bg-white text-[#1D4ED8] hover:text-[#1D4ED8]",
                   )}
                 >
-                  {k}
+                  {k === "claimants" ? t("claimsMap.claimants") : t("claimsMap.transactions")}
                 </button>
               ))}
             </span>
@@ -319,9 +319,9 @@ export default function ClaimsMap() {
           ) : (
             <>
               <div className="mb-2 flex items-center gap-4 text-[11.5px] font-semibold text-[#4B5563]">
-                <span className="flex items-center gap-1.5"><span className="h-[3px] w-5 rounded" style={{ backgroundColor: CLAIMANT_BLUE }} /> {lineMetric === "claimants" ? "Claimants" : "Transactions"}</span>
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: BILLING_RED }} /> Billing</span>
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: APPROVED_YELLOW }} /> Approved</span>
+                <span className="flex items-center gap-1.5"><span className="h-[3px] w-5 rounded" style={{ backgroundColor: CLAIMANT_BLUE }} /> {lineMetric === "claimants" ? t("claimsMap.claimants") : t("claimsMap.transactions")}</span>
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: BILLING_RED }} /> {t("claimsMap.billingLabel")}</span>
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: APPROVED_YELLOW }} /> {t("claimsMap.approvedLabel")}</span>
               </div>
               <ResponsiveContainer width="100%" height={320}>
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }} barCategoryGap="22%">
@@ -337,15 +337,15 @@ export default function ClaimsMap() {
                       return (
                         <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[12px] font-medium shadow-md tabular-nums">
                           <div className="mb-1 font-bold text-[#1F2A37]">{formatMonthShort(m.month)}</div>
-                          <div>{lineMetric === "claimants" ? "Claimants" : "Transactions"}: {formatNumber(lineMetric === "claimants" ? m.claimants : m.transactions)}</div>
-                          <div>Billing: IDR {formatIDR(m.billing)}</div>
-                          <div>Approved: IDR {formatIDR(m.approved)} ({formatRatioPct(m.billing ? m.approved / m.billing : 0)})</div>
+                          <div>{lineMetric === "claimants" ? t("claimsMap.claimants") : t("claimsMap.transactions")}: {formatNumber(lineMetric === "claimants" ? m.claimants : m.transactions)}</div>
+                          <div>{t("claimsMap.billingLabel")}: {t("claimsMap.tooltipIdr")} {formatIDR(m.billing)}</div>
+                          <div>{t("claimsMap.approvedLabel")}: {t("claimsMap.tooltipIdr")} {formatIDR(m.approved)} ({formatRatioPct(m.billing ? m.approved / m.billing : 0)})</div>
                         </div>
                       );
                     }}
                   />
-                  <Bar yAxisId="right" dataKey="billing" name="Billing" fill={BILLING_RED} radius={[4, 4, 0, 0]} isAnimationActive animationDuration={600} />
-                  <Bar yAxisId="right" dataKey="approved" name="Approved" fill={APPROVED_YELLOW} radius={[4, 4, 0, 0]} isAnimationActive animationDuration={600} animationBegin={80} />
+                  <Bar yAxisId="right" dataKey="billing" name={t("claimsMap.billingLabel")} fill={BILLING_RED} radius={[4, 4, 0, 0]} isAnimationActive animationDuration={600} />
+                  <Bar yAxisId="right" dataKey="approved" name={t("claimsMap.approvedLabel")} fill={APPROVED_YELLOW} radius={[4, 4, 0, 0]} isAnimationActive animationDuration={600} animationBegin={80} />
                   <Line yAxisId="left" type="monotone" dataKey={lineMetric} stroke={CLAIMANT_BLUE} strokeWidth={2.5} dot={{ r: 3, fill: CLAIMANT_BLUE }} isAnimationActive animationDuration={900} />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -357,8 +357,8 @@ export default function ClaimsMap() {
       {/* Section 5 — Provider table */}
       <motion.div variants={sectionVariants}>
         <SectionCard
-          title="Detail Distribution by Provider"
-          right={<SearchBox value={providerSearch} onChange={setProviderSearch} placeholder="Search provider…" />}
+          title={t("claimsMap.detailDistributionByProvider")}
+          right={<SearchBox value={providerSearch} onChange={setProviderSearch} placeholder={t("claimsMap.searchProvider")} />}
         >
           {isLoading ? (
             <Skeleton className="h-[300px] w-full" />
@@ -370,7 +370,7 @@ export default function ClaimsMap() {
                 rowKey={(r) => r.providerId}
                 maxHeight={480}
                 footer={[
-                  "Total",
+                  t("common.total"),
                   formatNumber(kpis.transactions),
                   formatNumber(kpis.claimants),
                   formatIDR(kpis.billing),
@@ -383,7 +383,7 @@ export default function ClaimsMap() {
                 onClick={() => setShowAllProviders((s) => !s)}
                 className="mt-3 text-[12.5px] font-semibold text-[#1D4ED8] hover:underline"
               >
-                {showAllProviders ? "Show top 25 only" : `Show all ${formatNumber(providerRows.length)} providers`}
+                {showAllProviders ? t("claimsMap.showTop25Only") : t("claimsMap.showAllProviders", { count: formatNumber(providerRows.length) })}
               </button>
             </>
           )}
@@ -395,10 +395,10 @@ export default function ClaimsMap() {
         <ExportButton
           filename={`adbrief-claims-map-${periode}.csv`}
           getPayload={() => ({
-            headers: ["City", "Province", "Transaction", "Claimant", "Billing (IDR)", "Approved (IDR)", "%Approved", "Avg Approved/Claimant (IDR)"],
+            headers: [t("claimsMap.city"), t("claimsMap.province"), t("claimsMap.transaction"), t("claimsMap.claimant"), t("claimsMap.billingIdr"), t("claimsMap.approvedIdr"), t("claimsMap.pctApproved"), t("claimsMap.avgApprovedClaimantIdr")],
             rows: [
               ...visibleCities.map((r) => [r.city, r.province, r.transactions, r.claimants, r.billing, r.approved, formatRatioPct(r.billing ? r.approved / r.billing : 0), Math.round(avgApprovedCity(r))] as (string | number)[]),
-              ["TOTAL", "", kpis.transactions, kpis.claimants, kpis.billing, kpis.approved, formatRatioPct(kpis.approvedPct), Math.round(kpis.avgApprovedPerClaimant)],
+              [t("common.total").toUpperCase(), "", kpis.transactions, kpis.claimants, kpis.billing, kpis.approved, formatRatioPct(kpis.approvedPct), Math.round(kpis.avgApprovedPerClaimant)],
             ],
           })}
         />
@@ -409,11 +409,12 @@ export default function ClaimsMap() {
 }
 
 function PageTitle() {
+  const { t } = useTranslation();
   return (
     <div>
-      <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">Where Claimants Made Claims</h1>
+      <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">{t("claimsMap.whereClaimantsMadeClaims")}</h1>
       <p className="mt-1 text-sm italic text-[#9CA3AF]">
-        Geographic distribution of claimants, transactions, and approved value across provinces, cities, and healthcare providers
+        {t("claimsMap.subtitle")}
       </p>
     </div>
   );

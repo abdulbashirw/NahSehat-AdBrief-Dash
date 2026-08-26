@@ -3,6 +3,7 @@
  * Preserved from original AdBrief design.
  */
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import mapRaw from '@/assets/indonesia-provinces.svg?raw';
 import type { CityRow } from '@/entities/claim/lib/aggregate';
@@ -11,12 +12,7 @@ import { formatCompactIDR, formatIDR, formatNumber, formatRatioPct } from '@/sha
 
 export type MapMetric = 'claimants' | 'transactions' | 'approved' | 'billing';
 
-export const MAP_METRIC_OPTIONS: { key: MapMetric; label: string }[] = [
-  { key: 'claimants', label: 'Total Claimant' },
-  { key: 'transactions', label: 'Total Transaction' },
-  { key: 'approved', label: 'Total Approved' },
-  { key: 'billing', label: 'Billing' },
-];
+export const MAP_METRIC_KEYS: MapMetric[] = ['claimants', 'transactions', 'approved', 'billing'];
 
 interface ProvincePath {
   name: string;
@@ -101,6 +97,7 @@ function projectLatLng(lat: number, lng: number): { x: number; y: number } {
 }
 
 export default function IndonesiaMap({ data, metric, pinned, onPin, locations = [], showLocations = true }: IndonesiaMapProps) {
+  const { t } = useTranslation();
   const paths = useMemo(parseProvincePaths, []);
   const [hover, setHover] = useState<Hover | null>(null);
   const [locHover, setLocHover] = useState<{ loc: ProviderLocation; x: number; y: number } | null>(null);
@@ -228,16 +225,16 @@ export default function IndonesiaMap({ data, metric, pinned, onPin, locations = 
           <div className="text-[13px] font-bold text-[#1F2A37]">{hover.name}</div>
           {hover.row ? (
             <div className="mt-1.5 space-y-0.5 text-[12px] font-medium text-[#4B5563] tabular-nums">
-              <div className="flex justify-between"><span>Claimants</span><span className="font-semibold text-[#1F2A37]">{formatNumber(hover.row.claimants)}</span></div>
-              <div className="flex justify-between"><span>Transactions</span><span className="font-semibold text-[#1F2A37]">{formatNumber(hover.row.transactions)}</span></div>
-              <div className="flex justify-between"><span>Billing</span><span className="font-semibold text-[#1F2A37]">IDR {formatIDR(hover.row.billing)}</span></div>
-              <div className="flex justify-between"><span>Approved</span><span className="font-semibold text-[#1F2A37]">IDR {formatIDR(hover.row.approved)}</span></div>
-              <div className="flex justify-between"><span>%Approved</span><span className="font-semibold text-[#2563EB]">{formatRatioPct(hover.row.billing ? hover.row.approved / hover.row.billing : 0)}</span></div>
+              <div className="flex justify-between"><span>{t('claimsMap.tooltipClaimants')}</span><span className="font-semibold text-[#1F2A37]">{formatNumber(hover.row.claimants)}</span></div>
+              <div className="flex justify-between"><span>{t('claimsMap.tooltipTransactionsLabel')}</span><span className="font-semibold text-[#1F2A37]">{formatNumber(hover.row.transactions)}</span></div>
+              <div className="flex justify-between"><span>{t('claimsMap.tooltipBilling')}</span><span className="font-semibold text-[#1F2A37]">{t('claimsMap.tooltipIdr')} {formatIDR(hover.row.billing)}</span></div>
+              <div className="flex justify-between"><span>{t('claimsMap.tooltipApproved')}</span><span className="font-semibold text-[#1F2A37]">{t('claimsMap.tooltipIdr')} {formatIDR(hover.row.approved)}</span></div>
+              <div className="flex justify-between"><span>{t('claimsMap.pctApproved')}</span><span className="font-semibold text-[#2563EB]">{formatRatioPct(hover.row.billing ? hover.row.approved / hover.row.billing : 0)}</span></div>
             </div>
           ) : (
-            <div className="mt-1 text-[12px] italic text-[#9CA3AF]">No claims in this period</div>
+            <div className="mt-1 text-[12px] italic text-[#9CA3AF]">{t('claimsMap.noClaimsInPeriod')}</div>
           )}
-          <div className="mt-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[#9CA3AF]">Click to {pinned === hover.name ? 'unpin' : 'pin'} province</div>
+          <div className="mt-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[#9CA3AF]">{pinned === hover.name ? t('claimsMap.clickToUnpinProvince') : t('claimsMap.clickToPinProvince')}</div>
         </div>
       )}
 
@@ -254,10 +251,10 @@ export default function IndonesiaMap({ data, metric, pinned, onPin, locations = 
           <div className="text-[13px] font-bold text-[#1F2A37]">{locHover.loc.providerName}</div>
           <div className="text-[11px] font-medium text-[#9CA3AF]">{locHover.loc.city}, {locHover.loc.province}</div>
           <div className="mt-1.5 space-y-0.5 text-[12px] font-medium text-[#4B5563] tabular-nums">
-            <div className="flex justify-between"><span>Claimants</span><span className="font-semibold text-[#1F2A37]">{formatNumber(locHover.loc.claimants)}</span></div>
-            <div className="flex justify-between"><span>Transactions</span><span className="font-semibold text-[#1F2A37]">{formatNumber(locHover.loc.transactions)}</span></div>
-            <div className="flex justify-between"><span>Billing</span><span className="font-semibold text-[#1F2A37]">IDR {formatIDR(locHover.loc.billing)}</span></div>
-            <div className="flex justify-between"><span>Approved</span><span className="font-semibold text-[#1F2A37]">IDR {formatIDR(locHover.loc.approved)}</span></div>
+            <div className="flex justify-between"><span>{t('claimsMap.tooltipClaimants')}</span><span className="font-semibold text-[#1F2A37]">{formatNumber(locHover.loc.claimants)}</span></div>
+            <div className="flex justify-between"><span>{t('claimsMap.tooltipTransactionsLabel')}</span><span className="font-semibold text-[#1F2A37]">{formatNumber(locHover.loc.transactions)}</span></div>
+            <div className="flex justify-between"><span>{t('claimsMap.tooltipBilling')}</span><span className="font-semibold text-[#1F2A37]">{t('claimsMap.tooltipIdr')} {formatIDR(locHover.loc.billing)}</span></div>
+            <div className="flex justify-between"><span>{t('claimsMap.tooltipApproved')}</span><span className="font-semibold text-[#1F2A37]">{t('claimsMap.tooltipIdr')} {formatIDR(locHover.loc.approved)}</span></div>
           </div>
         </div>
       )}

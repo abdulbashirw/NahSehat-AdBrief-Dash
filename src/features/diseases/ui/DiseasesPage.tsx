@@ -20,7 +20,8 @@ import PeriodFilter from "@/features/indemnity-overview/components/PeriodFilter"
 import { AGE_BUCKETS, byAgeGender, byDiagnosis, byMonth, byRelationship, kpiDeltas, kpiSummary } from "@/entities/claim/lib/aggregate";
 import type { DiagnosisRow, RelationshipRow } from "@/entities/claim/lib/aggregate";
 import { byDiseaseGroup } from "@/features/indemnity-overview/utils/diseaseAgg";
-import { formatCompactIDR, formatIDR, formatNumber, formatRatioPct } from "@/shared/lib/format";
+import { formatCompactIDR, formatDecimal, formatIDR, formatNumber, formatRatioPct } from "@/shared/lib/format";
+import { useTranslation } from "react-i18next";
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 12 },
@@ -33,9 +34,8 @@ const M_BLUE = "#3B82F6";
 const DISEASE_CYAN = "#06B6D4";
 const BUBBLE_BLUE = "#2563EB";
 
-const formatDecimal = (n: number) => n.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
 export default function Diseases() {
+  const { t } = useTranslation();
   const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
 
   const filteredClaims = data?.claims ?? [];
@@ -72,30 +72,30 @@ export default function Diseases() {
     () => [
       {
         key: "code",
-        label: "ICD-10",
+        label: t("diseases.icd10"),
         value: (r) => r.code,
         render: (r) => (
           <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#1F2A37]">{r.code}</span>
         ),
       },
-      { key: "description", label: "Description", value: (r) => r.description },
-      { key: "approved", label: "Total Approved (IDR)", align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
-      { key: "transaction", label: "Total Transaction", align: "right", value: (r) => r.transactions, render: (r) => formatNumber(r.transactions) },
+      { key: "description", label: t("diseases.description"), value: (r) => r.description },
+      { key: "approved", label: t("diseases.totalApprovedIdr"), align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
+      { key: "transaction", label: t("diseases.totalTransaction"), align: "right", value: (r) => r.transactions, render: (r) => formatNumber(r.transactions) },
       {
         key: "avgTxn",
-        label: "Avg. Transaksi / Claimant",
+        label: t("diseases.avgTxnPerClaimant"),
         align: "right",
         value: (r) => (r.claimants ? r.transactions / r.claimants : 0),
         render: (r) => formatDecimal(r.claimants ? r.transactions / r.claimants : 0),
       },
       {
         key: "avgApproved",
-        label: "Avg. Approved / Claimant (IDR)",
+        label: t("diseases.avgApprovedPerClaimant"),
         align: "right",
         value: (r) => (r.claimants ? r.approved / r.claimants : 0),
         render: (r) => formatIDR(r.claimants ? r.approved / r.claimants : 0),
       },
-      { key: "los", label: "Avg. LOS (days)", align: "right", value: (r) => r.avgLos, render: (r) => formatDecimal(r.avgLos) },
+      { key: "los", label: t("diseases.avgLos"), align: "right", value: (r) => r.avgLos, render: (r) => formatDecimal(r.avgLos) },
     ],
     [],
   );
@@ -107,7 +107,7 @@ export default function Diseases() {
       <div className="space-y-6">
         <PageTitle />
         <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
-        <SectionCard title="The Most Frequent Diseases">
+        <SectionCard title={t("diseases.mostFrequentDiseases")}>
           <EmptyState />
         </SectionCard>
       </div>
@@ -123,19 +123,19 @@ export default function Diseases() {
       <div className="space-y-6 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
       {/* Section 1 — KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        <KpiCard index={0} loading={isLoading} label="Claimants" accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
-        <KpiCard index={1} loading={isLoading} label="Transactions" accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
-        <KpiCard index={2} loading={isLoading} label="Healthcare" accent="#14B8A6" value={kpis.healthcare} format={formatNumber} delta={deltas.healthcare} />
-        <KpiCard index={3} loading={isLoading} label="Avg. Transactions / Claimant" accent="#2563EB" value={kpis.avgTxnPerClaimant} format={formatDecimal} />
-        <KpiCard index={4} loading={isLoading} label="Avg. Approved / Claimant (IDR)" accent="#7C3AED" value={kpis.avgApprovedPerClaimant} format={formatIDR} />
-        <KpiCard index={5} loading={isLoading} label="Billing (IDR)" accent="#9B2226" value={kpis.billing} format={formatIDR} delta={deltas.billing} spark={monthly.map((m) => m.billing)} />
-        <KpiCard index={6} loading={isLoading} label="Approved (IDR)" accent="#0F9488" value={kpis.approved} format={formatIDR} delta={deltas.approved} subline={`${formatRatioPct(kpis.approvedPct)} of billing`} spark={monthly.map((m) => m.approved)} />
+        <KpiCard index={0} loading={isLoading} label={t("diseases.claimants")} accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
+        <KpiCard index={1} loading={isLoading} label={t("diseases.transactions")} accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
+        <KpiCard index={2} loading={isLoading} label={t("diseases.healthcare")} accent="#14B8A6" value={kpis.healthcare} format={formatNumber} delta={deltas.healthcare} />
+        <KpiCard index={3} loading={isLoading} label={t("diseases.avgTxnPerClaimant")} accent="#2563EB" value={kpis.avgTxnPerClaimant} format={formatDecimal} />
+        <KpiCard index={4} loading={isLoading} label={t("diseases.avgApprovedPerClaimant")} accent="#7C3AED" value={kpis.avgApprovedPerClaimant} format={formatIDR} />
+        <KpiCard index={5} loading={isLoading} label={t("diseases.billing")} accent="#9B2226" value={kpis.billing} format={formatIDR} delta={deltas.billing} spark={monthly.map((m) => m.billing)} />
+        <KpiCard index={6} loading={isLoading} label={t("diseases.approved")} accent="#0F9488" value={kpis.approved} format={formatIDR} delta={deltas.approved} subline={`${formatRatioPct(kpis.approvedPct)} ${t("diseases.ofBilling")}`} spark={monthly.map((m) => m.approved)} />
       </div>
 
       {/* Sections 2 + 4 — relationship & demographic side by side */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <motion.div variants={sectionVariants}>
-          <SectionCard title="Claimants Relationship" className="h-full">
+          <SectionCard title={t("diseases.claimantsRelationship")} className="h-full">
             {isLoading ? (
               <Skeleton className="h-[220px] w-full" />
             ) : (
@@ -155,7 +155,7 @@ export default function Diseases() {
                         transition={{ delay: i * 0.08, duration: 0.65, ease: "easeOut" }}
                         className="h-full origin-left rounded-md transition-[filter] duration-150 group-hover:brightness-110"
                         style={{ width: `${(r.claimants / relMax) * 100}%`, backgroundColor: REL_COLORS[r.relationship] ?? "#60A5FA" }}
-                        title={`${r.relationship} — ${formatNumber(r.claimants)} claimants (${formatRatioPct(r.claimants / relTotal)})`}
+                        title={`${r.relationship} — ${formatNumber(r.claimants)} ${t("diseases.claimantsBar")} (${formatRatioPct(r.claimants / relTotal)})`}
                       />
                     </div>
                   </div>
@@ -166,15 +166,15 @@ export default function Diseases() {
         </motion.div>
 
         <motion.div variants={sectionVariants}>
-          <SectionCard title="Claimants Demographic" className="h-full">
+          <SectionCard title={t("diseases.claimantsDemographic")} className="h-full">
             {isLoading ? (
               <Skeleton className="h-[220px] w-full" />
             ) : (
               <div className="grid grid-cols-2 gap-4">
                 {(
                   [
-                    { label: "Female", total: totalFemale, color: F_PINK, key: "female" as const },
-                    { label: "Male", total: totalMale, color: M_BLUE, key: "male" as const },
+                    { label: t("diseases.female"), total: totalFemale, color: F_PINK, key: "female" as const },
+                    { label: t("diseases.male"), total: totalMale, color: M_BLUE, key: "male" as const },
                   ]
                 ).map((panel) => (
                   <motion.div
@@ -217,7 +217,7 @@ export default function Diseases() {
 
       {/* Section 3 — Most Frequent Diseases */}
       <motion.div variants={sectionVariants}>
-        <SectionCard title="Most Frequent Diseases">
+        <SectionCard title={t("diseases.mostFrequentDiseases")}>
           {isLoading ? (
             <Skeleton className="h-[380px] w-full" />
           ) : (
@@ -236,7 +236,7 @@ export default function Diseases() {
                         transition={{ delay: i * 0.06, duration: 0.7, ease: "easeOut" }}
                         className="h-full origin-left rounded-r-md transition-[filter] duration-150 group-hover:brightness-105"
                         style={{ width: `${Math.max(2, (g.claimants / groupMax) * 82)}%`, backgroundColor: DISEASE_CYAN }}
-                        title={`${g.group} · ${formatNumber(g.claimants)} claimants · ${formatNumber(g.transactions)} transactions · Approved IDR ${formatIDR(g.approved)} · Avg LOS ${formatDecimal(g.avgLos)} days`}
+                        title={`${g.group} · ${formatNumber(g.claimants)} ${t("diseases.claimantsBar")} · ${formatNumber(g.transactions)} ${t("diseases.transactionsBar")} · ${t("diseases.approvedBar")} ${formatIDR(g.approved)} · ${t("diseases.avgLosBar")} ${formatDecimal(g.avgLos)} ${t("diseases.daysBar")}`}
                       >
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11.5px] font-bold tabular-nums text-white">
                           {formatNumber(g.claimants)}
@@ -263,14 +263,14 @@ export default function Diseases() {
       {/* Section 5 — Diagnosis Detail */}
       <motion.div variants={sectionVariants}>
         <SectionCard
-          title="Diagnosis Detail"
+          title={t("diseases.diagnosisDetail")}
           right={
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/70" />
               <input
                 value={diagSearch}
                 onChange={(e) => setDiagSearch(e.target.value)}
-                placeholder="Search ICD-10 / description…"
+                placeholder={t("diseases.searchIcd")}
                 className="h-8 w-56 rounded-md border border-white/30 bg-white/10 pl-8 pr-3 text-[12.5px] font-medium text-white outline-none placeholder:text-white/70 focus:bg-white/20"
               />
             </div>
@@ -286,7 +286,7 @@ export default function Diseases() {
                 rowKey={(r) => r.code}
                 maxHeight={480}
                 footer={[
-                  "Total",
+                  t("diseases.totalLabel"),
                   "",
                   formatIDR(kpis.approved),
                   formatNumber(kpis.transactions),
@@ -298,7 +298,7 @@ export default function Diseases() {
                 ]}
               />
               <button onClick={() => setShowAllDiag((s) => !s)} className="mt-3 text-[12.5px] font-semibold text-[#1D4ED8] hover:underline">
-                {showAllDiag ? "Show top 15 only" : `Show all ${formatNumber(diagnoses.length)} diagnoses`}
+                {showAllDiag ? t("diseases.showTopOnly") : t("diseases.showAllDiagnoses", { count: diagnoses.length })}
               </button>
             </>
           )}
@@ -310,7 +310,7 @@ export default function Diseases() {
         <ExportButton
           filename="adbrief-diseases.csv"
           getPayload={() => ({
-            headers: ["ICD-10", "Description", "Group", "Total Approved (IDR)", "Total Transaction", "Avg Transaksi/Claimant", "Avg Approved/Claimant (IDR)", "Avg LOS (days)"],
+            headers: [t("diseases.icd10"), t("diseases.description"), t("diseases.group"), t("diseases.totalApprovedIdrExport"), t("diseases.totalTransactionExport"), t("diseases.avgTransactionPerClaimant"), t("diseases.avgApprovedPerClaimantExport"), t("diseases.avgLosDays")],
             rows: diagnoses.map((r) => [
               r.code,
               r.description,
@@ -330,11 +330,12 @@ export default function Diseases() {
 }
 
 function PageTitle() {
+  const { t } = useTranslation();
   return (
     <div>
-      <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">The Most Frequent Diseases</h1>
+      <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">{t("diseases.title")}</h1>
       <p className="mt-1 text-sm italic text-[#9CA3AF]">
-        Diagnosis mix, claimant relationships, and cost per condition based on primary ICD-10 codes
+        {t("diseases.subtitle")}
       </p>
     </div>
   );

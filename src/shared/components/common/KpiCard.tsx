@@ -10,6 +10,7 @@ import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { cn } from '@/shared/lib/utils';
 import { formatPct } from '@/shared/lib/format';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 
 /** Number that tweens old -> new over 800ms with easeOutCubic (jumps instantly
  *  when the user prefers reduced motion). */
@@ -66,6 +67,7 @@ export default function KpiCard({
   index = 0,
   variant = 'light',
 }: KpiCardProps) {
+  const { t } = useTranslation();
   const tweened = useTweenedNumber(loading ? 0 : value);
   const up = (delta ?? 0) >= 0;
   const isDark = variant === 'dark';
@@ -156,7 +158,7 @@ export default function KpiCard({
             ? (isDark ? 'text-[#34D399]' : 'text-[#16A34A]')
             : (isDark ? 'text-[#F87171]' : 'text-[#DC2626]'),
         )}>
-          {up ? '↑ Up' : '↓ Down'} by {formatPct(Math.abs(delta) * 100)} compared to Last Periode
+          {up ? `↑ ${t('common.up')}` : `↓ ${t('common.down')}`} {t('common.by')} {formatPct(Math.abs(delta) * 100)} {t('common.comparedToLastPeriod')}
         </div>
       )}
     </motion.div>

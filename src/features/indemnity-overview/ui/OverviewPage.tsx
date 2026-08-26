@@ -6,6 +6,7 @@
  * charts, tables) is preserved exactly.
  */
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import {
   Bar,
@@ -62,6 +63,7 @@ function ChartSkeleton({ height = 260 }: { height?: number }) {
 }
 
 export default function Overview() {
+  const { t } = useTranslation();
   const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
 
   const filteredClaims = data?.claims ?? [];
@@ -80,22 +82,22 @@ export default function Overview() {
 
   const benefitColumns: DataColumn<CoverageRow>[] = useMemo(
     () => [
-      { key: "coverage", label: "Coverage", value: (r) => r.coverage },
-      { key: "claimant", label: "Claimant", align: "right", value: (r) => r.claimants, render: (r) => formatNumber(r.claimants) },
-      { key: "transaction", label: "Transaction", align: "right", value: (r) => r.transactions, render: (r) => formatNumber(r.transactions) },
-      { key: "billing", label: "Billing (IDR)", align: "right", value: (r) => r.billing, render: (r) => formatIDR(r.billing) },
-      { key: "approved", label: "Approved (IDR)", align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
-      { key: "unapproved", label: "Unapproved (IDR)", align: "right", value: (r) => r.unapproved, render: (r) => formatIDR(r.unapproved) },
+      { key: "coverage", label: t("overview.coverage"), value: (r) => r.coverage },
+      { key: "claimant", label: t("overview.claimant"), align: "right", value: (r) => r.claimants, render: (r) => formatNumber(r.claimants) },
+      { key: "transaction", label: t("overview.transaction"), align: "right", value: (r) => r.transactions, render: (r) => formatNumber(r.transactions) },
+      { key: "billing", label: t("overview.billingIdr"), align: "right", value: (r) => r.billing, render: (r) => formatIDR(r.billing) },
+      { key: "approved", label: t("overview.approvedIdr"), align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
+      { key: "unapproved", label: t("overview.unapprovedIdr"), align: "right", value: (r) => r.unapproved, render: (r) => formatIDR(r.unapproved) },
       {
         key: "pct",
-        label: "%Approved",
+        label: t("overview.pctApproved"),
         align: "right",
         value: (r) => r.approvedPct,
         render: (r) => formatRatioPct(r.approvedPct),
         progressOf: (r) => r.approvedPct,
       },
     ],
-    [],
+    [t],
   );
 
   if (isError) return <ApiError onRetry={refetch} />;
@@ -105,7 +107,7 @@ export default function Overview() {
       <div className="space-y-6">
         <PageTitle />
         <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
-        <SectionCard title="Utilization Overview">
+        <SectionCard title={t("overview.utilizationOverview")}>
           <EmptyState />
         </SectionCard>
       </div>
@@ -131,28 +133,28 @@ export default function Overview() {
       >
         {/* Section 1 — KPI row */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          <KpiCard index={0} loading={isLoading} label="Member Active" accent="#2563EB" value={kpis.memberActive} format={formatNumber} delta={deltas.memberActive} />
-          <KpiCard index={1} loading={isLoading} label="Claimants" accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
-          <KpiCard index={2} loading={isLoading} label="Morbidity Rate" accent="#DC2626" value={kpis.morbidityRate * 100} format={formatPct} delta={deltas.morbidityRate} />
-          <KpiCard index={3} loading={isLoading} label="Transactions" accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
-          <KpiCard index={4} loading={isLoading} label="Healthcare" accent="#16A34A" value={kpis.healthcare} format={formatNumber} delta={deltas.healthcare} />
-          <KpiCard index={5} loading={isLoading} label="Billing (IDR)" accent="#9B2226" value={kpis.billing} format={formatIDR} delta={deltas.billing} spark={monthly.map((m) => m.billing)} />
+          <KpiCard index={0} loading={isLoading} label={t("overview.memberActive")} accent="#2563EB" value={kpis.memberActive} format={formatNumber} delta={deltas.memberActive} />
+          <KpiCard index={1} loading={isLoading} label={t("overview.claimants")} accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
+          <KpiCard index={2} loading={isLoading} label={t("overview.morbidityRate")} accent="#DC2626" value={kpis.morbidityRate * 100} format={formatPct} delta={deltas.morbidityRate} />
+          <KpiCard index={3} loading={isLoading} label={t("overview.transactions")} accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
+          <KpiCard index={4} loading={isLoading} label={t("overview.healthcare")} accent="#16A34A" value={kpis.healthcare} format={formatNumber} delta={deltas.healthcare} />
+          <KpiCard index={5} loading={isLoading} label={t("overview.billingIdr")} accent="#9B2226" value={kpis.billing} format={formatIDR} delta={deltas.billing} spark={monthly.map((m) => m.billing)} />
           <KpiCard
             index={6}
             loading={isLoading}
-            label="Approved (IDR)"
+            label={t("overview.approvedIdr")}
             accent="#7C3AED"
             value={kpis.approved}
             format={formatIDR}
             delta={deltas.approved}
-            subline={`${formatRatioPct(kpis.approvedPct)} of billing`}
+            subline={`${formatRatioPct(kpis.approvedPct)} ${t("overview.ofBilling")}`}
             spark={monthly.map((m) => m.approved)}
           />
         </div>
 
         {/* Section 2 — Patient Distribution by Type of Services */}
         <motion.div variants={sectionVariants}>
-          <SectionCard title="Patient Distribution by Type of Services">
+          <SectionCard title={t("overview.patientDistribution")}>
             {isLoading ? (
               <ChartSkeleton />
             ) : (
@@ -176,7 +178,7 @@ export default function Overview() {
                           const row = payload[0].payload as CoverageRow;
                           return (
                             <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[12px] font-medium shadow-md">
-                              {row.coverage} — {formatNumber(row.claimants)} claimants ({formatRatioPct(row.claimants / totalCoverageClaimants)} of claimants)
+                              {row.coverage} — {formatNumber(row.claimants)} {t("overview.claimants").toLowerCase()} ({formatRatioPct(row.claimants / totalCoverageClaimants)} {t("overview.ofClaimants").toLowerCase()})
                             </div>
                           );
                         }}
@@ -212,14 +214,14 @@ export default function Overview() {
         {/* Section 3 — Billing Distribution */}
         <motion.div variants={sectionVariants}>
           <SectionCard
-            title="Billing Distribution"
+            title={t("overview.billingDistribution")}
             right={
               <span className="flex items-center gap-4 text-[11px] font-semibold text-white/90">
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: BILLING_YELLOW }} /> Billing
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: BILLING_YELLOW }} /> {t("overview.billing")}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: APPROVED_RED }} /> Approved
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: APPROVED_RED }} /> {t("overview.approved")}
                 </span>
               </span>
             }
@@ -238,13 +240,13 @@ export default function Overview() {
                       const row = payload[0].payload as CoverageRow;
                       return (
                         <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[12px] font-medium shadow-md">
-                          {row.coverage} · Billing: IDR {formatIDR(row.billing)} · Approved: IDR {formatIDR(row.approved)} ({formatRatioPct(row.approvedPct)})
+                          {row.coverage} · {t("overview.billing")}: {t("overview.idr")} {formatIDR(row.billing)} · {t("overview.approved")}: {t("overview.idr")} {formatIDR(row.approved)} ({formatRatioPct(row.approvedPct)})
                         </div>
                       );
                     }}
                   />
-                  <Bar dataKey="billing" name="Billing" fill={BILLING_YELLOW} radius={[0, 4, 4, 0]} isAnimationActive animationDuration={700} />
-                  <Bar dataKey="approved" name="Approved" fill={APPROVED_RED} radius={[0, 4, 4, 0]} isAnimationActive animationDuration={700} animationBegin={100}>
+                  <Bar dataKey="billing" name={t("overview.billing")} fill={BILLING_YELLOW} radius={[0, 4, 4, 0]} isAnimationActive animationDuration={700} />
+                  <Bar dataKey="approved" name={t("overview.approved")} fill={APPROVED_RED} radius={[0, 4, 4, 0]} isAnimationActive animationDuration={700} animationBegin={100}>
                     <LabelList
                       dataKey="approvedPct"
                       position="right"
@@ -261,7 +263,7 @@ export default function Overview() {
         {/* Sections 4 + 6 — channel table & payment donut */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <motion.div variants={sectionVariants}>
-            <SectionCard title="Non Provider vs Provider" className="h-full">
+            <SectionCard title={t("overview.nonProviderVsProvider")} className="h-full">
               {isLoading ? (
                 <ChartSkeleton height={180} />
               ) : (
@@ -269,13 +271,13 @@ export default function Overview() {
                   sortable={false}
                   rowKey={(r) => r.channel}
                   columns={[
-                    { key: "channel", label: "Channel", value: (r) => r.channel },
-                    { key: "claimant", label: "Claimant", align: "right", value: (r) => r.claimants, render: (r) => formatNumber(r.claimants) },
-                    { key: "billing", label: "Billing (IDR)", align: "right", value: (r) => r.billing, render: (r) => formatIDR(r.billing) },
-                    { key: "approved", label: "Approved (IDR)", align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
+                    { key: "channel", label: t("overview.channel"), value: (r) => r.channel, render: (r) => r.channel.includes("Non") ? t("overview.nonProviderReimburse") : t("overview.providerInNetwork") },
+                    { key: "claimant", label: t("overview.claimant"), align: "right", value: (r) => r.claimants, render: (r) => formatNumber(r.claimants) },
+                    { key: "billing", label: t("overview.billingIdr"), align: "right", value: (r) => r.billing, render: (r) => formatIDR(r.billing) },
+                    { key: "approved", label: t("overview.approvedIdr"), align: "right", value: (r) => r.approved, render: (r) => formatIDR(r.approved) },
                     {
                       key: "pct",
-                      label: "%Approved",
+                      label: t("overview.pctApproved"),
                       align: "right",
                       value: (r) => r.approvedPct,
                       render: (r) => formatRatioPct(r.approvedPct),
@@ -284,7 +286,7 @@ export default function Overview() {
                   ]}
                   rows={channels}
                   footer={[
-                    "Total",
+                    t("overview.total"),
                     formatNumber(kpis.claimants),
                     formatIDR(kpis.billing),
                     formatIDR(kpis.approved),
@@ -296,7 +298,7 @@ export default function Overview() {
           </motion.div>
 
           <motion.div variants={sectionVariants}>
-            <SectionCard title="Distribution Payment Type" className="h-full">
+            <SectionCard title={t("overview.distributionPaymentType")} className="h-full">
               {isLoading ? (
                 <ChartSkeleton height={220} />
               ) : (
@@ -332,7 +334,7 @@ export default function Overview() {
                             const p = payload[0].payload as (typeof payments)[number];
                             return (
                               <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[12px] font-medium shadow-md">
-                                {p.type} — {formatNumber(p.transactions)} transactions ({formatRatioPct(p.share)})
+                                {p.type === "CASHLESS" ? t("overview.cashless") : t("overview.reimbursement")} — {formatNumber(p.transactions)} {t("overview.transactions").toLowerCase()} ({formatRatioPct(p.share)})
                               </div>
                             );
                           }}
@@ -341,7 +343,7 @@ export default function Overview() {
                     </ResponsiveContainer>
                     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-[26px] font-extrabold text-[#1F2A37] tabular-nums">{formatNumber(kpis.transactions)}</span>
-                      <span className="text-[10.5px] font-bold uppercase tracking-wide text-[#9CA3AF]">Transactions</span>
+                      <span className="text-[10.5px] font-bold uppercase tracking-wide text-[#9CA3AF]">{t("overview.transactions")}</span>
                     </div>
                   </div>
                   <ul className="w-full space-y-3">
@@ -354,7 +356,7 @@ export default function Overview() {
                         className="flex items-center gap-3 rounded-lg border border-[#E5E8EC] px-4 py-3"
                       >
                         <span className="h-3 w-3 rounded-full" style={{ backgroundColor: p.type === "CASHLESS" ? "#2563EB" : BILLING_YELLOW }} />
-                        <span className="text-[13px] font-bold text-[#1F2A37]">{p.type}</span>
+                        <span className="text-[13px] font-bold text-[#1F2A37]">{p.type === "CASHLESS" ? t("overview.cashless") : t("overview.reimbursement")}</span>
                         <span className="ml-auto text-[13px] font-semibold text-[#4B5563] tabular-nums">{formatNumber(p.transactions)}</span>
                         <span className="w-16 text-right text-[13px] font-bold text-[#1F2A37] tabular-nums">{formatRatioPct(p.share)}</span>
                       </motion.li>
@@ -368,7 +370,7 @@ export default function Overview() {
 
         {/* Section 5 — Benefit utilization table */}
         <motion.div variants={sectionVariants}>
-          <SectionCard title="Overview Benefit Utilization by Type of Services">
+          <SectionCard title={t("overview.benefitUtilization")}>
             {isLoading ? (
               <ChartSkeleton height={300} />
             ) : (
@@ -378,7 +380,7 @@ export default function Overview() {
                   rows={coverageRows}
                   rowKey={(r) => r.coverage}
                   footer={[
-                    "Total",
+                    t("overview.total"),
                     `${formatNumber(kpis.claimants)}`,
                     formatNumber(kpis.transactions),
                     formatIDR(kpis.billing),
@@ -388,7 +390,7 @@ export default function Overview() {
                   ]}
                 />
                 <p className="mt-2 text-[11.5px] italic text-[#9CA3AF]">
-                  *Total Claimant is distinct members across all services; a claimant may use multiple service types.
+                  {t("overview.footnoteClaimant")}
                 </p>
               </>
             )}
@@ -397,17 +399,17 @@ export default function Overview() {
 
         {/* Section 7 — Export row */}
         <motion.div variants={sectionVariants} className="flex items-center justify-end gap-3">
-          <Button variant="ghost" disabled title="Export PDF — coming soon" className="gap-2 text-[#9CA3AF]">
+          <Button variant="ghost" disabled title={t("overview.exportPdfDisabled")} className="gap-2 text-[#9CA3AF]">
             <FileDown className="h-4 w-4" />
-            Export PDF (soon)
+            {t("overview.exportPdf")}
           </Button>
           <ExportButton
             filename={`adbrief-overview-${periode}.csv`}
             getPayload={() => ({
-              headers: ["Coverage", "Claimant", "Transaction", "Billing (IDR)", "Approved (IDR)", "Unapproved (IDR)", "%Approved"],
+              headers: [t("overview.coverage"), t("overview.claimant"), t("overview.transaction"), t("overview.billingIdr"), t("overview.approvedIdr"), t("overview.unapprovedIdr"), t("overview.pctApproved")],
               rows: [
                 ...coverageRows.map((r) => [r.coverage, r.claimants, r.transactions, r.billing, r.approved, r.unapproved, formatRatioPct(r.approvedPct)] as (string | number)[]),
-                ["TOTAL", kpis.claimants, kpis.transactions, kpis.billing, kpis.approved, kpis.unapproved, formatRatioPct(kpis.approvedPct)],
+                [t("overview.total").toUpperCase(), kpis.claimants, kpis.transactions, kpis.billing, kpis.approved, kpis.unapproved, formatRatioPct(kpis.approvedPct)],
               ],
             })}
           />
@@ -418,11 +420,12 @@ export default function Overview() {
 }
 
 function PageTitle() {
+  const { t } = useTranslation();
   return (
     <div>
-      <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">Utilization Overview</h1>
+      <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">{t("overview.title")}</h1>
       <p className="mt-1 text-sm italic text-[#9CA3AF]">
-        Summary of member utilization, service mix, and claim value for the selected period
+        {t("overview.subtitle")}
       </p>
     </div>
   );
