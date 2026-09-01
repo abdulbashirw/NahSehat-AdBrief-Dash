@@ -12,6 +12,7 @@ import SectionCard from "@/shared/components/common/SectionCard";
 import DataTable from "@/shared/components/common/DataTable";
 import type { DataColumn } from "@/shared/components/common/DataTable";
 import ExportButton from "@/shared/components/common/ExportButton";
+import { useExportEnabled } from "@/entities/settings/model/useSettings";
 import EmptyState from "@/shared/components/common/EmptyState";
 import ApiError from "@/shared/components/error/ApiError";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -37,6 +38,7 @@ const BUBBLE_BLUE = "#2563EB";
 export default function Diseases() {
   const { t } = useTranslation();
   const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
+  const exportEnabled = useExportEnabled();
 
   const filteredClaims = data?.claims ?? [];
   const members = data?.members ?? [];
@@ -105,8 +107,33 @@ export default function Diseases() {
   if (!isLoading && filteredClaims.length === 0) {
     return (
       <div className="space-y-6">
-        <PageTitle />
-        <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <PageTitle />
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+            {exportEnabled && (
+              <div className="flex items-center gap-3">
+                <div className="w-px self-stretch bg-[#E5E8EC]" />
+                <ExportButton
+                  filename="adbrief-diseases.csv"
+                  getPayload={() => ({
+                    headers: [t("diseases.icd10"), t("diseases.description"), t("diseases.group"), t("diseases.totalApprovedIdrExport"), t("diseases.totalTransactionExport"), t("diseases.avgTransactionPerClaimant"), t("diseases.avgApprovedPerClaimantExport"), t("diseases.avgLosDays")],
+                    rows: diagnoses.map((r) => [
+                      r.code,
+                      r.description,
+                      r.group,
+                      r.approved,
+                      r.transactions,
+                      r.claimants ? +(r.transactions / r.claimants).toFixed(2) : 0,
+                      r.claimants ? Math.round(r.approved / r.claimants) : 0,
+                      +r.avgLos.toFixed(2),
+                    ] as (string | number)[]),
+                  })}
+                />
+              </div>
+            )}
+          </div>
+        </div>
         <SectionCard title={t("diseases.mostFrequentDiseases")}>
           <EmptyState />
         </SectionCard>
@@ -116,8 +143,33 @@ export default function Diseases() {
 
   return (
     <motion.div className="space-y-6" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
-      <PageTitle />
-      <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <PageTitle />
+        <div className="flex items-center justify-end gap-2">
+          <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+          {exportEnabled && (
+            <>
+              <div className="w-px self-stretch bg-[#E5E8EC]" />
+              <ExportButton
+                filename="adbrief-diseases.csv"
+                getPayload={() => ({
+                  headers: [t("diseases.icd10"), t("diseases.description"), t("diseases.group"), t("diseases.totalApprovedIdrExport"), t("diseases.totalTransactionExport"), t("diseases.avgTransactionPerClaimant"), t("diseases.avgApprovedPerClaimantExport"), t("diseases.avgLosDays")],
+                  rows: diagnoses.map((r) => [
+                    r.code,
+                    r.description,
+                    r.group,
+                    r.approved,
+                    r.transactions,
+                    r.claimants ? +(r.transactions / r.claimants).toFixed(2) : 0,
+                    r.claimants ? Math.round(r.approved / r.claimants) : 0,
+                    +r.avgLos.toFixed(2),
+                  ] as (string | number)[]),
+                })}
+              />
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Content area — subtle dim during background refetch (not initial load) */}
       <div className="space-y-6 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
@@ -305,25 +357,6 @@ export default function Diseases() {
         </SectionCard>
       </motion.div>
 
-      {/* Section 6 — Export */}
-      <motion.div variants={sectionVariants} className="flex items-center justify-end">
-        <ExportButton
-          filename="adbrief-diseases.csv"
-          getPayload={() => ({
-            headers: [t("diseases.icd10"), t("diseases.description"), t("diseases.group"), t("diseases.totalApprovedIdrExport"), t("diseases.totalTransactionExport"), t("diseases.avgTransactionPerClaimant"), t("diseases.avgApprovedPerClaimantExport"), t("diseases.avgLosDays")],
-            rows: diagnoses.map((r) => [
-              r.code,
-              r.description,
-              r.group,
-              r.approved,
-              r.transactions,
-              r.claimants ? +(r.transactions / r.claimants).toFixed(2) : 0,
-              r.claimants ? Math.round(r.approved / r.claimants) : 0,
-              +r.avgLos.toFixed(2),
-            ] as (string | number)[]),
-          })}
-        />
-      </motion.div>
       </div>
     </motion.div>
   );

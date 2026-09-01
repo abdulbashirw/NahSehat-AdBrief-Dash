@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/entities/auth';
 import { ROUTES } from '@/app/routes/routes';
+import { useAutoRotateTabs } from '@/widgets/tab-layout/model/useAutoRotateTabs';
 import type { RouteConfig } from '@/shared/types';
 import DashboardBackground from '@/shared/components/common/DashboardBackground';
 import {
@@ -59,6 +60,9 @@ export default function TabLayout() {
   // Determine which tab set to show based on role
   const tabItems = user?.role ? TAB_ROUTES[user.role] ?? [] : [];
   const moduleName = user?.role === 'INDEMNITY' ? t('nav.indemnityModule') : user?.role === 'MANAGECARE' ? t('nav.manageCareModule') : '';
+
+  // Auto-rotate tabs every 2 min 30 sec (INDEMNITY only has effect — MANAGECARE has 1 tab).
+  useAutoRotateTabs(tabItems.map((tab) => tab.path));
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">

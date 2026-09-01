@@ -48,8 +48,9 @@ export default function RefreshProgress({ isFetching, lastUpdated }: RefreshProg
         />
       </div>
 
-      {/* "Last updated" badge — subtle, non-blocking */}
-      <div className="flex items-center gap-2">
+      {/* "Last updated" badge — subtle, non-blocking.
+          Hidden below lg to save horizontal space for the export button. */}
+      <div className="hidden items-center gap-2 lg:flex">
         {isFetching ? (
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#E7F4EE] px-2.5 py-1 text-[11px] font-semibold text-[#2E7D5B]">
             <Loader2 className="h-3 w-3 animate-spin" />

@@ -1,37 +1,28 @@
 /**
- * PeriodFilter — segmented control for selecting claim period and payor.
+ * PeriodFilter — single-row filter bar with payor selector and date picker.
  *
- * Displays W1/W2/W3/W4 | Month | Custom pills with month selector
- * or custom date range inputs, plus a payor dropdown filtered by
- * INDEMNITY category payors that the logged-in user has access to.
+ * Concept: "per Date Now" — a single date picker defaulting to today.
+ * No period type toggle.
+ *
+ * Groups:
+ *   ① Payor dropdown (filtered by INDEMNITY category + user access)
+ *   ② Date picker (defaults to today)
+ *   ③ Refresh status (last updated / refreshing)
  *
  * Reads/writes global state from periodFilterStore.
- * Shows a badge with the computed date range.
  */
 import { useMemo, useEffect } from 'react';
 import { useSyncExternalStore } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   subscribe,
   getSnapshot,
   getServerSnapshot,
-  setPeriodType,
-  setSelectedMonth,
-  setCustomStartDate,
-  setCustomEndDate,
+  setSelectedDay,
   setSelectedPayorId,
-  getDateRangeLabel,
-  validateCustomRange,
-  MAX_CUSTOM_RANGE_DAYS,
-  AVAILABLE_MONTHS,
-  type PeriodType,
 } from '@/features/indemnity-overview/store/periodFilterStore';
 import { useGetPayorsQuery } from '@/entities/payor/api/payorApi';
 import { useAppSelector } from '@/shared/store';
-import { cn } from '@/shared/lib/utils';
 import RefreshProgress from '@/shared/components/loading/RefreshProgress';
-
-const PERIOD_OPTIONS: PeriodType[] = ['w1', 'w2', 'w3', 'w4', 'month', 'custom'];
 
 interface PeriodFilterProps {
   /** True while a background refetch is in-flight (RTK Query `isFetching`). */
@@ -41,19 +32,7 @@ interface PeriodFilterProps {
 }
 
 export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterProps) {
-  const { t } = useTranslation();
   const filter = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const rangeLabel = getDateRangeLabel(filter);
-  const isCustom = filter.periodType === 'custom';
-  const rangeValidation = validateCustomRange(filter, t);
-
-  // Compute max end date = start date + (MAX_CUSTOM_RANGE_DAYS - 1) days
-  const maxEndDate = useMemo(() => {
-    if (!filter.customStartDate) return undefined;
-    const start = new Date(filter.customStartDate);
-    start.setDate(start.getDate() + MAX_CUSTOM_RANGE_DAYS - 1);
-    return start.toISOString().split('T')[0];
-  }, [filter.customStartDate]);
 
   // ── Auth: get user's payorIds ──
   const user = useAppSelector((s) => s.auth.user);
@@ -81,136 +60,50 @@ export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterPr
   }, [indemnityPayors, filter.selectedPayorId]);
 
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-      <div className="flex flex-col gap-3">
-        {/* Row 1: Period pills + Payor selector + date range badge */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#94A3B8]">
-              {t('periodFilter.period')}
-            </span>
-            <div className="inline-flex rounded-[10px] bg-[#F1F5F9] p-[3px]">
-              {PERIOD_OPTIONS.map((opt, i) => {
-                const isActive = filter.periodType === opt;
-                const isSeparator = i === 4; // before 'Month'
-                const labelKey = `periodFilter.${opt}` as const;
-                return (
-                  <span key={opt} className="contents">
-                    {isSeparator && (
-                      <span className="mx-[2px] my-1 w-px bg-[#CBD5E1]" />
-                    )}
-                    <button
-                      onClick={() => setPeriodType(opt)}
-                      className={cn(
-                        'rounded-[8px] px-3 py-[6px] text-[13px] font-medium transition-all duration-150 whitespace-nowrap',
-                        isActive
-                          ? 'bg-white text-[#0F172A] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)]'
-                          : 'text-[#64748B] hover:text-[#334155] hover:bg-white/60',
-                      )}
-                    >
-                      {t(labelKey)}
-                    </button>
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Payor selector */}
-            {indemnityPayors.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                <svg className="h-3.5 w-3.5 text-[#64748B]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4M9 21V11M15 21V11" />
-                </svg>
-                <select
-                  value={filter.selectedPayorId}
-                  onChange={(e) => setSelectedPayorId(e.target.value)}
-                  className="h-8 rounded-lg border border-[#E2E8F0] bg-white px-2 text-[12px] font-medium text-[#1E293B] outline-none transition-colors focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394A3B8%22%20stroke-width%3D%222%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_8px_center] bg-no-repeat pr-7"
-                >
-                  {indemnityPayors.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Date range badge */}
-            <div className="inline-flex items-center gap-1.5 rounded-[6px] border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1">
-              <svg className="h-3.5 w-3.5 text-[#64748B]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              <span className="text-[12px] font-semibold text-[#334155]">{rangeLabel}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Row 2: Month selector OR custom date inputs */}
-        <div className="flex flex-wrap items-center gap-3">
-          {!isCustom ? (
-            /* Month dropdown */
+    <div className="flex flex-wrap items-center gap-2">
+        {/* ── Group 1: Payor selector ── */}
+        {indemnityPayors.length > 0 && (
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-[#64748B]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             <select
-              value={filter.selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] font-medium text-[#1E293B] outline-none transition-colors focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394A3B8%22%20stroke-width%3D%222%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_10px_center] bg-no-repeat pr-8"
+              value={filter.selectedPayorId}
+              onChange={(e) => setSelectedPayorId(e.target.value)}
+              className="h-9 rounded-lg border border-[#E2E8F0] bg-white pl-3 pr-9 text-[13px] font-medium text-[#1F2A37] outline-none transition-colors focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-[right_10px_center] bg-no-repeat"
             >
-              {AVAILABLE_MONTHS.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
+              {indemnityPayors.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
                 </option>
               ))}
             </select>
-          ) : (
-            /* Custom date range inputs */
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <label className="text-[11px] font-medium text-[#64748B]">{t('periodFilter.start')}</label>
-                <input
-                  type="date"
-                  value={filter.customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] font-medium text-[#1E293B] outline-none transition-colors focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 cursor-pointer"
-                />
-              </div>
-              <svg className="h-4 w-4 text-[#94A3B8]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <div className="flex items-center gap-1.5">
-                <label className="text-[11px] font-medium text-[#64748B]">{t('periodFilter.end')}</label>
-                <input
-                  type="date"
-                  value={filter.customEndDate}
-                  max={maxEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] font-medium text-[#1E293B] outline-none transition-colors focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 cursor-pointer"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Validation error for custom range */}
-          {isCustom && !rangeValidation.valid && (
-            <div className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5">
-              <svg className="h-3.5 w-3.5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span className="text-[12px] font-medium text-red-600">{rangeValidation.message}</span>
-            </div>
-          )}
-
-          {/* Refresh status — bottom-right, aligned with month dropdown */}
-          <div className="ml-auto">
-            <RefreshProgress isFetching={!!isFetching} lastUpdated={lastUpdated} />
           </div>
+        )}
+
+        {/* ── Hairline divider between payor and date ── */}
+        {indemnityPayors.length > 0 && (
+          <div className="w-px self-stretch bg-[#E5E8EC]" />
+        )}
+
+        {/* ── Group 2: Date picker ── */}
+        <div className="flex items-center gap-2">
+          <svg className="h-4 w-4 text-[#64748B]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <input
+            type="date"
+            value={filter.selectedDay}
+            onChange={(e) => setSelectedDay(e.target.value)}
+            className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] font-medium text-[#1F2A37] outline-none transition-colors focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 cursor-pointer"
+          />
         </div>
-      </div>
+
+        {/* ── Group 3: Refresh status ── */}
+        <RefreshProgress isFetching={!!isFetching} lastUpdated={lastUpdated} />
     </div>
   );
 }

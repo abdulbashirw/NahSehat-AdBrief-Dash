@@ -25,6 +25,7 @@ import {
 import KpiCard from "@/shared/components/common/KpiCard";
 import SectionCard from "@/shared/components/common/SectionCard";
 import ExportButton from "@/shared/components/common/ExportButton";
+import { useExportEnabled } from "@/entities/settings/model/useSettings";
 import EmptyState from "@/shared/components/common/EmptyState";
 import ApiError from "@/shared/components/error/ApiError";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -70,6 +71,7 @@ function growthBadge(growth: number | null): ReactElement {
 export default function Demographics() {
   const { t } = useTranslation();
   const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
+  const exportEnabled = useExportEnabled();
 
   const filteredClaims = data?.claims ?? [];
   const members = data?.members ?? [];
@@ -101,21 +103,54 @@ export default function Demographics() {
     [claimantMatrix],
   );
 
+  const periode = "demographics";
+
   if (isError) return <ApiError onRetry={refetch} />;
 
   if (!isLoading && filteredClaims.length === 0) {
     return (
       <div className="space-y-6">
-        <PageTitle />
-        <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <PageTitle />
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+            {exportEnabled && (
+              <div className="flex items-center gap-3">
+                <div className="w-px self-stretch bg-[#E5E8EC]" />
+                <ExportButton
+                  filename={`adbrief-demographics-${periode}.csv`}
+                  getPayload={() => ({
+                    headers: [
+                      t("demographics.ageGroup"),
+                      t("demographics.memberFemale"), t("demographics.memberMale"), t("demographics.memberTotal"),
+                      t("demographics.member1stHalf"), t("demographics.member2ndHalf"), t("demographics.memberGrowth"),
+                      t("demographics.claimantsFemale"), t("demographics.claimantsMale"), t("demographics.claimantsTotal"),
+                      t("demographics.claimants1stHalf"), t("demographics.claimants2ndHalf"), t("demographics.claimantsGrowth"),
+                    ],
+                    rows: AGE_BUCKETS.map((b, i) => {
+                      const m = memberMatrix[i];
+                      const c = claimantMatrix[i];
+                      const fmtGrowth = (g: number | null) => (g === null ? "—" : `${(g * 100).toFixed(1)}%`);
+                      return [
+                        b,
+                        m.female, m.male, m.total,
+                        m.firstHalf, m.secondHalf, fmtGrowth(m.growth),
+                        c.female, c.male, c.total,
+                        c.firstHalf, c.secondHalf, fmtGrowth(c.growth),
+                      ] as (string | number)[];
+                    }),
+                  })}
+                />
+              </div>
+            )}
+          </div>
+        </div>
         <SectionCard title={t("demographics.title")}>
           <EmptyState />
         </SectionCard>
       </div>
     );
   }
-
-  const periode = "demographics";
   const sumOf = (rows: AgeGenderGrowthCell[], key: "female" | "male") => rows.reduce((s, r) => s + r[key], 0);
   const sumTotal = (rows: AgeGenderGrowthCell[]) => rows.reduce((s, r) => s + r.total, 0);
   const sumFirst = (rows: AgeGenderGrowthCell[]) => rows.reduce((s, r) => s + r.firstHalf, 0);
@@ -135,8 +170,41 @@ export default function Demographics() {
 
   return (
     <motion.div className="space-y-6" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
-      <PageTitle />
-      <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <PageTitle />
+        <div className="flex items-center justify-end gap-2">
+          <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+          {exportEnabled && (
+            <>
+              <div className="w-px self-stretch bg-[#E5E8EC]" />
+              <ExportButton
+                filename={`adbrief-demographics-${periode}.csv`}
+                getPayload={() => ({
+                  headers: [
+                    t("demographics.ageGroup"),
+                    t("demographics.memberFemale"), t("demographics.memberMale"), t("demographics.memberTotal"),
+                    t("demographics.member1stHalf"), t("demographics.member2ndHalf"), t("demographics.memberGrowth"),
+                    t("demographics.claimantsFemale"), t("demographics.claimantsMale"), t("demographics.claimantsTotal"),
+                    t("demographics.claimants1stHalf"), t("demographics.claimants2ndHalf"), t("demographics.claimantsGrowth"),
+                  ],
+                  rows: AGE_BUCKETS.map((b, i) => {
+                    const m = memberMatrix[i];
+                    const c = claimantMatrix[i];
+                    const fmtGrowth = (g: number | null) => (g === null ? "—" : `${(g * 100).toFixed(1)}%`);
+                    return [
+                      b,
+                      m.female, m.male, m.total,
+                      m.firstHalf, m.secondHalf, fmtGrowth(m.growth),
+                      c.female, c.male, c.total,
+                      c.firstHalf, c.secondHalf, fmtGrowth(c.growth),
+                    ] as (string | number)[];
+                  }),
+                })}
+              />
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Content area — subtle dim during background refetch (not initial load) */}
       <div className="space-y-6 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
@@ -379,33 +447,6 @@ export default function Demographics() {
         </SectionCard>
       </motion.div>
 
-      {/* Section 5 — Export */}
-      <motion.div variants={sectionVariants} className="flex items-center justify-end">
-        <ExportButton
-          filename={`adbrief-demographics-${periode}.csv`}
-          getPayload={() => ({
-            headers: [
-              t("demographics.ageGroup"),
-              t("demographics.memberFemale"), t("demographics.memberMale"), t("demographics.memberTotal"),
-              t("demographics.member1stHalf"), t("demographics.member2ndHalf"), t("demographics.memberGrowth"),
-              t("demographics.claimantsFemale"), t("demographics.claimantsMale"), t("demographics.claimantsTotal"),
-              t("demographics.claimants1stHalf"), t("demographics.claimants2ndHalf"), t("demographics.claimantsGrowth"),
-            ],
-            rows: AGE_BUCKETS.map((b, i) => {
-              const m = memberMatrix[i];
-              const c = claimantMatrix[i];
-              const fmtGrowth = (g: number | null) => (g === null ? "—" : `${(g * 100).toFixed(1)}%`);
-              return [
-                b,
-                m.female, m.male, m.total,
-                m.firstHalf, m.secondHalf, fmtGrowth(m.growth),
-                c.female, c.male, c.total,
-                c.firstHalf, c.secondHalf, fmtGrowth(c.growth),
-              ] as (string | number)[];
-            }),
-          })}
-        />
-      </motion.div>
       </div>
     </motion.div>
   );

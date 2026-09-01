@@ -174,7 +174,17 @@
     "disable2FADialogTitle": "Nonaktifkan Autentikasi Dua Faktor",
     "disable2FADialogDesc": "Masukkan kata sandi saat ini untuk menonaktifkan 2FA. Ini akan membuat akun Anda kurang aman.",
     "disabling": "Menonaktifkan...",
-    "disable2FA": "Nonaktifkan 2FA"
+    "disable2FA": "Nonaktifkan 2FA",
+    "display": "Tampilan",
+    "displaySettings": "Pengaturan Tampilan",
+    "autoRotateTabs": "Rotasi Otomatis Tab",
+    "autoRotateTabsDesc": "Beralih otomatis antar tab dashboard",
+    "autoRotateEnabled": "Rotasi otomatis diaktifkan",
+    "autoRotateDisabled": "Rotasi otomatis dinonaktifkan",
+    "autoRotateInterval": "Interval Rotasi (menit)",
+    "autoRotateIntervalDesc": "Waktu antar perpindahan tab otomatis. Default: 2,5 menit.",
+    "autoRotateIntervalMin": "Min: 10 detik (0,17 menit)",
+    "autoRotateIntervalMax": "Maks: 30 menit"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -200,6 +210,7 @@
   },
   "periodFilter": {
     "period": "Periode",
+    "day": "Hari",
     "w1": "M1",
     "w2": "M2",
     "w3": "M3",

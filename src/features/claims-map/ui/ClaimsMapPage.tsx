@@ -23,6 +23,7 @@ import SectionCard from "@/shared/components/common/SectionCard";
 import DataTable from "@/shared/components/common/DataTable";
 import type { DataColumn } from "@/shared/components/common/DataTable";
 import ExportButton from "@/shared/components/common/ExportButton";
+import { useExportEnabled } from "@/entities/settings/model/useSettings";
 import EmptyState from "@/shared/components/common/EmptyState";
 import ApiError from "@/shared/components/error/ApiError";
 import IndonesiaMap, { MAP_METRIC_KEYS } from "@/features/claims-map/components/IndonesiaMap";
@@ -61,6 +62,7 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 export default function ClaimsMap() {
   const { t } = useTranslation();
   const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
+  const exportEnabled = useExportEnabled();
 
   const filteredClaims = data?.claims ?? [];
   const members = data?.members ?? [];
@@ -153,21 +155,40 @@ export default function ClaimsMap() {
     [t],
   );
 
+  const periode = "claims-map";
+
   if (isError) return <ApiError onRetry={refetch} />;
 
   if (!isLoading && filteredClaims.length === 0) {
     return (
       <div className="space-y-6">
-        <PageTitle />
-        <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <PageTitle />
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+            {exportEnabled && (
+              <div className="flex items-center gap-3">
+                <div className="w-px self-stretch bg-[#E5E8EC]" />
+                <ExportButton
+                  filename={`adbrief-claims-map-${periode}.csv`}
+                  getPayload={() => ({
+                    headers: [t("claimsMap.city"), t("claimsMap.province"), t("claimsMap.transaction"), t("claimsMap.claimant"), t("claimsMap.billingIdr"), t("claimsMap.approvedIdr"), t("claimsMap.pctApproved"), t("claimsMap.avgApprovedClaimantIdr")],
+                    rows: [
+                      ...visibleCities.map((r) => [r.city, r.province, r.transactions, r.claimants, r.billing, r.approved, formatRatioPct(r.billing ? r.approved / r.billing : 0), Math.round(avgApprovedCity(r))] as (string | number)[]),
+                      [t("common.total").toUpperCase(), "", kpis.transactions, kpis.claimants, kpis.billing, kpis.approved, formatRatioPct(kpis.approvedPct), Math.round(kpis.avgApprovedPerClaimant)],
+                    ],
+                  })}
+                />
+              </div>
+            )}
+          </div>
+        </div>
         <SectionCard title={t("claimsMap.title")}>
           <EmptyState />
         </SectionCard>
       </div>
     );
   }
-
-  const periode = "claims-map";
 
   const chartData = monthly.map((m: MonthRow) => ({
     ...m,
@@ -176,8 +197,27 @@ export default function ClaimsMap() {
 
   return (
     <motion.div className="space-y-6" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
-      <PageTitle />
-      <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <PageTitle />
+        <div className="flex items-center justify-end gap-2">
+          <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+          {exportEnabled && (
+            <>
+              <div className="w-px self-stretch bg-[#E5E8EC]" />
+              <ExportButton
+                filename={`adbrief-claims-map-${periode}.csv`}
+                getPayload={() => ({
+                  headers: [t("claimsMap.city"), t("claimsMap.province"), t("claimsMap.transaction"), t("claimsMap.claimant"), t("claimsMap.billingIdr"), t("claimsMap.approvedIdr"), t("claimsMap.pctApproved"), t("claimsMap.avgApprovedClaimantIdr")],
+                  rows: [
+                    ...visibleCities.map((r) => [r.city, r.province, r.transactions, r.claimants, r.billing, r.approved, formatRatioPct(r.billing ? r.approved / r.billing : 0), Math.round(avgApprovedCity(r))] as (string | number)[]),
+                    [t("common.total").toUpperCase(), "", kpis.transactions, kpis.claimants, kpis.billing, kpis.approved, formatRatioPct(kpis.approvedPct), Math.round(kpis.avgApprovedPerClaimant)],
+                  ],
+                })}
+              />
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Content area — subtle dim during background refetch (not initial load) */}
       <div className="space-y-6 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
@@ -390,19 +430,6 @@ export default function ClaimsMap() {
         </SectionCard>
       </motion.div>
 
-      {/* Section 6 — Export */}
-      <motion.div variants={sectionVariants} className="flex items-center justify-end">
-        <ExportButton
-          filename={`adbrief-claims-map-${periode}.csv`}
-          getPayload={() => ({
-            headers: [t("claimsMap.city"), t("claimsMap.province"), t("claimsMap.transaction"), t("claimsMap.claimant"), t("claimsMap.billingIdr"), t("claimsMap.approvedIdr"), t("claimsMap.pctApproved"), t("claimsMap.avgApprovedClaimantIdr")],
-            rows: [
-              ...visibleCities.map((r) => [r.city, r.province, r.transactions, r.claimants, r.billing, r.approved, formatRatioPct(r.billing ? r.approved / r.billing : 0), Math.round(avgApprovedCity(r))] as (string | number)[]),
-              [t("common.total").toUpperCase(), "", kpis.transactions, kpis.claimants, kpis.billing, kpis.approved, formatRatioPct(kpis.approvedPct), Math.round(kpis.avgApprovedPerClaimant)],
-            ],
-          })}
-        />
-      </motion.div>
       </div>
     </motion.div>
   );

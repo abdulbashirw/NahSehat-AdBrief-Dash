@@ -20,15 +20,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { FileDown } from "lucide-react";
 import KpiCard from "@/shared/components/common/KpiCard";
 import SectionCard from "@/shared/components/common/SectionCard";
 import DataTable from "@/shared/components/common/DataTable";
 import type { DataColumn } from "@/shared/components/common/DataTable";
 import ExportButton from "@/shared/components/common/ExportButton";
+import { useExportEnabled } from "@/entities/settings/model/useSettings";
 import EmptyState from "@/shared/components/common/EmptyState";
 import ApiError from "@/shared/components/error/ApiError";
-import { Button } from "@/shared/ui/button";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { useIndemnityData } from "@/features/indemnity-overview/hooks/useIndemnityData";
 import PeriodFilter from "@/features/indemnity-overview/components/PeriodFilter";
@@ -65,6 +64,7 @@ function ChartSkeleton({ height = 260 }: { height?: number }) {
 export default function Overview() {
   const { t } = useTranslation();
   const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
+  const exportEnabled = useExportEnabled();
 
   const filteredClaims = data?.claims ?? [];
   const members = data?.members ?? [];
@@ -100,21 +100,40 @@ export default function Overview() {
     [t],
   );
 
+  const periode = "overview";
+
   if (isError) return <ApiError onRetry={refetch} />;
 
   if (!isLoading && filteredClaims.length === 0) {
     return (
       <div className="space-y-6">
-        <PageTitle />
-        <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <PageTitle />
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+            {exportEnabled && (
+              <div className="flex items-center gap-3">
+                <div className="w-px self-stretch bg-[#E5E8EC]" />
+                <ExportButton
+                  filename={`adbrief-overview-${periode}.csv`}
+                  getPayload={() => ({
+                    headers: [t("overview.coverage"), t("overview.claimant"), t("overview.transaction"), t("overview.billingIdr"), t("overview.approvedIdr"), t("overview.unapprovedIdr"), t("overview.pctApproved")],
+                    rows: [
+                      ...coverageRows.map((r) => [r.coverage, r.claimants, r.transactions, r.billing, r.approved, r.unapproved, formatRatioPct(r.approvedPct)] as (string | number)[]),
+                      [t("overview.total").toUpperCase(), kpis.claimants, kpis.transactions, kpis.billing, kpis.approved, kpis.unapproved, formatRatioPct(kpis.approvedPct)],
+                    ],
+                  })}
+                />
+              </div>
+            )}
+          </div>
+        </div>
         <SectionCard title={t("overview.utilizationOverview")}>
           <EmptyState />
         </SectionCard>
       </div>
     );
   }
-
-  const periode = "overview";
 
   return (
     <motion.div
@@ -123,8 +142,27 @@ export default function Overview() {
       animate="show"
       variants={{ show: { transition: { staggerChildren: 0.06 } } }}
     >
-      <PageTitle />
-      <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <PageTitle />
+        <div className="flex items-center justify-end gap-2">
+          <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
+          {exportEnabled && (
+            <>
+              <div className="w-px self-stretch bg-[#E5E8EC]" />
+              <ExportButton
+                filename={`adbrief-overview-${periode}.csv`}
+                getPayload={() => ({
+                  headers: [t("overview.coverage"), t("overview.claimant"), t("overview.transaction"), t("overview.billingIdr"), t("overview.approvedIdr"), t("overview.unapprovedIdr"), t("overview.pctApproved")],
+                  rows: [
+                    ...coverageRows.map((r) => [r.coverage, r.claimants, r.transactions, r.billing, r.approved, r.unapproved, formatRatioPct(r.approvedPct)] as (string | number)[]),
+                    [t("overview.total").toUpperCase(), kpis.claimants, kpis.transactions, kpis.billing, kpis.approved, kpis.unapproved, formatRatioPct(kpis.approvedPct)],
+                  ],
+                })}
+              />
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Content area — subtle dim during background refetch (not initial load) */}
       <div
@@ -395,24 +433,6 @@ export default function Overview() {
               </>
             )}
           </SectionCard>
-        </motion.div>
-
-        {/* Section 7 — Export row */}
-        <motion.div variants={sectionVariants} className="flex items-center justify-end gap-3">
-          <Button variant="ghost" disabled title={t("overview.exportPdfDisabled")} className="gap-2 text-[#9CA3AF]">
-            <FileDown className="h-4 w-4" />
-            {t("overview.exportPdf")}
-          </Button>
-          <ExportButton
-            filename={`adbrief-overview-${periode}.csv`}
-            getPayload={() => ({
-              headers: [t("overview.coverage"), t("overview.claimant"), t("overview.transaction"), t("overview.billingIdr"), t("overview.approvedIdr"), t("overview.unapprovedIdr"), t("overview.pctApproved")],
-              rows: [
-                ...coverageRows.map((r) => [r.coverage, r.claimants, r.transactions, r.billing, r.approved, r.unapproved, formatRatioPct(r.approvedPct)] as (string | number)[]),
-                [t("overview.total").toUpperCase(), kpis.claimants, kpis.transactions, kpis.billing, kpis.approved, kpis.unapproved, formatRatioPct(kpis.approvedPct)],
-              ],
-            })}
-          />
         </motion.div>
       </div>
     </motion.div>

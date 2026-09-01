@@ -9,7 +9,7 @@
  * Client-side filtering (additional):
  *   - coverageId, claimType, status, search
  */
-import { useMemo, useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useSyncExternalStore } from 'react';
 import { useGetDCSehatQuery } from '@/entities/claim/api/claimApi';
 import type { AdmDailyClaimRequest } from '@/entities/claim/api/claimApi';
@@ -18,7 +18,6 @@ import {
   getSnapshot as getFilterSnapshot,
   getServerSnapshot as getFilterServerSnapshot,
   getDateRange,
-  validateCustomRange,
   setSelectedPayorId,
 } from '@/features/indemnity-overview/store/periodFilterStore';
 import { useGetPayorsQuery } from '@/entities/payor/api/payorApi';
@@ -79,44 +78,29 @@ export function useIndemnityData(filters?: IndemnityFilters) {
     return payor?.code ?? '';
   }, [selectedPayorId, payorsData]);
 
-  // ── Validate custom range (max 1 month) ──
-  const rangeValidation = validateCustomRange(periodFilter);
-
   // ── Build request body from period filter ──
   const requestBody: AdmDailyClaimRequest | undefined = useMemo(() => {
     if (!payorCode) return undefined; // Don't fetch until we have a payor code
-    if (!rangeValidation.valid) return undefined; // Skip fetch when custom range exceeds 1 month
     const { startDate, endDate } = getDateRange(periodFilter);
     return {
       start_date: toDDMMYYYY(startDate),
       end_date: toDDMMYYYY(endDate),
       payor_code: payorCode,
     };
-  }, [periodFilter, payorCode, rangeValidation.valid]);
+  }, [periodFilter, payorCode]);
 
-  const { data, isLoading, isFetching, isError, error, refetch } = useGetDCSehatQuery(requestBody!, {
+  const { data, isLoading, isFetching, isError, error, refetch, fulfilledTimeStamp } = useGetDCSehatQuery(requestBody!, {
     skip: !requestBody,
+    pollingInterval: 600_000, // 10 minutes — RTK Query native polling (1 timer per cache entry)
   });
 
-  // ── Auto-refresh: refetch every 10 minutes (matches Manage Care Daily Monitoring) ──
-  useEffect(() => {
-    if (!requestBody) return; // Don't poll until we have a valid request
-    const interval = setInterval(() => {
-      refetch();
-    }, 600000); // 10 minutes
-    return () => clearInterval(interval);
-  }, [refetch, requestBody]);
-
-  // ── Track last successful fetch timestamp (for "Updated HH:mm:ss" badge) ──
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const prevFetching = useRef(false);
-  useEffect(() => {
-    // Transition: fetching → done with data = successful fetch
-    if (prevFetching.current && !isFetching && data) {
-      setLastUpdated(new Date());
-    }
-    prevFetching.current = isFetching;
-  }, [isFetching, data]);
+  // ── Last successful fetch timestamp (for "Updated HH:mm:ss" badge) ──
+  // Uses RTK Query's fulfilledTimeStamp from the cache entry, so it
+  // persists across tab navigation (unlike component-local useState).
+  const lastUpdated = useMemo(
+    () => (fulfilledTimeStamp ? new Date(fulfilledTimeStamp) : null),
+    [fulfilledTimeStamp],
+  );
 
   // ── Client-side filters (coverage, claim type, status, search) ──
   const filtered = useMemo(() => {

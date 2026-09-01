@@ -174,7 +174,17 @@
     "disable2FADialogTitle": "Disable Two-Factor Authentication",
     "disable2FADialogDesc": "Enter your current password to disable 2FA. This will make your account less secure.",
     "disabling": "Disabling...",
-    "disable2FA": "Disable 2FA"
+    "disable2FA": "Disable 2FA",
+    "display": "Display",
+    "displaySettings": "Display Settings",
+    "autoRotateTabs": "Auto-Rotate Tabs",
+    "autoRotateTabsDesc": "Automatically switch between dashboard tabs",
+    "autoRotateEnabled": "Auto-rotate is enabled",
+    "autoRotateDisabled": "Auto-rotate is disabled",
+    "autoRotateInterval": "Rotation Interval (minutes)",
+    "autoRotateIntervalDesc": "Time between automatic tab switches. Default: 2.5 minutes.",
+    "autoRotateIntervalMin": "Min: 10 seconds (0.17 min)",
+    "autoRotateIntervalMax": "Max: 30 minutes"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -200,6 +210,7 @@
   },
   "periodFilter": {
     "period": "Period",
+    "day": "Day",
     "w1": "W1",
     "w2": "W2",
     "w3": "W3",

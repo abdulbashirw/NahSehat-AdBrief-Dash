@@ -41,10 +41,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/shared/ui/dialog';
-import { Save, Settings as SettingsIcon, User, Shield, Monitor, ShieldCheck, QrCode, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Save, Settings as SettingsIcon, User, Shield, Monitor, ShieldCheck, QrCode, Loader2, Eye, EyeOff, LayoutDashboard } from 'lucide-react';
 import type { AuthUser } from '@/shared/types';
+import { useAutoRotateSettings } from '@/widgets/tab-layout/model/useAutoRotateEnabled';
+import { MIN_INTERVAL_SECONDS, MAX_INTERVAL_SECONDS } from '@/widgets/tab-layout/model/autoRotateStore';
 
-type TabKey = 'general' | 'application' | 'profile' | 'security';
+type TabKey = 'general' | 'application' | 'profile' | 'security' | 'display';
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -52,6 +54,20 @@ export default function Settings() {
   const { user } = useAuth();
   const dispatch = useAppDispatch();
   const isSuperAdmin = hasAnyRole(['SUPER_ADMIN']);
+  const isIndemnity = hasAnyRole(['INDEMNITY']);
+  const {
+    enabled: autoRotateEnabled,
+    intervalSeconds: autoRotateIntervalSeconds,
+    setEnabled: setAutoRotateEnabled,
+    setIntervalSeconds: setAutoRotateIntervalSeconds,
+  } = useAutoRotateSettings();
+  // Display/edit interval in minutes (decimal). Convert to/from seconds.
+  const intervalMinutes = (autoRotateIntervalSeconds / 60).toFixed(2);
+  const handleIntervalChange = (minutesStr: string) => {
+    const minutes = parseFloat(minutesStr);
+    if (Number.isNaN(minutes)) return;
+    setAutoRotateIntervalSeconds(Math.round(minutes * 60));
+  };
 
   // Only fetch settings for SUPER_ADMIN — backend returns 403 for other roles
   const { data: settingsData, isLoading, isError, refetch } = useGetSettingsQuery(undefined, { skip: !isSuperAdmin });
@@ -323,6 +339,9 @@ export default function Settings() {
       : []),
     { key: 'profile' as const, label: t('settings.profile'), icon: User },
     { key: 'security' as const, label: t('settings.security'), icon: Shield },
+    ...(isIndemnity
+      ? [{ key: 'display' as const, label: t('settings.display'), icon: LayoutDashboard }]
+      : []),
   ];
 
   return (
@@ -431,6 +450,49 @@ export default function Settings() {
                     <Save className="mr-2 h-4 w-4" />
                     {savingApplication ? t('common.saving') : t('common.saveChanges')}
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Display Settings (INDEMNITY only) ── */}
+          {activeTab === 'display' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg text-[#1F2A37]">{t('settings.displaySettings')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 items-center gap-4">
+                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.autoRotateTabs')}</label>
+                  <div className="col-span-2 flex items-center gap-3">
+                    <Switch
+                      checked={autoRotateEnabled}
+                      onCheckedChange={setAutoRotateEnabled}
+                      className="data-[state=checked]:bg-[#0066FF]"
+                    />
+                    <span className="text-sm text-[#6B7280]">{t('settings.autoRotateTabsDesc')}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 items-center gap-4">
+                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.autoRotateInterval')}</label>
+                  <div className="col-span-2 space-y-1">
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min={(MIN_INTERVAL_SECONDS / 60).toFixed(2)}
+                      max={(MAX_INTERVAL_SECONDS / 60).toFixed(2)}
+                      value={intervalMinutes}
+                      onChange={(e) => handleIntervalChange(e.target.value)}
+                      disabled={!autoRotateEnabled}
+                      className="w-32"
+                    />
+                    <p className="text-xs text-[#6B7280]">{t('settings.autoRotateIntervalDesc')}</p>
+                    <p className="text-xs text-[#9CA3AF]">{t('settings.autoRotateIntervalMin')} · {t('settings.autoRotateIntervalMax')}</p>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-[#F4F6F8] px-4 py-3 text-sm text-[#6B7280]">
+                  {autoRotateEnabled ? t('settings.autoRotateEnabled') : t('settings.autoRotateDisabled')}
                 </div>
               </CardContent>
             </Card>
