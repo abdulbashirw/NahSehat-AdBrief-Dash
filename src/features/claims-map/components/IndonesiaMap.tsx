@@ -135,9 +135,9 @@ export default function IndonesiaMap({ data, metric, pinned, onPin, locations = 
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col">
       {/* Legend */}
-      <div className="mb-2 flex items-center justify-end gap-2 text-[11px] font-medium text-[#9CA3AF]">
+      <div className="mb-2 flex shrink-0 items-center justify-end gap-2 text-[11px] font-medium text-[#9CA3AF]">
         <span>{fmtTick(0)}</span>
         <div className="flex h-2.5 w-48 overflow-hidden rounded-full">
           {BLUE_SCALE.map((c) => (
@@ -147,7 +147,7 @@ export default function IndonesiaMap({ data, metric, pinned, onPin, locations = 
         <span>{fmtTick(maxVal)}</span>
       </div>
 
-      <svg viewBox="0 0 1200 500" className="h-auto w-full" role="img" aria-label="Choropleth map of Indonesia">
+      <svg viewBox="0 0 1200 500" className="min-h-0 flex-1 w-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Choropleth map of Indonesia">
         <defs>
           <pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
             <rect width="6" height="6" fill="#E5E8EC" />

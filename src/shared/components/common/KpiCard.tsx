@@ -75,14 +75,14 @@ export default function KpiCard({
   if (loading) {
     return (
       <div className={cn(
-        'rounded-xl p-4',
+        'rounded-xl p-3',
         isDark
           ? 'border border-white/[0.08] bg-white/[0.06]'
           : 'border border-[#E5E8EC] bg-white',
       )}>
-        <Skeleton className={cn('h-4 w-20', isDark && 'bg-white/10')} />
-        <Skeleton className={cn('mt-3 h-7 w-28', isDark && 'bg-white/10')} />
-        <Skeleton className={cn('mt-3 h-3 w-24', isDark && 'bg-white/10')} />
+        <Skeleton className={cn('h-2.5 w-16', isDark && 'bg-white/10')} />
+        <Skeleton className={cn('mt-2 h-5 w-24', isDark && 'bg-white/10')} />
+        <Skeleton className={cn('mt-2 h-3 w-20', isDark && 'bg-white/10')} />
       </div>
     );
   }
@@ -100,7 +100,7 @@ export default function KpiCard({
         transition: { duration: 0.15 },
       }}
       className={cn(
-        'relative overflow-hidden rounded-xl p-4',
+        'relative overflow-hidden rounded-xl p-3',
         isDark
           ? 'border border-white/[0.08] bg-white/[0.06] shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-sm'
           : 'border border-[#E5E8EC] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)]',
@@ -108,7 +108,7 @@ export default function KpiCard({
     >
       <div className="flex items-center justify-between gap-2">
         <span
-          className="rounded px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide"
+          className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide"
           style={{
             color: accent,
             backgroundColor: isDark ? `${accent}25` : `${accent}1F`,
@@ -123,10 +123,10 @@ export default function KpiCard({
             <TrendingDown className={cn('h-3.5 w-3.5 shrink-0', isDark ? 'text-[#F87171]' : 'text-[#DC2626]')} />
           ))}
       </div>
-      <div className="mt-2.5 flex items-end justify-between gap-2">
+      <div className="mt-2 flex items-end justify-between gap-2">
         <div
           className={cn(
-            'text-[26px] font-extrabold leading-none tabular-nums xl:text-[28px]',
+            'text-[20px] font-extrabold leading-none tabular-nums xl:text-[22px]',
             isDark ? 'text-white' : 'text-[#1F2A37]',
           )}
           style={{ fontVariantNumeric: 'tabular-nums' }}
@@ -134,7 +134,7 @@ export default function KpiCard({
           {format(tweened)}
         </div>
         {spark && spark.length > 1 && (
-          <div className="h-9 w-20 shrink-0 opacity-70">
+          <div className="h-7 w-16 shrink-0 opacity-70">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={spark.map((v, i) => ({ i, v }))} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                 <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={1.5} fill={accent} fillOpacity={isDark ? 0.2 : 0.15} isAnimationActive animationDuration={900} />
@@ -145,7 +145,7 @@ export default function KpiCard({
       </div>
       {subline && (
         <div className={cn(
-          'mt-1.5 text-[11.5px] font-semibold tabular-nums',
+          'mt-1.5 text-[10.5px] font-semibold tabular-nums',
           isDark ? 'text-[#94A3B8]' : 'text-[#4B5563]',
         )}>
           {subline}
@@ -153,7 +153,7 @@ export default function KpiCard({
       )}
       {delta !== undefined && (
         <div className={cn(
-          'mt-1 text-[11.5px] font-medium',
+          'mt-1 text-[10.5px] font-medium',
           up
             ? (isDark ? 'text-[#34D399]' : 'text-[#16A34A]')
             : (isDark ? 'text-[#F87171]' : 'text-[#DC2626]'),

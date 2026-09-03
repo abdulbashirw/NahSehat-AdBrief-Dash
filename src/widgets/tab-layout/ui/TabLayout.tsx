@@ -138,8 +138,8 @@ export default function TabLayout() {
       </header>
 
       {/* ── Page content ── */}
-      <main className="relative z-10 flex-1 overflow-y-auto">
-        <div className="p-4 lg:p-6">
+      <main className="relative z-10 min-h-0 flex-1 overflow-y-auto">
+        <div className="h-full p-3 lg:p-4">
           <Suspense
             fallback={
               <div className="flex h-64 items-center justify-center">

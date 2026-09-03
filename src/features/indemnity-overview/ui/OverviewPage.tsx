@@ -137,12 +137,12 @@ export default function Overview() {
 
   return (
     <motion.div
-      className="space-y-6"
+      className="flex h-full flex-col gap-3"
       initial="hidden"
       animate="show"
       variants={{ show: { transition: { staggerChildren: 0.06 } } }}
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <PageTitle />
         <div className="flex items-center justify-end gap-2">
           <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
@@ -166,11 +166,11 @@ export default function Overview() {
 
       {/* Content area — subtle dim during background refetch (not initial load) */}
       <div
-        className="space-y-6 transition-opacity duration-300"
+        className="flex min-h-0 flex-1 flex-col gap-4 transition-opacity duration-300"
         style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}
       >
         {/* Section 1 — KPI row */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <KpiCard index={0} loading={isLoading} label={t("overview.memberActive")} accent="#2563EB" value={kpis.memberActive} format={formatNumber} delta={deltas.memberActive} />
           <KpiCard index={1} loading={isLoading} label={t("overview.claimants")} accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
           <KpiCard index={2} loading={isLoading} label={t("overview.morbidityRate")} accent="#DC2626" value={kpis.morbidityRate * 100} format={formatPct} delta={deltas.morbidityRate} />
@@ -190,123 +190,200 @@ export default function Overview() {
           />
         </div>
 
-        {/* Section 2 — Patient Distribution by Type of Services */}
-        <motion.div variants={sectionVariants}>
-          <SectionCard title={t("overview.patientDistribution")}>
-            {isLoading ? (
-              <ChartSkeleton />
-            ) : (
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-                <div className="lg:col-span-3">
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={coverageRows} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 8 }} barCategoryGap="28%">
-                      <XAxis type="number" hide />
-                      <YAxis
-                        type="category"
-                        dataKey="coverage"
-                        width={64}
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fontSize: 12, fontWeight: 600, fill: "#4B5563" }}
-                      />
-                      <Tooltip
-                        cursor={{ fill: "rgba(63,163,122,0.06)" }}
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const row = payload[0].payload as CoverageRow;
-                          return (
-                            <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[12px] font-medium shadow-md">
-                              {row.coverage} — {formatNumber(row.claimants)} {t("overview.claimants").toLowerCase()} ({formatRatioPct(row.claimants / totalCoverageClaimants)} {t("overview.ofClaimants").toLowerCase()})
-                            </div>
-                          );
-                        }}
-                      />
-                      <Bar dataKey="claimants" radius={[0, 6, 6, 0]} isAnimationActive animationDuration={700}>
-                        {coverageRows.map((row, i) => (
-                          <Cell key={row.coverage} fill={SERVICES_RAMP[i % SERVICES_RAMP.length]} />
-                        ))}
-                        <LabelList dataKey="claimants" position="right" formatter={(v: number) => formatNumber(v)} style={{ fontSize: 12, fontWeight: 700, fill: "#1F2A37" }} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="lg:col-span-2">
-                  <ul className="divide-y divide-[#E5E8EC]">
+        {/* ── Section 2 — Distribution group (1 row, 3 cols) ── */}
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-5">
+          {/* 2a: Patient Distribution by Type of Services */}
+          <motion.div variants={sectionVariants} className="min-h-0 lg:col-span-2">
+            <SectionCard title={t("overview.patientDistribution")} className="h-full" bodyClassName="flex flex-col p-4">
+              {isLoading ? (
+                <ChartSkeleton />
+              ) : (
+                <div className="flex min-h-0 flex-1 flex-col gap-2">
+                  <div className="min-h-0 flex-1">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={coverageRows} layout="vertical" margin={{ top: 4, right: 48, bottom: 4, left: 8 }} barCategoryGap="28%">
+                        <XAxis type="number" hide />
+                        <YAxis
+                          type="category"
+                          dataKey="coverage"
+                          width={64}
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 11, fontWeight: 600, fill: "#4B5563" }}
+                        />
+                        <Tooltip
+                          cursor={{ fill: "rgba(63,163,122,0.06)" }}
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const row = payload[0].payload as CoverageRow;
+                            return (
+                              <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[11px] font-medium shadow-md">
+                                {row.coverage} — {formatNumber(row.claimants)} {t("overview.claimants").toLowerCase()} ({formatRatioPct(row.claimants / totalCoverageClaimants)} {t("overview.ofClaimants").toLowerCase()})
+                              </div>
+                            );
+                          }}
+                        />
+                        <Bar dataKey="claimants" radius={[0, 6, 6, 0]} isAnimationActive animationDuration={700}>
+                          {coverageRows.map((row, i) => (
+                            <Cell key={row.coverage} fill={SERVICES_RAMP[i % SERVICES_RAMP.length]} />
+                          ))}
+                          <LabelList dataKey="claimants" position="right" formatter={(v: number) => formatNumber(v)} style={{ fontSize: 11, fontWeight: 700, fill: "#1F2A37" }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <ul className="min-h-0 flex-1 divide-y divide-[#E5E8EC] overflow-y-auto">
                     {coverageRows.map((row, i) => (
-                      <li key={row.coverage} className="flex items-center gap-3 py-2.5">
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: SERVICES_RAMP[i % SERVICES_RAMP.length] }} />
-                        <span className="text-[13px] font-semibold text-[#1F2A37]">{row.coverage}</span>
-                        <span className="ml-auto text-[13px] font-bold text-[#1F2A37] tabular-nums">{formatNumber(row.claimants)}</span>
-                        <span className="w-16 text-right text-[12px] font-medium text-[#9CA3AF] tabular-nums">
+                      <li key={row.coverage} className="flex items-center gap-2 py-1">
+                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: SERVICES_RAMP[i % SERVICES_RAMP.length] }} />
+                        <span className="text-[11.5px] font-semibold text-[#1F2A37]">{row.coverage}</span>
+                        <span className="ml-auto text-[11.5px] font-bold text-[#1F2A37] tabular-nums">{formatNumber(row.claimants)}</span>
+                        <span className="w-14 text-right text-[11px] font-medium text-[#9CA3AF] tabular-nums">
                           {formatRatioPct(row.claimants / totalCoverageClaimants)}
                         </span>
                       </li>
                     ))}
                   </ul>
                 </div>
-              </div>
-            )}
-          </SectionCard>
-        </motion.div>
+              )}
+            </SectionCard>
+          </motion.div>
 
-        {/* Section 3 — Billing Distribution */}
-        <motion.div variants={sectionVariants}>
-          <SectionCard
-            title={t("overview.billingDistribution")}
-            right={
-              <span className="flex items-center gap-4 text-[11px] font-semibold text-white/90">
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: BILLING_YELLOW }} /> {t("overview.billing")}
+          {/* 2b: Billing Distribution */}
+          <motion.div variants={sectionVariants} className="min-h-0 lg:col-span-2">
+            <SectionCard
+              title={t("overview.billingDistribution")}
+              className="h-full"
+              bodyClassName="flex flex-col p-4"
+              right={
+                <span className="flex items-center gap-4 text-[11px] font-semibold text-white/90">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: BILLING_YELLOW }} /> {t("overview.billing")}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: APPROVED_RED }} /> {t("overview.approved")}
+                  </span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: APPROVED_RED }} /> {t("overview.approved")}
-                </span>
-              </span>
-            }
-          >
-            {isLoading ? (
-              <ChartSkeleton height={320} />
-            ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={coverageRows} layout="vertical" margin={{ top: 4, right: 64, bottom: 4, left: 8 }} barCategoryGap="22%" barGap={3}>
-                  <XAxis type="number" tickFormatter={(v: number) => formatCompactIDR(v)} tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="coverage" width={64} tickLine={false} axisLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: "#4B5563" }} />
-                  <Tooltip
-                    cursor={{ fill: "rgba(63,163,122,0.06)" }}
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const row = payload[0].payload as CoverageRow;
-                      return (
-                        <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[12px] font-medium shadow-md">
-                          {row.coverage} · {t("overview.billing")}: {t("overview.idr")} {formatIDR(row.billing)} · {t("overview.approved")}: {t("overview.idr")} {formatIDR(row.approved)} ({formatRatioPct(row.approvedPct)})
-                        </div>
-                      );
-                    }}
-                  />
-                  <Bar dataKey="billing" name={t("overview.billing")} fill={BILLING_YELLOW} radius={[0, 4, 4, 0]} isAnimationActive animationDuration={700} />
-                  <Bar dataKey="approved" name={t("overview.approved")} fill={APPROVED_RED} radius={[0, 4, 4, 0]} isAnimationActive animationDuration={700} animationBegin={100}>
-                    <LabelList
-                      dataKey="approvedPct"
-                      position="right"
-                      formatter={(v: number) => formatRatioPct(v)}
-                      style={{ fontSize: 11, fontWeight: 700, fill: "#2E7D5B" }}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </SectionCard>
-        </motion.div>
-
-        {/* Sections 4 + 6 — channel table & payment donut */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <motion.div variants={sectionVariants}>
-            <SectionCard title={t("overview.nonProviderVsProvider")} className="h-full">
+              }
+            >
               {isLoading ? (
-                <ChartSkeleton height={180} />
+                <ChartSkeleton height={240} />
+              ) : (
+                <div className="min-h-0 flex-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={coverageRows} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 8 }} barCategoryGap="22%" barGap={3}>
+                      <XAxis type="number" tickFormatter={(v: number) => formatCompactIDR(v)} tick={{ fontSize: 10.5, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="coverage" width={64} tickLine={false} axisLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: "#4B5563" }} />
+                      <Tooltip
+                        cursor={{ fill: "rgba(63,163,122,0.06)" }}
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          const row = payload[0].payload as CoverageRow;
+                          return (
+                            <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[11px] font-medium shadow-md">
+                              {row.coverage} · {t("overview.billing")}: {t("overview.idr")} {formatIDR(row.billing)} · {t("overview.approved")}: {t("overview.idr")} {formatIDR(row.approved)} ({formatRatioPct(row.approvedPct)})
+                            </div>
+                          );
+                        }}
+                      />
+                      <Bar dataKey="billing" name={t("overview.billing")} fill={BILLING_YELLOW} radius={[0, 4, 4, 0]} isAnimationActive animationDuration={700} />
+                      <Bar dataKey="approved" name={t("overview.approved")} fill={APPROVED_RED} radius={[0, 4, 4, 0]} isAnimationActive animationDuration={700} animationBegin={100}>
+                        <LabelList
+                          dataKey="approvedPct"
+                          position="right"
+                          formatter={(v: number) => formatRatioPct(v)}
+                          style={{ fontSize: 10.5, fontWeight: 700, fill: "#2E7D5B" }}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </SectionCard>
+          </motion.div>
+
+          {/* 2c: Distribution Payment Type (donut) */}
+          <motion.div variants={sectionVariants} className="min-h-0 lg:col-span-1">
+            <SectionCard title={t("overview.distributionPaymentType")} className="h-full" bodyClassName="flex flex-col p-4">
+              {isLoading ? (
+                <ChartSkeleton height={160} />
+              ) : (
+                <div className="flex min-h-0 flex-1 flex-col items-center gap-2">
+                  <div className="relative h-[140px] w-[140px] shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                        <Pie
+                          data={payments}
+                          dataKey="transactions"
+                          nameKey="type"
+                          innerRadius="58%"
+                          outerRadius="85%"
+                          startAngle={90}
+                          endAngle={-270}
+                          isAnimationActive
+                          animationDuration={800}
+                          onMouseEnter={(_, i) => setActiveSlice(i)}
+                          onMouseLeave={() => setActiveSlice(null)}
+                        >
+                          {payments.map((p, i) => (
+                            <Cell
+                              key={p.type}
+                              fill={p.type === "CASHLESS" ? "#2563EB" : BILLING_YELLOW}
+                              opacity={activeSlice === null || activeSlice === i ? 1 : 0.4}
+                              style={{ transform: activeSlice === i ? "scale(1.03)" : "scale(1)", transformOrigin: "center", transition: "all 150ms" }}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const p = payload[0].payload as (typeof payments)[number];
+                            return (
+                              <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[11px] font-medium shadow-md">
+                                {p.type === "CASHLESS" ? t("overview.cashless") : t("overview.reimbursement")} — {formatNumber(p.transactions)} {t("overview.transactions").toLowerCase()} ({formatRatioPct(p.share)})
+                              </div>
+                            );
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-[18px] font-extrabold text-[#1F2A37] tabular-nums">{formatNumber(kpis.transactions)}</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wide text-[#9CA3AF]">{t("overview.transactions")}</span>
+                    </div>
+                  </div>
+                  <ul className="flex w-full min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
+                    {payments.map((p) => (
+                      <motion.li
+                        key={p.type}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.25 }}
+                        className="flex items-center gap-2.5 rounded-lg border border-[#E5E8EC] px-2.5 py-2"
+                      >
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: p.type === "CASHLESS" ? "#2563EB" : BILLING_YELLOW }} />
+                        <span className="text-[11.5px] font-bold text-[#1F2A37]">{p.type === "CASHLESS" ? t("overview.cashless") : t("overview.reimbursement")}</span>
+                        <span className="ml-auto text-[11.5px] font-semibold text-[#4B5563] tabular-nums">{formatNumber(p.transactions)}</span>
+                        <span className="w-16 text-right text-[11.5px] font-bold text-[#1F2A37] tabular-nums">{formatRatioPct(p.share)}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </SectionCard>
+          </motion.div>
+        </div>
+
+        {/* ── Section 3 — Channel table & Benefit utilization ── */}
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-5">
+          <motion.div variants={sectionVariants} className="min-h-0 lg:col-span-2">
+            <SectionCard title={t("overview.nonProviderVsProvider")} className="h-full" bodyClassName="flex min-h-0 flex-col justify-start p-4">
+              {isLoading ? (
+                <ChartSkeleton height={140} />
               ) : (
                 <DataTable
                   sortable={false}
+                  className="min-h-0 flex-1"
                   rowKey={(r) => r.channel}
                   columns={[
                     { key: "channel", label: t("overview.channel"), value: (r) => r.channel, render: (r) => r.channel.includes("Non") ? t("overview.nonProviderReimburse") : t("overview.providerInNetwork") },
@@ -335,105 +412,35 @@ export default function Overview() {
             </SectionCard>
           </motion.div>
 
-          <motion.div variants={sectionVariants}>
-            <SectionCard title={t("overview.distributionPaymentType")} className="h-full">
+          <motion.div variants={sectionVariants} className="min-h-0 lg:col-span-3">
+            <SectionCard title={t("overview.benefitUtilization")} className="h-full" bodyClassName="flex min-h-0 flex-col p-4">
               {isLoading ? (
-                <ChartSkeleton height={220} />
+                <ChartSkeleton height={240} />
               ) : (
-                <div className="flex flex-col items-center gap-6 sm:flex-row">
-                  <div className="relative h-[220px] w-[220px] shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={payments}
-                          dataKey="transactions"
-                          nameKey="type"
-                          innerRadius="58%"
-                          outerRadius="85%"
-                          startAngle={90}
-                          endAngle={-270}
-                          isAnimationActive
-                          animationDuration={800}
-                          onMouseEnter={(_, i) => setActiveSlice(i)}
-                          onMouseLeave={() => setActiveSlice(null)}
-                        >
-                          {payments.map((p, i) => (
-                            <Cell
-                              key={p.type}
-                              fill={p.type === "CASHLESS" ? "#2563EB" : BILLING_YELLOW}
-                              opacity={activeSlice === null || activeSlice === i ? 1 : 0.4}
-                              style={{ transform: activeSlice === i ? "scale(1.03)" : "scale(1)", transformOrigin: "center", transition: "all 150ms" }}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          content={({ active, payload }) => {
-                            if (!active || !payload?.length) return null;
-                            const p = payload[0].payload as (typeof payments)[number];
-                            return (
-                              <div className="rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-[12px] font-medium shadow-md">
-                                {p.type === "CASHLESS" ? t("overview.cashless") : t("overview.reimbursement")} — {formatNumber(p.transactions)} {t("overview.transactions").toLowerCase()} ({formatRatioPct(p.share)})
-                              </div>
-                            );
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-[26px] font-extrabold text-[#1F2A37] tabular-nums">{formatNumber(kpis.transactions)}</span>
-                      <span className="text-[10.5px] font-bold uppercase tracking-wide text-[#9CA3AF]">{t("overview.transactions")}</span>
-                    </div>
-                  </div>
-                  <ul className="w-full space-y-3">
-                    {payments.map((p) => (
-                      <motion.li
-                        key={p.type}
-                        initial={{ opacity: 0, x: 12 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3, duration: 0.25 }}
-                        className="flex items-center gap-3 rounded-lg border border-[#E5E8EC] px-4 py-3"
-                      >
-                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: p.type === "CASHLESS" ? "#2563EB" : BILLING_YELLOW }} />
-                        <span className="text-[13px] font-bold text-[#1F2A37]">{p.type === "CASHLESS" ? t("overview.cashless") : t("overview.reimbursement")}</span>
-                        <span className="ml-auto text-[13px] font-semibold text-[#4B5563] tabular-nums">{formatNumber(p.transactions)}</span>
-                        <span className="w-16 text-right text-[13px] font-bold text-[#1F2A37] tabular-nums">{formatRatioPct(p.share)}</span>
-                      </motion.li>
-                    ))}
-                  </ul>
-                </div>
+                <>
+                  <DataTable
+                    className="min-h-0 flex-1"
+                    columns={benefitColumns}
+                    rows={coverageRows}
+                    rowKey={(r) => r.coverage}
+                    footer={[
+                      t("overview.total"),
+                      `${formatNumber(kpis.claimants)}`,
+                      formatNumber(kpis.transactions),
+                      formatIDR(kpis.billing),
+                      formatIDR(kpis.approved),
+                      formatIDR(kpis.unapproved),
+                      formatRatioPct(kpis.approvedPct),
+                    ]}
+                  />
+                  <p className="mt-1.5 shrink-0 text-[11.5px] italic text-[#9CA3AF]">
+                    {t("overview.footnoteClaimant")}
+                  </p>
+                </>
               )}
             </SectionCard>
           </motion.div>
         </div>
-
-        {/* Section 5 — Benefit utilization table */}
-        <motion.div variants={sectionVariants}>
-          <SectionCard title={t("overview.benefitUtilization")}>
-            {isLoading ? (
-              <ChartSkeleton height={300} />
-            ) : (
-              <>
-                <DataTable
-                  columns={benefitColumns}
-                  rows={coverageRows}
-                  rowKey={(r) => r.coverage}
-                  footer={[
-                    t("overview.total"),
-                    `${formatNumber(kpis.claimants)}`,
-                    formatNumber(kpis.transactions),
-                    formatIDR(kpis.billing),
-                    formatIDR(kpis.approved),
-                    formatIDR(kpis.unapproved),
-                    formatRatioPct(kpis.approvedPct),
-                  ]}
-                />
-                <p className="mt-2 text-[11.5px] italic text-[#9CA3AF]">
-                  {t("overview.footnoteClaimant")}
-                </p>
-              </>
-            )}
-          </SectionCard>
-        </motion.div>
       </div>
     </motion.div>
   );
@@ -443,8 +450,8 @@ function PageTitle() {
   const { t } = useTranslation();
   return (
     <div>
-      <h1 className="font-display text-[28px] font-extrabold text-[#1F2A37] md:text-[32px]">{t("overview.title")}</h1>
-      <p className="mt-1 text-sm italic text-[#9CA3AF]">
+      <h1 className="font-display text-[24px] font-extrabold text-[#1F2A37] md:text-[28px]">{t("overview.title")}</h1>
+      <p className="mt-0.5 text-[13px] italic text-[#9CA3AF]">
         {t("overview.subtitle")}
       </p>
     </div>

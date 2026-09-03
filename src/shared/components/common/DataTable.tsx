@@ -33,6 +33,8 @@ export interface DataTableProps<T> {
   rowKey: (row: T, index: number) => string | number;
   /** Additional className applied to every data cell. */
   cellClassName?: string;
+  /** Additional className for the root scroll container (e.g. "min-h-0 flex-1" for flex-fill). */
+  className?: string;
 }
 
 /**
@@ -47,6 +49,7 @@ export default function DataTable<T>({
   maxHeight,
   rowKey,
   cellClassName,
+  className,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -75,9 +78,9 @@ export default function DataTable<T>({
   };
 
   return (
-    <div className="overflow-auto rounded-lg border border-[#E5E8EC]" style={maxHeight ? { maxHeight } : undefined}>
+    <div className={cn('overflow-auto rounded-lg border border-[#E5E8EC]', className)} style={maxHeight ? { maxHeight } : undefined}>
       <Table>
-        <TableHeader className={maxHeight ? 'sticky top-0 z-10' : undefined}>
+        <TableHeader className="sticky top-0 z-10">
           <TableRow className="bg-[#F1F3F5] hover:bg-[#F1F3F5]">
             {columns.map((c) => (
               <TableHead
@@ -85,7 +88,7 @@ export default function DataTable<T>({
                 onClick={() => toggleSort(c.key)}
                 style={c.minWidth ? { minWidth: c.minWidth } : undefined}
                 className={cn(
-                  'h-10 whitespace-nowrap px-4 text-[11.5px] font-bold uppercase tracking-wide text-[#4B5563]',
+                  'h-9 whitespace-nowrap px-3 text-[10.5px] font-bold uppercase tracking-wide text-[#4B5563]',
                   c.align === 'right' && 'text-right',
                   c.align === 'center' && 'text-center',
                   sortable && 'cursor-pointer select-none',
@@ -118,7 +121,7 @@ export default function DataTable<T>({
                     key={c.key}
                     style={c.minWidth ? { minWidth: c.minWidth } : undefined}
                     className={cn(
-                      'px-4 py-2.5 text-[13px] font-medium text-[#1F2A37]',
+                      'px-3 py-2 text-[11px] font-medium text-[#1F2A37]',
                       cellClassName,
                       c.align === 'right' && 'text-right tabular-nums',
                       c.align === 'center' && 'text-center',
@@ -148,7 +151,7 @@ export default function DataTable<T>({
                 <TableCell
                   key={i}
                   className={cn(
-                    'px-4 py-3 text-[13px] font-bold text-[#1F2A37]',
+                    'px-3 py-2.5 text-[11px] font-bold text-[#1F2A37]',
                     columns[i]?.align === 'right' && 'text-right tabular-nums',
                     columns[i]?.align === 'center' && 'text-center',
                   )}
