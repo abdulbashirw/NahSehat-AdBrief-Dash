@@ -180,7 +180,7 @@ export default function ClaimsMap() {
   }
 
   return (
-    <motion.div className="flex h-full flex-col gap-3" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
+    <motion.div className="flex h-full flex-col gap-3 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }} initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
       {/* ── Header: title + filters + export ── */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <PageTitle />
@@ -204,9 +204,7 @@ export default function ClaimsMap() {
         </div>
       </div>
 
-      {/* Content area — subtle dim during background refetch (not initial load) */}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
-        {/* ── Section 1 — KPI row ── */}
+      {/* ── Section 1 — KPI row ── */}
         <div className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
           <KpiCard index={0} loading={isLoading} label={t("claimsMap.claimants")} accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
           <KpiCard index={1} loading={isLoading} label={t("claimsMap.transactions")} accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
@@ -362,7 +360,6 @@ export default function ClaimsMap() {
             )}
           </SectionCard>
         </motion.div>
-      </div>
     </motion.div>
   );
 }

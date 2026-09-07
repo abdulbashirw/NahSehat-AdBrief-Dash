@@ -17,6 +17,7 @@ import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/shared/ui/dialog';
 import { Plus, Search, Edit2, Trash2, Building, CheckCircle, AlertCircle } from 'lucide-react';
+import { useHasPermission } from '@/entities/auth';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import { toast } from 'sonner';
 import { cn } from '@/shared/lib/utils';
@@ -46,6 +47,10 @@ export default function PayorManagement() {
   const [createPayor] = useCreatePayorMutation();
   const [updatePayor] = useUpdatePayorMutation();
   const [deletePayor] = useDeletePayorMutation();
+
+  const canCreate = useHasPermission('cms-payors', 'create');
+  const canUpdate = useHasPermission('cms-payors', 'update');
+  const canDelete = useHasPermission('cms-payors', 'delete');
 
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
@@ -116,10 +121,12 @@ export default function PayorManagement() {
           </div>
         </div>
 
-        <Button onClick={openCreateDialog} className="gap-2 bg-[#2E7D5B] hover:bg-[#245A47] text-white shadow-sm font-semibold rounded-lg">
-          <Plus className="h-4 w-4" />
-          Add New Payor
-        </Button>
+        {canCreate && (
+          <Button onClick={openCreateDialog} className="gap-2 bg-[#2E7D5B] hover:bg-[#245A47] text-white shadow-sm font-semibold rounded-lg">
+            <Plus className="h-4 w-4" />
+            Add New Payor
+          </Button>
+        )}
       </div>
 
       {/* Summary KPI Cards */}
@@ -205,24 +212,28 @@ export default function PayorManagement() {
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditDialog(payor)}
-                    className="h-8 w-8 p-0 text-[#4B5563] hover:bg-[#E7F4EE] hover:text-[#2E7D5B]"
-                    title="Edit Payor"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteConfirm(payor.id)}
-                    className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                    title="Delete Payor"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canUpdate && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditDialog(payor)}
+                      className="h-8 w-8 p-0 text-[#4B5563] hover:bg-[#E7F4EE] hover:text-[#2E7D5B]"
+                      title="Edit Payor"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteConfirm(payor.id)}
+                      className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      title="Delete Payor"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
 

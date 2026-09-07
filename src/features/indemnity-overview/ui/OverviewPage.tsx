@@ -137,7 +137,8 @@ export default function Overview() {
 
   return (
     <motion.div
-      className="flex h-full flex-col gap-3"
+      className="flex h-full flex-col gap-3 transition-opacity duration-300"
+      style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}
       initial="hidden"
       animate="show"
       variants={{ show: { transition: { staggerChildren: 0.06 } } }}
@@ -164,12 +165,7 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* Content area — subtle dim during background refetch (not initial load) */}
-      <div
-        className="flex min-h-0 flex-1 flex-col gap-4 transition-opacity duration-300"
-        style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}
-      >
-        {/* Section 1 — KPI row */}
+      {/* Section 1 — KPI row */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <KpiCard index={0} loading={isLoading} label={t("overview.memberActive")} accent="#2563EB" value={kpis.memberActive} format={formatNumber} delta={deltas.memberActive} />
           <KpiCard index={1} loading={isLoading} label={t("overview.claimants")} accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
@@ -441,7 +437,6 @@ export default function Overview() {
             </SectionCard>
           </motion.div>
         </div>
-      </div>
     </motion.div>
   );
 }

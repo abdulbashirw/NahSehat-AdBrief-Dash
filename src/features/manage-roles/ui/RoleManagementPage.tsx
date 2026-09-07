@@ -16,6 +16,7 @@ import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/shared/ui/dialog';
 import { Shield, Edit2, Trash2, Search, CheckCircle2, ShieldCheck, Key } from 'lucide-react';
+import { useHasPermission } from '@/entities/auth';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 
 const MENU_ITEMS = [
@@ -60,6 +61,10 @@ export default function RoleManagement() {
   const [createRole] = useCreateRoleMutation();
   const [updateRole] = useUpdateRoleMutation();
   const [deleteRole] = useDeleteRoleMutation();
+
+  const canCreate = useHasPermission('cms-roles', 'create');
+  const canUpdate = useHasPermission('cms-roles', 'update');
+  const canDelete = useHasPermission('cms-roles', 'delete');
 
   const openCreateDialog = () => {
     setEditingRole(null);
@@ -161,10 +166,12 @@ export default function RoleManagement() {
           </div>
         </div>
 
-        <Button onClick={openCreateDialog} className="gap-2 bg-[#2E7D5B] hover:bg-[#245A47] text-white shadow-sm font-semibold rounded-lg">
-          <Shield className="h-4 w-4" />
-          Add New Role
-        </Button>
+        {canCreate && (
+          <Button onClick={openCreateDialog} className="gap-2 bg-[#2E7D5B] hover:bg-[#245A47] text-white shadow-sm font-semibold rounded-lg">
+            <Shield className="h-4 w-4" />
+            Add New Role
+          </Button>
+        )}
       </div>
 
       {/* Filter Toolbar */}
@@ -202,24 +209,28 @@ export default function RoleManagement() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditDialog(role)}
-                    className="h-8 w-8 p-0 text-[#4B5563] hover:bg-[#E7F4EE] hover:text-[#2E7D5B]"
-                    title="Edit Role"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteConfirm(role.id)}
-                    className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                    title="Delete Role"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canUpdate && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditDialog(role)}
+                      className="h-8 w-8 p-0 text-[#4B5563] hover:bg-[#E7F4EE] hover:text-[#2E7D5B]"
+                      title="Edit Role"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteConfirm(role.id)}
+                      className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      title="Delete Role"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
 

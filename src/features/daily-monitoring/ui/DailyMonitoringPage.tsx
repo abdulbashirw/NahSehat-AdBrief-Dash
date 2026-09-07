@@ -290,9 +290,9 @@ export default function DailyMonitoring() {
   if (isError) return <ApiError onRetry={refetch} />;
 
   return (
-    <div className="flex flex-col gap-5 p-4 lg:p-6">
+    <div className="flex h-full flex-col gap-3">
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-white p-5 shadow-sm border border-[#E5E8EC]">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 rounded-xl bg-white p-5 shadow-sm border border-[#E5E8EC]">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2E7D5B]/10 text-[#2E7D5B]">
             <Activity className="h-6 w-6" />
@@ -317,7 +317,7 @@ export default function DailyMonitoring() {
       </div>
 
       {/* Main Grid: Left (KPI Cards) & Right (Trend Diagnosa) */}
-      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
+      <div className="grid shrink-0 grid-cols-1 items-start gap-3 lg:grid-cols-12">
         {/* KPI Cards (7 cols on lg) */}
         <div ref={leftColRef} className="lg:col-span-7 flex flex-col gap-4">
           {/* 4 Cards Grid */}
@@ -409,7 +409,7 @@ export default function DailyMonitoring() {
       {/* Bottom Main Section: Pasien List Table */}
       <div
         className={cn(
-          'flex flex-col rounded-xl bg-white p-5 shadow-sm border border-[#E5E8EC] transition-all duration-200',
+          'flex min-h-0 flex-1 flex-col rounded-xl bg-white p-5 shadow-sm border border-[#E5E8EC] transition-all duration-200',
           isMainTableFullscreen && 'fixed inset-0 z-50 rounded-none p-6 overflow-hidden',
         )}
       >
@@ -446,7 +446,7 @@ export default function DailyMonitoring() {
           ref={patientTableRef}
           className={cn(
             'flex-1 overflow-auto rounded-lg border border-[#E5E8EC]',
-            isMainTableFullscreen ? 'max-h-[calc(100vh-120px)]' : 'max-h-[480px]',
+            isMainTableFullscreen ? 'max-h-[calc(100vh-120px)]' : '',
           )}
         >
           <table className="w-full text-left text-sm border-collapse">
@@ -511,7 +511,7 @@ export default function DailyMonitoring() {
       </div>
 
       {/* Footer */}
-      <footer className="mt-2 rounded-xl bg-[#1F2A37] py-3 text-center text-xs text-gray-400">
+      <footer className="mt-2 shrink-0 rounded-xl bg-[#1F2A37] py-3 text-center text-xs text-gray-400">
         {t('dailyMonitoring.footer')}
       </footer>
     </div>

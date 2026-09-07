@@ -13,6 +13,7 @@ import ApiError from '@/shared/components/error/ApiError';
 import { Button } from '@/shared/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { ROLES } from '@/shared/types';
+import { useHasPermission } from '@/entities/auth';
 import { Save, Key, ShieldCheck, CheckSquare, Sparkles } from 'lucide-react';
 
 const PERMISSION_ACTIONS: PermissionAction[] = ['create', 'read', 'update', 'delete', 'export'];
@@ -34,6 +35,8 @@ export default function PermissionManagement() {
   const { data: groups, isLoading: groupsLoading, isError: groupsError, refetch: refetchGroups } = useGetPermissionGroupsQuery();
   const { data: rolePermissions } = useGetRolePermissionsQuery(selectedRole, { skip: !selectedRole });
   const [updatePermissions] = useUpdatePermissionsMutation();
+
+  const canUpdate = useHasPermission('cms-permissions', 'update');
 
   // Initialize permissions when role data loads
   useEffect(() => {
@@ -124,7 +127,7 @@ export default function PermissionManagement() {
             </SelectContent>
           </Select>
 
-          {hasChanges && (
+          {hasChanges && canUpdate && (
             <Button
               onClick={handleSave}
               className="gap-2 bg-[#2E7D5B] hover:bg-[#245A47] text-white text-xs font-semibold shadow-sm animate-pulse"

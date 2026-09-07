@@ -131,7 +131,7 @@ export default function Demographics() {
   const sumTotal = (rows: AgeGenderCell[]) => rows.reduce((s, r) => s + r.total, 0);
 
   return (
-    <motion.div className="flex h-full flex-col gap-3" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
+    <motion.div className="flex h-full flex-col gap-3 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }} initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <PageTitle />
         <div className="flex items-center justify-end gap-2">
@@ -163,8 +163,6 @@ export default function Demographics() {
         </div>
       </div>
 
-      {/* Content area — subtle dim during background refetch (not initial load) */}
-      <div className="flex min-h-0 flex-1 flex-col gap-3 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}>
         {/* Section 1 — KPI row */}
         <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <KpiCard index={0} loading={isLoading} label={t("demographics.claimants")} accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
@@ -319,7 +317,6 @@ export default function Demographics() {
         </motion.div>
         </div>
 
-      </div>
     </motion.div>
   );
 }

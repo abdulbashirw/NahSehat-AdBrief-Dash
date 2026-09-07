@@ -11,6 +11,7 @@ import {
   useToggleUserStatusMutation,
 } from '@/entities/user/api/userApi';
 import { useGetPayorsQuery } from '@/entities/payor/api/payorApi';
+import { useHasPermission } from '@/entities/auth';
 import { ROLES, type Role, type AuthUser } from '@/shared/types';
 import type { CreateUserPayload } from '@/entities/user/model/userTypes';
 import DataTable, { type DataColumn } from '@/shared/components/common/DataTable';
@@ -33,9 +34,13 @@ import {
   UserX,
   ShieldCheck,
   Building2,
+  Copy,
+  Check,
+  AlertTriangle,
 } from 'lucide-react';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import { cn } from '@/shared/lib/utils';
+import { generateRandomPassword } from '@/shared/lib/password';
 import { toast } from 'sonner';
 
 const roleLabels: Record<string, string> = {
@@ -63,6 +68,8 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [resetConfirm, setResetConfirm] = useState<string | null>(null);
+  const [resetResult, setResetResult] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const [form, setForm] = useState<CreateUserPayload>({
     username: '',
@@ -86,6 +93,11 @@ export default function UserManagement() {
   const [deleteUser] = useDeleteUserMutation();
   const [resetPassword] = useResetPasswordMutation();
   const [toggleStatus] = useToggleUserStatusMutation();
+
+  const canCreate = useHasPermission('cms-users', 'create');
+  const canUpdate = useHasPermission('cms-users', 'update');
+  const canDelete = useHasPermission('cms-users', 'delete');
+  const canExport = useHasPermission('cms-users', 'export');
 
   /** Resolve payor IDs → names for display */
   const payorNameMap = useMemo(() => {
@@ -162,13 +174,19 @@ export default function UserManagement() {
   };
 
   const handleResetPassword = async (id: string) => {
+    setResetLoading(true);
+    const tempPassword = generateRandomPassword();
     try {
-      await resetPassword({ id, body: { newPassword: 'TempPass123!' } }).unwrap();
+      await resetPassword({ id, body: { newPassword: tempPassword } }).unwrap();
       setResetConfirm(null);
+      setResetResult(tempPassword);
       toast.success('Password reset successfully');
+      refetch();
     } catch (_err: any) {
       const message = _err?.data?.message || _err?.message || 'Failed to reset password';
       toast.error(message);
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -266,46 +284,54 @@ export default function UserManagement() {
       value: () => '',
       render: (row: AuthUser) => (
         <div className="flex items-center justify-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => openEditDialog(row)}
-            className="h-8 w-8 p-0 text-[#4B5563] hover:bg-[#E7F4EE] hover:text-[#2E7D5B]"
-            title="Edit User"
-          >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleToggleStatus(row)}
-            className={cn('h-8 w-8 p-0', row.isActive ? 'text-amber-600 hover:bg-amber-50 hover:text-amber-700' : 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700')}
-            title={row.isActive ? 'Deactivate' : 'Activate'}
-          >
-            <Power className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setResetConfirm(row.id)}
-            className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-            title="Reset Password"
-          >
-            <KeyRound className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDeleteConfirm(row.id)}
-            className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-            title="Delete User"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canUpdate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openEditDialog(row)}
+              className="h-8 w-8 p-0 text-[#4B5563] hover:bg-[#E7F4EE] hover:text-[#2E7D5B]"
+              title="Edit User"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+          )}
+          {canUpdate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleToggleStatus(row)}
+              className={cn('h-8 w-8 p-0', row.isActive ? 'text-amber-600 hover:bg-amber-50 hover:text-amber-700' : 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700')}
+              title={row.isActive ? 'Deactivate' : 'Activate'}
+            >
+              <Power className="h-4 w-4" />
+            </Button>
+          )}
+          {canUpdate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setResetConfirm(row.id)}
+              className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              title="Reset Password"
+            >
+              <KeyRound className="h-4 w-4" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDeleteConfirm(row.id)}
+              className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+              title="Delete User"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
-  ], [openEditDialog, handleToggleStatus, payorNameMap]);
+  ], [openEditDialog, handleToggleStatus, payorNameMap, canUpdate, canDelete]);
 
   if (isLoading) return <LoadingSpinner message="Loading user directory..." />;
   if (isError) return <ApiError onRetry={refetch} />;
@@ -324,10 +350,12 @@ export default function UserManagement() {
           </div>
         </div>
 
-        <Button onClick={openCreateDialog} className="gap-2 bg-[#2E7D5B] hover:bg-[#245A47] text-white shadow-sm font-semibold rounded-lg">
-          <UserPlus className="h-4 w-4" />
-          Add New User
-        </Button>
+        {canCreate && (
+          <Button onClick={openCreateDialog} className="gap-2 bg-[#2E7D5B] hover:bg-[#245A47] text-white shadow-sm font-semibold rounded-lg">
+            <UserPlus className="h-4 w-4" />
+            Add New User
+          </Button>
+        )}
       </div>
 
       {/* Summary KPI Cards */}
@@ -398,20 +426,22 @@ export default function UserManagement() {
           </Select>
         </div>
 
-        <ExportButton
-          filename="user_directory.csv"
-          getPayload={() => ({
-            headers: ['Name', 'Username', 'Email', 'Role', 'Payor Access', 'Status'],
-            rows: users.map((u) => [
-              u.fullName,
-              u.username,
-              u.email,
-              roleLabels[u.role] || u.role,
-              u.payorIds.map((id) => payorNameMap.get(id) || id).join('; '),
-              u.isActive ? 'Active' : 'Inactive',
-            ]),
-          })}
-        />
+        {canExport && (
+          <ExportButton
+            filename="user_directory.csv"
+            getPayload={() => ({
+              headers: ['Name', 'Username', 'Email', 'Role', 'Payor Access', 'Status'],
+              rows: users.map((u) => [
+                u.fullName,
+                u.username,
+                u.email,
+                roleLabels[u.role] || u.role,
+                u.payorIds.map((id) => payorNameMap.get(id) || id).join('; '),
+                u.isActive ? 'Active' : 'Inactive',
+              ]),
+            })}
+          />
+        )}
       </div>
 
       {/* Main Table */}
@@ -563,10 +593,59 @@ export default function UserManagement() {
         open={!!resetConfirm}
         onOpenChange={(open) => !open && setResetConfirm(null)}
         title="Reset Password"
-        description="Are you sure you want to reset this user's password? They will receive a temporary password."
+        description="Are you sure you want to reset this user's password? A new secure temporary password will be generated and shown to you once."
         confirmLabel="Reset Password"
+        loading={resetLoading}
         onConfirm={() => resetConfirm && handleResetPassword(resetConfirm)}
       />
+
+      {/* Reset Password Result — show generated password once */}
+      <Dialog open={!!resetResult} onOpenChange={(open) => !open && setResetResult(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-blue-600" />
+              Temporary Password Generated
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              The user's password has been reset. Copy this temporary password and share it with the user securely.
+            </p>
+            <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <code className="flex-1 select-all text-lg font-mono font-semibold tracking-wide text-blue-900">
+                {resetResult}
+              </code>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 shrink-0"
+                onClick={() => {
+                  if (resetResult) {
+                    navigator.clipboard.writeText(resetResult);
+                    toast.success('Password copied to clipboard');
+                  }
+                }}
+                title="Copy password"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                <strong>Security warning:</strong> This password is shown only once. Copy it now — it cannot be retrieved again. The user should change it after logging in via Settings → Security.
+              </span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setResetResult(null)}>
+              <Check className="mr-2 h-4 w-4" />
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -112,6 +112,7 @@ export const userApi = api.injectEndpoints({
         }
         return { error: result.error! };
       },
+      invalidatesTags: ['User'],
     }),
 
     toggleUserStatus: builder.mutation<AuthUser, { id: string; isActive: boolean }>({
