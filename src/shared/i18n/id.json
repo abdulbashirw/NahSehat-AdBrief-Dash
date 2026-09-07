@@ -435,7 +435,19 @@
     "fullscreen": "Layar Penuh",
     "exitFullscreen": "Keluar Layar Penuh",
     "hari": "hari",
-    "footer": "© 2025 Dashboard Monitoring Harian — AdMedika Manage Care."
+    "footer": "© 2025 Dashboard Monitoring Harian — AdMedika Manage Care.",
+    "distribusiStatus": "Distribusi Status Claim",
+    "totalClaim": "Total Claim",
+    "searchPasien": "Cari pasien...",
+    "noResults": "Tidak ada hasil",
+    "clearSearch": "Hapus pencarian",
+    "showAll": "Tampilkan semua",
+    "showTopOnly": "Tampilkan top saja",
+    "pasienDmoAktif": "Pasien DMO aktif",
+    "admissionLabel": "Admission",
+    "dischargeLabel": "Discharge (DHC)",
+    "providerAktif": "Provider aktif",
+    "claimDitolak": "Claim ditolak"
   },
   "users": {
     "title": "Manajemen Pengguna",

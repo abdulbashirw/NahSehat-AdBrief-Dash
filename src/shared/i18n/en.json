@@ -435,7 +435,19 @@
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit Fullscreen",
     "hari": "days",
-    "footer": "© 2025 Dashboard Daily Monitoring — AdMedika Manage Care."
+    "footer": "© 2025 Dashboard Daily Monitoring — AdMedika Manage Care.",
+    "distribusiStatus": "Claim Status Distribution",
+    "totalClaim": "Total Claims",
+    "searchPasien": "Search patient...",
+    "noResults": "No results",
+    "clearSearch": "Clear search",
+    "showAll": "Show all",
+    "showTopOnly": "Show top only",
+    "pasienDmoAktif": "Active DMO patients",
+    "admissionLabel": "Admission",
+    "dischargeLabel": "Discharge (DHC)",
+    "providerAktif": "Active providers",
+    "claimDitolak": "Rejected claims"
   },
   "users": {
     "title": "User Management",
