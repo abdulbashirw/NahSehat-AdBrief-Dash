@@ -29,6 +29,9 @@ import roleRoutes from './routes/roleRoutes';
 import permissionRoutes from './routes/permissionRoutes';
 import payorRoutes from './routes/payorRoutes';
 import settingsRoutes from './routes/settingsRoutes';
+import activityRoutes from './routes/activityRoutes';
+import { accessLogger } from './middleware/accessLogger';
+import { startAggregationJob } from './jobs/aggregationJob';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -49,6 +52,11 @@ app.use(cors({
 app.use(morgan('dev'));
 app.use(express.json());
 
+// Access logging — placed BEFORE route registrations so it runs on every
+// API request. It registers a `res.on('finish')` listener that logs the
+// access event after the response is sent (non-blocking, fire-and-forget).
+app.use(accessLogger);
+
 /* ─── Health Check ─── */
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -61,6 +69,7 @@ app.use('/api/v1/roles', roleRoutes);
 app.use('/api/v1/permissions', permissionRoutes);
 app.use('/api/v1/payors', payorRoutes);
 app.use('/api/v1/settings', settingsRoutes);
+app.use('/api/v1/activity', activityRoutes);
 
 /* ─── 404 Handler ─── */
 app.use((_req, res) => {
@@ -80,6 +89,8 @@ async function start() {
     await testConnection();
     // Start token blacklist periodic sweep
     startBlacklistSweep();
+    // Start activity aggregation job (runs every hour + once on startup)
+    startAggregationJob();
     app.listen(PORT, () => {
       console.log(`🚀 NahSeHat Dashboard API running on port ${PORT}`);
       console.log(`   Health: http://localhost:${PORT}/health`);

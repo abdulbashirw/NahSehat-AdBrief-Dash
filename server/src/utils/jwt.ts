@@ -33,6 +33,7 @@ export function buildAuthUser(row: any, permissions: any[] = [], payorIds: strin
     fullName: row.full_name,
     phone: row.phone || '',
     role: row.role,
+    analyticsCategory: row.analytics_category ?? null,
     permissions: permissions.map((p: any) => ({
       id: String(p.id),
       menu: p.menu,

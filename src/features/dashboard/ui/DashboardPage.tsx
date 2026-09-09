@@ -21,6 +21,7 @@ import {
   BarChart3,
   Shield,
   Settings,
+  TrendingUp,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const isSuperAdmin = useHasRole('SUPER_ADMIN');
   const isIndemnity = useHasRole('INDEMNITY');
   const isManageCare = useHasRole('MANAGECARE');
+  const isAdScore = useHasRole('ADSCORE');
   const isAdmin = useHasRole('ADMIN');
 
   const { data: indemnityData, isLoading: indemnityLoading, isError: indemnityError, refetch } = useIndemnityData();
@@ -48,6 +50,7 @@ export default function Dashboard() {
 
   const showIndemnity = isSuperAdmin || isIndemnity;
   const showManageCare = isSuperAdmin || isManageCare;
+  const showAdScore = isSuperAdmin || isAdmin || isAdScore;
   const showCms = isSuperAdmin || isAdmin;
 
   return (
@@ -173,6 +176,24 @@ export default function Dashboard() {
                 <div>
                   <h3 className="font-semibold text-[#1E293B]">{t('dashboard.manageCare')}</h3>
                   <p className="text-sm text-[#64748B]">{t('dashboard.dailyMonitoring')}</p>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {showAdScore && (
+            <Link
+              to="/adscore"
+              className="animate-fade-in-scale group rounded-xl border border-[#E5E8EC] bg-white/90 p-6 shadow-[0_1px_3px_rgba(16,24,40,0.06)] backdrop-blur-sm transition-all duration-300 hover:border-indigo-500/30 hover:bg-white hover:shadow-[0_4px_20px_rgba(99,102,241,0.12)]"
+              style={{ animationDelay: '0.35s' }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-all duration-300 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-[0_2px_10px_rgba(99,102,241,0.3)]">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#1E293B]">{t('nav.adScore', 'AdScore')}</h3>
+                  <p className="text-sm text-[#64748B]">Provider, Member & Flow</p>
                 </div>
               </div>
             </Link>

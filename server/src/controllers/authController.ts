@@ -9,7 +9,9 @@ import type { AuthRequest } from '../middleware/auth';
 import type { LoginRequest } from '../types';
 import { blacklistToken } from '../models/tokenBlacklist';
 import { getSettingNumber } from '../models/settingsModel';
+import { logLoginSession, logLogoutSession } from '../models/activityModel';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 /** Validate password against Min Password Length setting + complexity rules. */
 async function validatePasswordPolicy(newPassword: string): Promise<void> {
@@ -124,6 +126,19 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const token = signToken({ id: user.id, username: user.username, role: user.role });
     const authUser = buildAuthUser(user, permRows as any[], (payorRows as any[]).map((p: any) => p.payor_id));
 
+    // ── Log login session for activity tracking ──
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    logLoginSession({
+      userId: user.id,
+      username: user.username,
+      fullName: user.full_name,
+      role: user.role,
+      analyticsCategory: (user as any).analytics_category ?? null,
+      ipAddress: req.ip ?? req.socket.remoteAddress ?? null,
+      userAgent: req.get('user-agent') ?? null,
+      tokenHash,
+    }).catch((err) => console.error('[authController] Failed to log login session:', err));
+
     res.json({ token, user: authUser });
   } catch (err) {
     next(err);
@@ -169,6 +184,12 @@ export async function logout(req: AuthRequest, res: Response, next: NextFunction
       const token = header.slice(7);
       // Add token to blacklist so it cannot be reused
       blacklistToken(token);
+
+      // ── Log logout session for activity tracking ──
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      logLogoutSession(tokenHash, 'user').catch((err) =>
+        console.error('[authController] Failed to log logout session:', err),
+      );
     }
     res.json({ message: 'Logged out successfully' });
   } catch (err) {

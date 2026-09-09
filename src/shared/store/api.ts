@@ -35,6 +35,6 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Auth', 'User', 'Role', 'Payor', 'Permission', 'Setting', 'Indemnity', 'ManageCare'],
+  tagTypes: ['Auth', 'User', 'Role', 'Payor', 'Permission', 'Setting', 'Indemnity', 'ManageCare', 'Activity', 'AdScore'],
   endpoints: () => ({}),
 });

@@ -19,6 +19,7 @@ export const userApi = api.injectEndpoints({
             search: params.search,
             role: params.role,
             isActive: params.isActive,
+            analyticsCategory: params.analyticsCategory,
           },
         });
 

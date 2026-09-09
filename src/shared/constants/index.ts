@@ -22,22 +22,25 @@ export const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Admin',
   INDEMNITY: 'Indemnity',
   MANAGECARE: 'Manage Care',
+  ADSCORE: 'AdScore',
 };
 
 /** Role-based menu access */
 export const ROLE_MENUS: Record<string, string[]> = {
-  SUPER_ADMIN: ['dashboard', 'indemnity', 'managecare', 'cms', 'settings'],
-  ADMIN: ['dashboard', 'indemnity', 'managecare', 'cms', 'settings'],
+  SUPER_ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'cms', 'settings'],
+  ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'cms', 'settings'],
   INDEMNITY: ['dashboard', 'indemnity'],
   MANAGECARE: ['dashboard', 'managecare'],
+  ADSCORE: ['dashboard', 'adscore'],
 };
 
 /** Role-based permissions — maps role to accessible route keys */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
-  SUPER_ADMIN: ['dashboard', 'indemnity', 'managecare', 'cms', 'settings'],
-  ADMIN: ['dashboard', 'indemnity', 'managecare', 'cms', 'settings'],
+  SUPER_ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'cms', 'settings'],
+  ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'cms', 'settings'],
   INDEMNITY: ['dashboard', 'indemnity'],
   MANAGECARE: ['dashboard', 'managecare'],
+  ADSCORE: ['dashboard', 'adscore'],
 };
 
 /** Route paths */
@@ -59,6 +62,10 @@ export const ROUTES = {
   CMS_SETTINGS: '/cms/settings',
   SETTINGS: '/settings',
   PROFILE: '/settings/profile',
+  ADSCORE: '/adscore',
+  ADSCORE_PROVIDER: '/adscore/provider',
+  ADSCORE_MEMBER: '/adscore/member',
+  ADSCORE_PROCESS_FLOW: '/adscore/process-flow',
 } as const;
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];

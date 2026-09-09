@@ -35,6 +35,8 @@ import {
   Building,
   Key,
   Cog,
+  TrendingUp,
+  GitBranch,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -55,6 +57,8 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Shield,
   Building,
   Key,
+  TrendingUp,
+  GitBranch,
 };
 
 

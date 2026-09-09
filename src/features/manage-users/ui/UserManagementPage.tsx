@@ -12,7 +12,7 @@ import {
 } from '@/entities/user/api/userApi';
 import { useGetPayorsQuery } from '@/entities/payor/api/payorApi';
 import { useHasPermission } from '@/entities/auth';
-import { ROLES, type Role, type AuthUser } from '@/shared/types';
+import { ROLES, ANALYTICS_CATEGORIES, type Role, type AnalyticsCategory, type AuthUser } from '@/shared/types';
 import type { CreateUserPayload } from '@/entities/user/model/userTypes';
 import DataTable, { type DataColumn } from '@/shared/components/common/DataTable';
 import ExportButton from '@/shared/components/common/ExportButton';
@@ -48,6 +48,7 @@ const roleLabels: Record<string, string> = {
   ADMIN: 'Admin',
   INDEMNITY: 'Indemnity',
   MANAGECARE: 'Manage Care',
+  ADSCORE: 'AdScore',
 };
 
 const roleBadgeColors: Record<string, string> = {
@@ -55,6 +56,14 @@ const roleBadgeColors: Record<string, string> = {
   ADMIN: 'bg-blue-50 text-blue-700 border-blue-200',
   INDEMNITY: 'bg-amber-50 text-amber-700 border-amber-200',
   MANAGECARE: 'bg-teal-50 text-teal-700 border-teal-200',
+  ADSCORE: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+};
+
+const analyticsCategoryBadgeColors: Record<string, string> = {
+  INS: 'bg-amber-50 text-amber-700 border-amber-200',
+  GES: 'bg-teal-50 text-teal-700 border-teal-200',
+  PS: 'bg-purple-50 text-purple-700 border-purple-200',
+  Internal: 'bg-slate-100 text-slate-700 border-slate-300',
 };
 
 export default function UserManagement() {
@@ -63,6 +72,7 @@ export default function UserManagement() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
@@ -77,6 +87,7 @@ export default function UserManagement() {
     password: '',
     fullName: '',
     role: 'ADMIN',
+    analyticsCategory: 'Internal',
     payorIds: [],
   });
 
@@ -85,6 +96,7 @@ export default function UserManagement() {
     pageSize,
     search: search || undefined,
     role: roleFilter !== 'ALL' ? roleFilter : undefined,
+    analyticsCategory: categoryFilter !== 'ALL' ? categoryFilter : undefined,
   });
 
   const { data: payorsData } = useGetPayorsQuery({ page: 1, pageSize: 100 });
@@ -124,7 +136,7 @@ export default function UserManagement() {
 
   const openCreateDialog = () => {
     setEditingUser(null);
-    setForm({ username: '', email: '', password: '', fullName: '', role: 'ADMIN', payorIds: [] });
+    setForm({ username: '', email: '', password: '', fullName: '', role: 'ADMIN', analyticsCategory: 'Internal', payorIds: [] });
     setDialogOpen(true);
   };
 
@@ -136,6 +148,7 @@ export default function UserManagement() {
       password: '',
       fullName: user.fullName,
       role: user.role,
+      analyticsCategory: user.analyticsCategory ?? 'Internal',
       payorIds: user.payorIds || [],
     });
     setDialogOpen(true);
@@ -143,10 +156,14 @@ export default function UserManagement() {
 
   const handleSubmit = async () => {
     try {
+      if (!form.analyticsCategory) {
+        toast.error('Data Analytics Category is required');
+        return;
+      }
       if (editingUser) {
         await updateUser({
           id: editingUser.id,
-          body: { fullName: form.fullName, email: form.email, role: form.role as Role, payorIds: form.payorIds },
+          body: { fullName: form.fullName, email: form.email, role: form.role as Role, analyticsCategory: form.analyticsCategory as AnalyticsCategory, payorIds: form.payorIds },
         }).unwrap();
         toast.success('User updated successfully');
       } else {
@@ -237,6 +254,21 @@ export default function UserManagement() {
         <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold', roleBadgeColors[row.role] || 'bg-gray-50 text-gray-700 border-gray-200')}>
           {roleLabels[row.role] || row.role}
         </span>
+      ),
+    },
+    {
+      key: 'analyticsCategory',
+      label: 'Analytics',
+      minWidth: '110px',
+      value: (row: AuthUser) => row.analyticsCategory ?? '—',
+      render: (row: AuthUser) => (
+        row.analyticsCategory ? (
+          <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold', analyticsCategoryBadgeColors[row.analyticsCategory] || 'bg-gray-50 text-gray-700 border-gray-200')}>
+            {row.analyticsCategory}
+          </span>
+        ) : (
+          <span className="text-xs text-[#9CA3AF] italic">—</span>
+        )
       ),
     },
     {
@@ -424,18 +456,30 @@ export default function UserManagement() {
               <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[160px] text-xs sm:text-sm border-[#E5E8EC]">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Categories</SelectItem>
+              {ANALYTICS_CATEGORIES.map((cat) => (
+                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {canExport && (
           <ExportButton
             filename="user_directory.csv"
             getPayload={() => ({
-              headers: ['Name', 'Username', 'Email', 'Role', 'Payor Access', 'Status'],
+              headers: ['Name', 'Username', 'Email', 'Role', 'Analytics Category', 'Payor Access', 'Status'],
               rows: users.map((u) => [
                 u.fullName,
                 u.username,
                 u.email,
                 roleLabels[u.role] || u.role,
+                u.analyticsCategory ?? '',
                 u.payorIds.map((id) => payorNameMap.get(id) || id).join('; '),
                 u.isActive ? 'Active' : 'Inactive',
               ]),
@@ -541,6 +585,24 @@ export default function UserManagement() {
                 <SelectContent>
                   {Object.values(ROLES).map((role) => (
                     <SelectItem key={role} value={role}>{roleLabels[role]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-bold text-[#4B5563]">
+                Data Analytics Category <span className="text-rose-500">*</span>
+              </label>
+              <Select
+                value={form.analyticsCategory ?? ''}
+                onValueChange={(v) => setForm((f) => ({ ...f, analyticsCategory: v as AnalyticsCategory }))}
+              >
+                <SelectTrigger className="text-sm border-[#E5E8EC]">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ANALYTICS_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

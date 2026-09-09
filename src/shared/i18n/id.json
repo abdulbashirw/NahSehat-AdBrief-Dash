@@ -201,9 +201,15 @@
     "payorManagement": "Manajemen Payor",
     "permissions": "Izin",
     "settings": "Pengaturan",
+    "userActivity": "User Monitoring",
     "logout": "Keluar",
     "indemnityModule": "Indemnity",
-    "manageCareModule": "Manage Care"
+    "manageCareModule": "Manage Care",
+    "adScore": "AdScore",
+    "adScoreProvider": "AdScore Provider",
+    "adScoreMember": "AdScore Member",
+    "adScoreProcessFlow": "Alur Proses",
+    "adScoreModule": "AdScore"
   },
   "tabLayout": {
     "logout": "Keluar"
@@ -556,5 +562,103 @@
     "disabled": "Ekspor dinonaktifkan",
     "success": "Ekspor berhasil",
     "csv": "Ekspor CSV"
+  },
+  "activity": {
+    "title": "User Monitoring",
+    "noData": "Belum ada data aktivitas",
+    "charts": {
+      "trend": "Tren Aktivitas Harian",
+      "modules": "Distribusi per Modul",
+      "topUsers": "Top 5 User by Akses",
+      "heatmap": "Heatmap Aktivitas (Jam × Hari)"
+    },
+    "userTable": {
+      "title": "DAFTAR USER TERAKTIF",
+      "search": "Cari nama / User ID…",
+      "empty": "Tidak ada user yang cocok dengan filter"
+    }
+  },
+  "adScore": {
+    "landing": {
+      "title": "AdScore Analytics",
+      "subtitle": "Analisis performa provider, member, dan corporate berdasarkan riwayat transaksi",
+      "providerCard": {
+        "title": "AdScore Provider",
+        "description": "Analisis performa provider berdasarkan riwayat transaksi dan SLA"
+      },
+      "memberCard": {
+        "title": "AdScore Member & Corporate",
+        "description": "Masukkan data untuk analisis AdScore berdasarkan riwayat transaksi di jaringan AdMedika"
+      },
+      "processFlowCard": {
+        "title": "Alur Proses",
+        "description": "Alur proses calon member menjadi member — perbandingan existing vs AdScore"
+      }
+    },
+    "provider": {
+      "title": "Cari Provider",
+      "subtitle": "Analisis performa provider berdasarkan riwayat transaksi dan SLA",
+      "nameLabel": "Nama Provider",
+      "namePlaceholder": "Contoh: Rumah Sakit Medika Utama",
+      "typeLabel": "Tipe Provider",
+      "typePlaceholder": "Pilih tipe",
+      "cityLabel": "Kota",
+      "cityPlaceholder": "Jakarta",
+      "searchButton": "Lihat AdScore Provider",
+      "tipDemo": "Tip Demo: masukkan nama provider apa saja untuk melihat simulasi AdScore Provider dengan skala 1-20."
+    },
+    "member": {
+      "title": "Cari Member / Corporate",
+      "subtitle": "Masukkan data untuk analisis AdScore berdasarkan riwayat transaksi di jaringan AdMedika",
+      "tabMember": "Member",
+      "tabCorporate": "Corporate",
+      "nameLabel": "Nama Lengkap",
+      "namePlaceholder": "Contoh: Budi Santoso",
+      "birthDateLabel": "Tanggal Lahir",
+      "companyLabel": "Nama Perusahaan",
+      "companyPlaceholder": "Contoh: PT Maju Bersama",
+      "searchButton": "Lihat AdScore",
+      "tipDemo": "Tip Demo: Masukkan data apa saja untuk melihat simulasi AdScore. Skor dihasilkan dari nama input dengan skala 1-20."
+    },
+    "processFlow": {
+      "pageTitle": "Alur Proses Onboarding Member",
+      "title": "Proses Calon Member Menjadi Member",
+      "subtitle": "Perbandingan proses existing vs dengan AdScore",
+      "existingTitle": "Proses Existing (Tanpa AdScore)",
+      "existingTime": "Waktu proses: 14-30 hari",
+      "existingFlowTitle": "Proses Onboarding Member Asuransi (Existing)",
+      "withAdScoreTitle": "Proses dengan AdScore",
+      "withAdScoreTime": "Waktu proses: 1-3 hari (80% lebih cepat)",
+      "withAdScoreFlowTitle": "Proses Onboarding Member dengan AdScore",
+      "step1": "Penawaran Agen",
+      "step2": "Calon Member Mengisi Form",
+      "step3": "Underwriting Asuransi",
+      "step4": "Keputusan Terima/Tolak",
+      "step5": "Member Aktif",
+      "day1": "Hari 1",
+      "day1_3": "Hari 1-3",
+      "day3_14": "Hari 3-14",
+      "day14_21": "Hari 14-21",
+      "day21_30": "Hari 21-30",
+      "step1Desc": "Penawaran Agen",
+      "step2Desc": "Pengisian Form",
+      "step3Desc": "Manual Underwriting",
+      "step4Desc": "Medical Check-up",
+      "step5Desc": "Keputusan & Polis"
+    },
+    "score": {
+      "good": "Skor Baik",
+      "moderate": "Cukup Baik",
+      "bad": "Kurang Baik",
+      "goodDesc": "Pelayanan < SLA",
+      "moderateDesc": "Pelayanan ≈ SLA",
+      "badDesc": "Pelayanan > SLA"
+    },
+    "result": {
+      "title": "Hasil AdScore",
+      "score": "Skor",
+      "outOf": "dari 20",
+      "noResult": "Kirim formulir untuk melihat hasil AdScore"
+    }
   }
 }

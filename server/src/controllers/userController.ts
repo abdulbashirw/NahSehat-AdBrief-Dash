@@ -7,6 +7,7 @@ import { buildAuthUser } from '../utils/jwt';
 import { createError } from '../middleware/errorHandler';
 import type { AuthRequest } from '../middleware/auth';
 import type { CreateUserPayload, UpdateUserPayload, PaginatedResponse, AuthUser } from '../types';
+import { ANALYTICS_CATEGORIES } from '../types';
 import { getSettingNumber } from '../models/settingsModel';
 import bcrypt from 'bcryptjs';
 
@@ -39,10 +40,10 @@ async function getPermissionsByRoleName(roleName: string) {
   return permRows as any[];
 }
 
-/** GET /api/v1/users?page=&pageSize=&search=&role=&isActive= */
+/** GET /api/v1/users?page=&pageSize=&search=&role=&isActive=&analyticsCategory= */
 export async function getUsers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { page = 1, pageSize = 10, search, role, isActive } = req.query as any;
+    const { page = 1, pageSize = 10, search, role, isActive, analyticsCategory } = req.query as any;
     const offset = (Number(page) - 1) * Number(pageSize);
 
     let where = '1=1';
@@ -51,6 +52,7 @@ export async function getUsers(req: AuthRequest, res: Response, next: NextFuncti
     if (search) { where += ' AND (u.username LIKE ? OR u.email LIKE ? OR u.full_name LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
     if (role && role !== 'ALL') { where += ' AND u.role = ?'; params.push(role); }
     if (isActive !== undefined && isActive !== '') { where += ' AND u.is_active = ?'; params.push(isActive === 'true' || isActive === '1' ? 1 : 0); }
+    if (analyticsCategory && analyticsCategory !== 'ALL') { where += ' AND u.analytics_category = ?'; params.push(analyticsCategory); }
 
     const [[countRow]] = await pool.query<any[]>(`SELECT COUNT(*) as total FROM users u WHERE ${where}`, params);
     const total = Number(countRow.total);
@@ -90,10 +92,15 @@ export async function getUserById(req: AuthRequest, res: Response, next: NextFun
 /** POST /api/v1/users */
 export async function createUser(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { username, email, password, fullName, role, payorIds, isActive } = req.body as CreateUserPayload;
+    const { username, email, password, fullName, role, analyticsCategory, payorIds, isActive } = req.body as CreateUserPayload;
 
     if (!username || !email || !password || !fullName || !role) {
       throw createError(400, 'username, email, password, fullName, role are required');
+    }
+
+    // ── analyticsCategory is REQUIRED (INS | GES | PS | Internal) ──
+    if (!analyticsCategory || !ANALYTICS_CATEGORIES.includes(analyticsCategory)) {
+      throw createError(400, 'analyticsCategory is required and must be one of: INS, GES, PS, Internal');
     }
 
     // ── Validate password against Min Password Length setting ──
@@ -107,8 +114,8 @@ export async function createUser(req: AuthRequest, res: Response, next: NextFunc
     const id = crypto.randomUUID();
 
     await pool.execute(
-      'INSERT INTO users (id, username, email, password, full_name, role, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, username, email, hash, fullName, role, isActive !== false ? 1 : 0],
+      'INSERT INTO users (id, username, email, password, full_name, role, analytics_category, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, username, email, hash, fullName, role, analyticsCategory, isActive !== false ? 1 : 0],
     );
 
     // Assign payors
@@ -142,6 +149,12 @@ export async function updateUser(req: AuthRequest, res: Response, next: NextFunc
     if (body.fullName) { updates.push('full_name = ?'); values.push(body.fullName); }
     if (body.email) { updates.push('email = ?'); values.push(body.email); }
     if (body.role) { updates.push('role = ?'); values.push(body.role); }
+    if (body.analyticsCategory !== undefined) {
+      if (!ANALYTICS_CATEGORIES.includes(body.analyticsCategory)) {
+        throw createError(400, 'analyticsCategory must be one of: INS, GES, PS, Internal');
+      }
+      updates.push('analytics_category = ?'); values.push(body.analyticsCategory);
+    }
     if (body.isActive !== undefined) { updates.push('is_active = ?'); values.push(body.isActive ? 1 : 0); }
 
     if (updates.length > 0) {

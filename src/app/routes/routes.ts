@@ -17,7 +17,7 @@ export const ROUTES: RouteConfig[] = [
     path: '/dashboard',
     label: 'nav.dashboard',
     icon: 'LayoutDashboard',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE'],
   },
 
   // ── Indemnity ──
@@ -56,12 +56,28 @@ export const ROUTES: RouteConfig[] = [
     ],
   },
 
+  // ── AdScore ──
+  {
+    path: '/adscore',
+    label: 'nav.adScore',
+    icon: 'TrendingUp',
+    roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'],
+  },
+
+  // ── User Activity — admin only ──
+  {
+    path: '/activity',
+    label: 'nav.userActivity',
+    icon: 'Activity',
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+
   // ── Settings — all authenticated users ──
   {
     path: '/settings',
     label: 'nav.settings',
     icon: 'Cog',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE'],
   },
 ];
 
@@ -69,6 +85,7 @@ export const ROUTES: RouteConfig[] = [
  * Default redirect paths per role.
  * INDEMNITY → /indemnity/overview
  * MANAGECARE → /managecare/daily-monitoring
+ * ADSCORE → /adscore
  * SUPER_ADMIN/ADMIN → /dashboard
  */
 export const DEFAULT_REDIRECTS: Record<string, string> = {
@@ -76,10 +93,11 @@ export const DEFAULT_REDIRECTS: Record<string, string> = {
   ADMIN: '/dashboard',
   INDEMNITY: '/indemnity/overview',
   MANAGECARE: '/managecare/daily-monitoring',
+  ADSCORE: '/adscore',
 };
 
 /**
  * Roles that should use the TabLayout instead of AppLayout.
  */
-export const TAB_LAYOUT_ROLES = ['INDEMNITY', 'MANAGECARE'] as const;
+export const TAB_LAYOUT_ROLES = ['INDEMNITY', 'MANAGECARE', 'ADSCORE'] as const;
 export type TabLayoutRole = (typeof TAB_LAYOUT_ROLES)[number];

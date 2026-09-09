@@ -25,6 +25,9 @@ import {
   Users,
   Heart,
   CalendarDays,
+  TrendingUp,
+  Building2,
+  GitBranch,
 } from 'lucide-react';
 
 /** Icon mapping for tab items */
@@ -36,6 +39,9 @@ const TAB_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> 
   CalendarDays,
   BarChart3,
   Activity,
+  TrendingUp,
+  Building2,
+  GitBranch,
 };
 
 /** Route configs for tab-based roles */
@@ -49,6 +55,14 @@ const TAB_ROUTES: Record<string, RouteConfig[]> = {
       roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGECARE'],
     },
   ],
+  ADSCORE: [
+    {
+      path: '/adscore',
+      label: 'nav.adScore',
+      icon: 'TrendingUp',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'],
+    },
+  ],
 };
 
 export default function TabLayout() {
@@ -59,7 +73,7 @@ export default function TabLayout() {
 
   // Determine which tab set to show based on role
   const tabItems = user?.role ? TAB_ROUTES[user.role] ?? [] : [];
-  const moduleName = user?.role === 'INDEMNITY' ? t('nav.indemnityModule') : user?.role === 'MANAGECARE' ? t('nav.manageCareModule') : '';
+  const moduleName = user?.role === 'INDEMNITY' ? t('nav.indemnityModule') : user?.role === 'MANAGECARE' ? t('nav.manageCareModule') : user?.role === 'ADSCORE' ? t('nav.adScoreModule') : '';
 
   // Auto-rotate tabs every 2 min 30 sec (INDEMNITY only has effect — MANAGECARE has 1 tab).
   useAutoRotateTabs(tabItems.map((tab) => tab.path));

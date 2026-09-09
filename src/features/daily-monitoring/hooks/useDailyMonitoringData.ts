@@ -6,16 +6,24 @@
  *   - Computes the 30-day date range (KEEP from original DailyMonitoring)
  *   - Uses RTK Query native `pollingInterval` for auto-refresh (ADOPT from Indemnity)
  *   - Exposes `fulfilledTimeStamp` as `lastUpdated` for the "Updated HH:mm:ss" badge
+ *   - Reads selectedPayorId from monitoringPayorStore (ADOPT — user-selectable payor)
  *
  * Unlike Indemnity, there is no user-selectable date filter — the range is
  * always the last 30 days (hardcoded, per product requirement).
  */
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useGetDailyMonitoringQuery } from '@/entities/monitoring/api/monitoringApi';
 import type { DailyMonitoringItem, DailyMonitoringResponse } from '@/entities/monitoring/api/monitoringApi';
 import { useGetPayorsQuery } from '@/entities/payor/api/payorApi';
 import { useAppSelector } from '@/shared/store';
 import { useHasRole } from '@/entities/auth/model/useRbac';
+import {
+  subscribe as subscribePayor,
+  getSnapshot as getPayorSnapshot,
+  getServerSnapshot as getPayorServerSnapshot,
+  setSelectedPayorId,
+} from '@/features/daily-monitoring/store/monitoringPayorStore';
 
 /** Format Date to YYYY-MM-DD (API expects this format for dailyMonitoring). */
 function formatDate(date: Date): string {
@@ -39,8 +47,12 @@ export interface UseDailyMonitoringDataResult {
 }
 
 export function useDailyMonitoringData(): UseDailyMonitoringDataResult {
+  // ── Payor filter store (ADOPT — user-selectable payor) ──
+  const payorFilter = useSyncExternalStore(subscribePayor, getPayorSnapshot, getPayorServerSnapshot);
+
   // ── Auth & RBAC ──
   const user = useAppSelector((s) => s.auth.user);
+  const userPayorIds = user?.payorIds ?? [];
   const isManageCareRole = useHasRole('MANAGECARE');
   const isSuperAdmin = useHasRole('SUPER_ADMIN');
   const isAdmin = useHasRole('ADMIN');
@@ -52,15 +64,32 @@ export function useDailyMonitoringData(): UseDailyMonitoringDataResult {
     { skip: !isManageCare },
   );
 
-  // ── Resolve payor_code: first MANAGE_CARE payor matching user's payorIds ──
-  const payorCode = useMemo(() => {
-    if (!isManageCare || !user?.payorIds?.length) return '';
+  // ── Filter: only MANAGE_CARE payors that the user has access to ──
+  const manageCarePayors = useMemo(() => {
     const allPayors = payorsData?.data ?? [];
-    const match = allPayors.find(
-      (p) => p.category === 'MANAGE_CARE' && user.payorIds.includes(p.id),
+    const activeManageCare = allPayors.filter(
+      (p) => p.category === 'MANAGE_CARE' && p.isActive,
     );
-    return match?.code ?? '';
-  }, [payorsData, user, isManageCare]);
+    if (userPayorIds.length === 0) return activeManageCare;
+    return activeManageCare.filter((p) => userPayorIds.includes(p.id));
+  }, [payorsData, userPayorIds]);
+
+  // ── Auto-select first payor if none selected (works even without PayorFilter) ──
+  useEffect(() => {
+    if (payorFilter.selectedPayorId === 'ALL' && manageCarePayors.length > 0) {
+      setSelectedPayorId(manageCarePayors[0].id);
+    }
+  }, [manageCarePayors, payorFilter.selectedPayorId]);
+
+  // ── Resolve selectedPayorId → payor_code ──
+  const payorCode = useMemo(() => {
+    if (!isManageCare) return '';
+    const selectedPayorId = payorFilter.selectedPayorId;
+    if (!selectedPayorId || selectedPayorId === 'ALL') return '';
+    const allPayors = payorsData?.data ?? [];
+    const payor = allPayors.find((p) => p.id === selectedPayorId);
+    return payor?.code ?? '';
+  }, [payorFilter.selectedPayorId, payorsData, isManageCare]);
 
   // ── Compute date range: 30 days ago → now (KEEP from original) ──
   const { startDate, endDate } = useMemo(() => {

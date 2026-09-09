@@ -1,0 +1,1 @@
+export { default as UserActivityPage } from './ui/UserActivityPage';

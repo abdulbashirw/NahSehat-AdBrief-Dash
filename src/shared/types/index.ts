@@ -12,9 +12,15 @@ export const ROLES = {
   ADMIN: 'ADMIN',
   INDEMNITY: 'INDEMNITY',
   MANAGECARE: 'MANAGECARE',
+  ADSCORE: 'ADSCORE',
 } as const;
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
+
+/** Data analytics category identity — final labels: INS | GES | PS | Internal */
+export const ANALYTICS_CATEGORIES = ['INS', 'GES', 'PS', 'Internal'] as const;
+
+export type AnalyticsCategory = (typeof ANALYTICS_CATEGORIES)[number];
 
 export interface Permission {
   id: string;
@@ -39,6 +45,7 @@ export interface AuthUser {
   fullName: string;
   phone?: string;
   role: Role;
+  analyticsCategory?: AnalyticsCategory | null;
   permissions: Permission[];
   payorIds: string[];
   isActive: boolean;

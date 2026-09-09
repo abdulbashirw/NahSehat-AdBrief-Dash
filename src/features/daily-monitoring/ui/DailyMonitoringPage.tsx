@@ -52,6 +52,7 @@ import EmptyState from '@/shared/components/common/EmptyState';
 import ExportButton from '@/shared/components/common/ExportButton';
 import { useExportEnabled } from '@/entities/settings/model/useSettings';
 import { useDailyMonitoringData } from '@/features/daily-monitoring/hooks/useDailyMonitoringData';
+import PayorFilter from '@/features/daily-monitoring/components/PayorFilter';
 import {
   kpiSummary,
   byDiagnosis,
@@ -492,6 +493,12 @@ export default function DailyMonitoring() {
         </div>
 
         <div className="flex items-center justify-end gap-3">
+          {/* Payor selector (ADOPT — same concept as Indemnity PeriodFilter) */}
+          <PayorFilter />
+
+          {/* Hairline divider */}
+          <div className="hidden w-px self-stretch bg-[#E5E8EC] md:block" />
+
           {/* Live clock (KEEP — minimal) */}
           <div className="flex items-center gap-2 rounded-lg bg-[#F4F6F8] px-3 py-2">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#2E7D5B]" />

@@ -28,6 +28,7 @@ const MENU_ITEMS = [
   { key: 'indemnity-diseases', label: 'Diseases' },
   { key: 'managecare', label: 'Manage Care' },
   { key: 'managecare-daily-monitoring', label: 'Daily Monitoring' },
+  { key: 'adscore', label: 'AdScore' },
   { key: 'cms', label: 'CMS' },
   { key: 'cms-users', label: 'User Management' },
   { key: 'cms-roles', label: 'Role Management' },

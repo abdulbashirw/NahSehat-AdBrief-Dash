@@ -11,13 +11,18 @@ export interface AuthUser {
   fullName: string;
   phone?: string;
   role: Role;
+  analyticsCategory: AnalyticsCategory | null;
   permissions: Permission[];
   payorIds: string[];
   isActive: boolean;
   twoFactorEnabled?: boolean;
 }
 
-export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'INDEMNITY' | 'MANAGECARE';
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'INDEMNITY' | 'MANAGECARE' | 'ADSCORE';
+
+/** Data analytics category identity — final list: INS | GES | PS | Internal */
+export const ANALYTICS_CATEGORIES = ['INS', 'GES', 'PS', 'Internal'] as const;
+export type AnalyticsCategory = (typeof ANALYTICS_CATEGORIES)[number];
 
 export interface Permission {
   id: string;
@@ -145,6 +150,7 @@ export interface CreateUserPayload {
   password: string;
   fullName: string;
   role: Role;
+  analyticsCategory: AnalyticsCategory;
   payorIds?: string[];
   isActive?: boolean;
 }
@@ -153,6 +159,7 @@ export interface UpdateUserPayload {
   fullName?: string;
   email?: string;
   role?: Role;
+  analyticsCategory?: AnalyticsCategory;
   payorIds?: string[];
   isActive?: boolean;
 }

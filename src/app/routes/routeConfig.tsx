@@ -3,7 +3,7 @@
  *
  * Uses a single route tree with role-based layout switching:
  *   - SUPER_ADMIN, ADMIN → AppLayout (sidebar + topbar)
- *   - INDEMNITY, MANAGECARE → TabLayout (header tabs, no sidebar)
+ *   - INDEMNITY, MANAGECARE, ADSCORE → TabLayout (header tabs, no sidebar)
  *
  * The LayoutSwitcher component reads the user's role from Redux
  * and renders the appropriate layout.
@@ -32,6 +32,12 @@ const RoleManagement = lazy(() => import('@/features/manage-roles/ui/RoleManagem
 const PayorManagement = lazy(() => import('@/features/manage-payors/ui/PayorManagementPage'));
 const PermissionManagement = lazy(() => import('@/features/manage-permissions/ui/PermissionManagementPage'));
 const Settings = lazy(() => import('@/features/manage-settings/ui/SettingsPage'));
+const UserActivity = lazy(() => import('@/features/user-activity/ui/UserActivityPage'));
+
+const AdScoreLanding = lazy(() => import('@/features/adscore/ui/AdScoreLandingPage'));
+const AdScoreProvider = lazy(() => import('@/features/adscore-provider/ui/AdScoreProviderPage'));
+const AdScoreMember = lazy(() => import('@/features/adscore-member/ui/AdScoreMemberPage'));
+const ProcessFlow = lazy(() => import('@/features/adscore-process-flow/ui/ProcessFlowPage'));
 
 // ── Helper to create role-guarded routes ────────────────────────
 function roleRoute(path: string, roles: Role[], children: RouteObject[]): RouteObject {
@@ -63,12 +69,23 @@ export const routeConfig: RouteObject[] = [
         { index: true, element: <DailyMonitoring /> },
         { path: 'daily-monitoring', element: <DailyMonitoring /> },
       ]),
+      // ── AdScore ──
+      roleRoute('adscore', ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'], [
+        { index: true, element: <AdScoreLanding /> },
+        { path: 'provider', element: <AdScoreProvider /> },
+        { path: 'member', element: <AdScoreMember /> },
+        { path: 'process-flow', element: <ProcessFlow /> },
+      ]),
       // ── CMS ──
       roleRoute('cms', ['SUPER_ADMIN', 'ADMIN'], [
         { path: 'users', element: <UserManagement /> },
         { path: 'roles', element: <RoleGuard roles={['SUPER_ADMIN']}><RoleManagement /></RoleGuard> },
         { path: 'payors', element: <PayorManagement /> },
         { path: 'permissions', element: <RoleGuard roles={['SUPER_ADMIN']}><PermissionManagement /></RoleGuard> },
+      ]),
+      // ── User Activity ──
+      roleRoute('activity', ['SUPER_ADMIN', 'ADMIN'], [
+        { index: true, element: <UserActivity /> },
       ]),
       // ── Settings ──
       { path: 'settings', element: <Settings /> },
