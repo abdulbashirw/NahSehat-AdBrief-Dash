@@ -15,12 +15,26 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { LS_TOKEN_KEY } from '@/shared/constants';
 
+/**
+ * SECURITY (P3 — L1): TIDAK ada lagi fallback URL internal yang di-hardcode.
+ * Semua base URL WAJIB disediakan via env saat build (VITE_*). Jika env
+ * hilang → string kosong (relative URL), BUKAN URL internal yang
+ * membocorkan infrastruktur ke dalam bundle produksi.
+ *
+ * Pastikan .env.production / pipeline CI selalu set:
+ *   VITE_BE_API, VITE_NAHSEHAT_API_V3, VITE_NAHSEHAT_ADBRIEF_API_V3
+ */
+const warnMissing = (key: string): string => {
+  void key;
+  return '';
+};
+
 export const API_URLS = {
-  auth: `${import.meta.env.VITE_BE_API || 'https://repi-api-336781009919.asia-southeast2.run.app/api/v1'}/auth`,
-  indemnity: import.meta.env.VITE_NAHSEHAT_API_V3 || 'https://repi-api-336781009919.asia-southeast2.run.app/api/v3',
-  manageCare: import.meta.env.VITE_NAHSEHAT_API_V3 || 'https://repi-api-336781009919.asia-southeast2.run.app/api/v3',
-  adbrief: import.meta.env.VITE_NAHSEHAT_ADBRIEF_API_V3 || 'https://repi2-server-dev-336781009919.asia-southeast2.run.app/adbrief/nahsehat/api/v3',
-  cms: import.meta.env.VITE_BE_API || 'https://repi-api-336781009919.asia-southeast2.run.app/api/v1',
+  auth: `${import.meta.env.VITE_BE_API || warnMissing('VITE_BE_API')}/auth`,
+  indemnity: import.meta.env.VITE_NAHSEHAT_API_V3 || warnMissing('VITE_NAHSEHAT_API_V3'),
+  manageCare: import.meta.env.VITE_NAHSEHAT_API_V3 || warnMissing('VITE_NAHSEHAT_API_V3'),
+  adbrief: import.meta.env.VITE_NAHSEHAT_ADBRIEF_API_V3 || warnMissing('VITE_NAHSEHAT_ADBRIEF_API_V3'),
+  cms: import.meta.env.VITE_BE_API || warnMissing('VITE_BE_API'),
 };
 
 export const api = createApi({

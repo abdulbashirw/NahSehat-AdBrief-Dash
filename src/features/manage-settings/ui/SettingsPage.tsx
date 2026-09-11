@@ -24,7 +24,7 @@ import {
 import { useHasAnyRole } from '@/entities/auth/model/useRbac';
 import { useAuth } from '@/entities/auth/model/useAuth';
 import { useAppDispatch } from '@/shared/store';
-import { updateUser } from '@/entities/auth/model/authSlice';
+import { updateUser, setCredentials } from '@/entities/auth/model/authSlice';
 import PageHeader from '@/shared/components/common/PageHeader';
 import LoadingSpinner from '@/shared/components/loading/LoadingSpinner';
 import ApiError from '@/shared/components/error/ApiError';
@@ -54,6 +54,7 @@ export default function Settings() {
   const { user } = useAuth();
   const dispatch = useAppDispatch();
   const isSuperAdmin = hasAnyRole(['SUPER_ADMIN']);
+  const isAdmin = hasAnyRole(['ADMIN']);
   const isIndemnity = hasAnyRole(['INDEMNITY']);
   const {
     enabled: autoRotateEnabled,
@@ -252,10 +253,16 @@ export default function Settings() {
     }
     setSavingSecurity(true);
     try {
-      await changePassword({
+      // BE mengembalikan token baru setelah ganti password (rotasi sesi)
+      const result = (await changePassword({
         currentPassword: security.currentPassword,
         newPassword: security.newPassword,
-      }).unwrap();
+      }).unwrap()) as unknown as { message?: string; token?: string };
+      // SECURITY (P1.3): BE mem-rotate token setelah ganti password
+      // (device lain ikut logout). Simpan token baru agar sesi ini tetap hidup.
+      if (result?.token) {
+        dispatch(setCredentials({ token: result.token, user: user as never }));
+      }
       setSecurity({ currentPassword: '', newPassword: '', confirmPassword: '' });
       toast.success(t('settings.passwordChanged'));
     } catch (err: unknown) {
@@ -339,7 +346,7 @@ export default function Settings() {
       : []),
     { key: 'profile' as const, label: t('settings.profile'), icon: User },
     { key: 'security' as const, label: t('settings.security'), icon: Shield },
-    ...(isIndemnity
+    ...(isIndemnity || isAdmin
       ? [{ key: 'display' as const, label: t('settings.display'), icon: LayoutDashboard }]
       : []),
   ];

@@ -12,7 +12,7 @@ export async function testConnection(): Promise<void> {
   const conn = await pool.getConnection();
   try {
     await conn.ping();
-    console.log('✅ MySQL connected —', dbConfig.database);
+    console.log('MySQL connected');
   } finally {
     conn.release();
   }

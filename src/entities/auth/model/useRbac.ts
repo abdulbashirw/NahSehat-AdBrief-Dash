@@ -25,11 +25,18 @@ export type PermissionAction = Permission['action'];
  */
 const PATH_TO_MENU: Record<string, string> = {
   '/dashboard': 'dashboard',
+  '/indemnity': 'indemnity-overview',
   '/indemnity/overview': 'indemnity-overview',
   '/indemnity/claims-map': 'indemnity-claims-map',
   '/indemnity/demographics': 'indemnity-demographics',
   '/indemnity/diseases': 'indemnity-diseases',
+  '/managecare': 'managecare-daily-monitoring',
   '/managecare/daily-monitoring': 'managecare-daily-monitoring',
+  '/adscore': 'adscore',
+  '/adscore/provider': 'adscore',
+  '/adscore/member': 'adscore',
+  '/adscore/process-flow': 'adscore',
+  '/activity': 'activity',
   '/cms/users': 'cms-users',
   '/cms/roles': 'cms-roles',
   '/cms/payors': 'cms-payors',
@@ -102,4 +109,18 @@ export function useCanAccess(path: string): boolean {
   const menu = PATH_TO_MENU[path];
   if (!menu) return true; // unknown paths default to accessible
   return user.permissions.some((p) => p.menu === menu && p.action === 'read');
+}
+
+/**
+ * Returns a callback to check menu access. Useful inside loops or list filters.
+ */
+export function useCanAccessCallback(): (path: string) => boolean {
+  const user = useAppSelector((s) => s.auth.user);
+  return (path: string) => {
+    if (!user) return false;
+    if (user.role === 'SUPER_ADMIN') return true;
+    const menu = PATH_TO_MENU[path];
+    if (!menu) return true;
+    return user.permissions.some((p) => p.menu === menu && p.action === 'read');
+  };
 }

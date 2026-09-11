@@ -45,25 +45,39 @@ const TAB_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> 
 };
 
 /** Route configs for tab-based roles */
+const INDEMNITY_TAB_ROUTES = ROUTES.find((r) => r.path === '/indemnity')?.children ?? [];
+const MANAGECARE_TAB_ROUTES: RouteConfig[] = [
+  {
+    path: '/managecare/daily-monitoring',
+    label: 'nav.dailyMonitoring',
+    icon: 'Activity',
+    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGECARE'],
+  },
+];
+const ADSCORE_TAB_ROUTES: RouteConfig[] = [
+  {
+    path: '/adscore',
+    label: 'nav.adScore',
+    icon: 'TrendingUp',
+    roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'],
+  },
+];
+
 const TAB_ROUTES: Record<string, RouteConfig[]> = {
-  INDEMNITY: ROUTES.find((r) => r.path === '/indemnity')?.children ?? [],
-  MANAGECARE: [
-    {
-      path: '/managecare/daily-monitoring',
-      label: 'nav.dailyMonitoring',
-      icon: 'Activity',
-      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGECARE'],
-    },
-  ],
-  ADSCORE: [
-    {
-      path: '/adscore',
-      label: 'nav.adScore',
-      icon: 'TrendingUp',
-      roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'],
-    },
-  ],
+  ADMIN: [],
+  INDEMNITY: INDEMNITY_TAB_ROUTES,
+  MANAGECARE: MANAGECARE_TAB_ROUTES,
+  ADSCORE: ADSCORE_TAB_ROUTES,
 };
+
+function getTabItems(role: string | undefined, pathname: string): RouteConfig[] {
+  if (!role || pathname === '/dashboard') return [];
+  if (role !== 'ADMIN') return TAB_ROUTES[role] ?? [];
+  if (pathname.startsWith('/indemnity')) return INDEMNITY_TAB_ROUTES;
+  if (pathname.startsWith('/managecare')) return MANAGECARE_TAB_ROUTES;
+  if (pathname.startsWith('/adscore')) return ADSCORE_TAB_ROUTES;
+  return [];
+}
 
 export default function TabLayout() {
   const { user, logout } = useAuth();
@@ -72,7 +86,7 @@ export default function TabLayout() {
   const navigate = useNavigate();
 
   // Determine which tab set to show based on role
-  const tabItems = user?.role ? TAB_ROUTES[user.role] ?? [] : [];
+  const tabItems = getTabItems(user?.role, location.pathname);
   const moduleName = user?.role === 'INDEMNITY' ? t('nav.indemnityModule') : user?.role === 'MANAGECARE' ? t('nav.manageCareModule') : user?.role === 'ADSCORE' ? t('nav.adScoreModule') : '';
 
   // Auto-rotate tabs every 2 min 30 sec (INDEMNITY only has effect — MANAGECARE has 1 tab).

@@ -5,14 +5,42 @@
  *   - DB_SOCKET_PATH terisi  -> Unix socket  (Local XAMPP / Cloud Run)
  *   - DB_SOCKET_PATH kosong  -> TCP          (DB_HOST + DB_PORT)
  *
- * NOTE: gunakan `??` untuk field yang boleh kosong (DB_PASSWORD untuk
- * XAMPP root tanpa password). `||` menganggap "" falsy dan jatuh ke
- * fallback, menyebabkan ER_ACCESS_DENIED_ERROR.
+ * SECURITY (P0.3): Tidak ada lagi fallback kredensial/secret yang di-hardcode.
+ * Server menolak startup (fail-fast) jika variabel wajib tidak tersedia
+ * atau terlalu lemah. Lihat requireEnv() di bawah.
  */
 import dotenv from 'dotenv';
 dotenv.config();
 
 const env = process.env;
+
+/**
+ * Fail-fast env validation.
+ * Throws at startup if a required variable is missing or too weak —
+ * the server must never run with insecure defaults.
+ */
+function requireEnv(name: string, opts?: { minLength?: number }): string {
+  const value = env[name]?.trim();
+  if (!value) {
+    throw new Error(
+      `[config] Missing required environment variable: ${name}. ` +
+        'Refusing to start — no insecure fallbacks are allowed.',
+    );
+  }
+  if (opts?.minLength && value.length < opts.minLength) {
+    throw new Error(
+      `[config] ${name} is too weak (minimum ${opts.minLength} characters). ` +
+        'Generate one with: openssl rand -base64 48',
+    );
+  }
+  return value;
+}
+
+// ── Required secrets (validated at startup) ──────────────────────────
+const JWT_SECRET = requireEnv('JWT_SECRET', { minLength: 32 });
+const TWO_FACTOR_ENCRYPTION_KEY = requireEnv('TWO_FACTOR_ENCRYPTION_KEY', {
+  minLength: 32,
+});
 
 const socketPath = env.DB_SOCKET_PATH?.trim() || undefined;
 
@@ -42,25 +70,53 @@ export const dbConfig = socketPath
       keepAliveInitialDelay: 10000,
       timezone: '+07:00',
     }
-  : {
-      // ── TCP mode (GCP Cloud SQL public IP / Docker) ──
-    host: env.DB_HOST || '10.250.16.5',
-      port: Number(env.DB_PORT) || 3306,
-    user: env.DB_USER ?? 'bashir',
-    password: env.DB_PASSWORD ?? '0xEp8duI*iL(kLJ&',
-      database: env.DB_NAME || 'nahsehat_analytics_dash',
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      connectTimeout: 30000,
-      enableKeepAlive: true,
-      keepAliveInitialDelay: 10000,
-      timezone: '+07:00',
-      ...(sslConfig ? { ssl: sslConfig } : {}),
-    };
+  : buildTcpConfig();
+
+/**
+ * TCP mode (GCP Cloud SQL public IP / Docker).
+ * SECURITY: kredensial TIDAK punya fallback — host & user wajib di-set,
+ * password wajib untuk host non-loopback (localhost XAMPP dikecualikan
+ * agar dev lokal tetap bisa jalan tanpa password root).
+ */
+function buildTcpConfig() {
+  const host = env.DB_HOST?.trim();
+  const user = env.DB_USER?.trim();
+  const password = env.DB_PASSWORD ?? '';
+  const isLoopback =
+    host === '127.0.0.1' || host === 'localhost' || host === '::1';
+
+  if (!host) {
+    throw new Error('[config] DB_HOST is required when DB_SOCKET_PATH is not set');
+  }
+  if (!user) {
+    throw new Error('[config] DB_USER is required when DB_SOCKET_PATH is not set');
+  }
+  if (!password && !isLoopback) {
+    throw new Error(
+      '[config] DB_PASSWORD is required for non-local TCP connections. ' +
+        'Refusing to start with an empty database password.',
+    );
+  }
+
+  return {
+    host,
+    port: Number(env.DB_PORT) || 3306,
+    user,
+    password,
+    database: env.DB_NAME || 'nahsehat_analytics_dash',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 30000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+    timezone: '+07:00',
+    ...(sslConfig ? { ssl: sslConfig } : {}),
+  };
+}
 
 export const jwtConfig = {
-  secret: env.JWT_SECRET || 'change-me-to-a-secure-random-string-in-production',
+  secret: JWT_SECRET,
   expiresIn: env.JWT_EXPIRES_IN || '24h',
 };
 
@@ -82,10 +138,10 @@ export const corsConfig = {
 
 /**
  * 2FA configuration — encryption key for TOTP secrets at rest (AES-256-GCM).
- * Falls back to JWT_SECRET if TWO_FACTOR_ENCRYPTION_KEY is not set.
+ * SECURITY (P0.3): key wajib terpisah dari JWT_SECRET — tidak ada fallback.
  */
 export const twoFactorConfig = {
-  encryptionKey: env.TWO_FACTOR_ENCRYPTION_KEY || env.JWT_SECRET || 'change-me-to-a-secure-random-string-in-production',
+  encryptionKey: TWO_FACTOR_ENCRYPTION_KEY,
 };
 
 export const port = Number(env.PORT) || 3001;

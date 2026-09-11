@@ -48,10 +48,10 @@ export default function Dashboard() {
     return { totalClaims, totalIncurred, totalApproved, approvalRate, uniqueMembers };
   }, [indemnityData]);
 
-  const showIndemnity = isSuperAdmin || isIndemnity;
-  const showManageCare = isSuperAdmin || isManageCare;
+  const showIndemnity = isSuperAdmin || isAdmin || isIndemnity;
+  const showManageCare = isSuperAdmin || isAdmin || isManageCare;
   const showAdScore = isSuperAdmin || isAdmin || isAdScore;
-  const showCms = isSuperAdmin || isAdmin;
+  const showCms = isSuperAdmin;
 
   return (
     <div className="relative min-h-full">
@@ -73,73 +73,73 @@ export default function Dashboard() {
         {/* ── Indemnity KPIs ── */}
         {showIndemnity && (
           <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <SectionCard
-            title={t('dashboard.indemnityOverview')}
-            variant="light"
-          >
-            {indemnityError ? (
-              <ApiError onRetry={refetch} variant="light" />
-            ) : indemnityLoading ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-32 animate-pulse rounded-xl bg-gray-100" />
-                ))}
-              </div>
-            ) : kpis ? (
-              <>
+            <SectionCard
+              title={t('dashboard.indemnityOverview')}
+              variant="light"
+            >
+              {indemnityError ? (
+                <ApiError onRetry={refetch} variant="light" />
+              ) : indemnityLoading ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <KpiCard
-                    label={t('dashboard.totalClaims')}
-                    accent="#06B6D4"
-                    value={kpis.totalClaims}
-                    format={formatNumber}
-                    delta={0.125}
-                    variant="light"
-                  />
-                  <KpiCard
-                    label={t('dashboard.totalIncurred')}
-                    accent="#2563EB"
-                    value={kpis.totalIncurred}
-                    format={formatIDR}
-                    delta={0.083}
-                    variant="light"
-                  />
-                  <KpiCard
-                    label={t('dashboard.totalApproved')}
-                    accent="#14B8A6"
-                    value={kpis.totalApproved}
-                    format={formatIDR}
-                    delta={-0.051}
-                    variant="light"
-                  />
-                  <KpiCard
-                    label={t('dashboard.approvalRate')}
-                    accent="#06B6D4"
-                    value={kpis.approvalRate / 100}
-                    format={(n) => `${(n * 100).toFixed(1)}%`}
-                    variant="light"
-                  />
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-32 animate-pulse rounded-xl bg-gray-100" />
+                  ))}
                 </div>
-                <div className="mt-4">
-                  <KpiCard
-                    label={t('dashboard.uniqueMembers')}
-                    accent="#2563EB"
-                    value={kpis.uniqueMembers}
-                    format={formatNumber}
-                    variant="light"
-                  />
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <Link
-                    to="/indemnity/overview"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(37,99,235,0.25)] transition-all hover:bg-[#1D4ED8] hover:shadow-[0_4px_20px_rgba(37,99,235,0.35)]"
-                  >
-                    {t('dashboard.viewFullIndemnity')} <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </>
-            ) : null}
-          </SectionCard>
+              ) : kpis ? (
+                <>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <KpiCard
+                      label={t('dashboard.totalClaims')}
+                      accent="#06B6D4"
+                      value={kpis.totalClaims}
+                      format={formatNumber}
+                      delta={0.125}
+                      variant="light"
+                    />
+                    <KpiCard
+                      label={t('dashboard.totalIncurred')}
+                      accent="#2563EB"
+                      value={kpis.totalIncurred}
+                      format={formatIDR}
+                      delta={0.083}
+                      variant="light"
+                    />
+                    <KpiCard
+                      label={t('dashboard.totalApproved')}
+                      accent="#14B8A6"
+                      value={kpis.totalApproved}
+                      format={formatIDR}
+                      delta={-0.051}
+                      variant="light"
+                    />
+                    <KpiCard
+                      label={t('dashboard.approvalRate')}
+                      accent="#06B6D4"
+                      value={kpis.approvalRate / 100}
+                      format={(n) => `${(n * 100).toFixed(1)}%`}
+                      variant="light"
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <KpiCard
+                      label={t('dashboard.uniqueMembers')}
+                      accent="#2563EB"
+                      value={kpis.uniqueMembers}
+                      format={formatNumber}
+                      variant="light"
+                    />
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <Link
+                      to="/indemnity/overview"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(37,99,235,0.25)] transition-all hover:bg-[#1D4ED8] hover:shadow-[0_4px_20px_rgba(37,99,235,0.35)]"
+                    >
+                      {t('dashboard.viewFullIndemnity')} <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </>
+              ) : null}
+            </SectionCard>
           </div>
         )}
 
@@ -227,7 +227,7 @@ export default function Dashboard() {
                 <Settings className="h-5 w-5" />
               </div>
               <div>
-                  <h3 className="font-semibold text-[#1E293B]">{t('dashboard.settings')}</h3>
+                <h3 className="font-semibold text-[#1E293B]">{t('dashboard.settings')}</h3>
                 <p className="text-sm text-[#64748B]">{t('dashboard.appConfig')}</p>
               </div>
             </div>

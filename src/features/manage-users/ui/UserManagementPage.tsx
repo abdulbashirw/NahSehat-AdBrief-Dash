@@ -11,6 +11,7 @@ import {
   useToggleUserStatusMutation,
 } from '@/entities/user/api/userApi';
 import { useGetPayorsQuery } from '@/entities/payor/api/payorApi';
+import { useGetRolesQuery } from '@/entities/role/api/roleApi';
 import { useHasPermission } from '@/entities/auth';
 import { ROLES, ANALYTICS_CATEGORIES, type Role, type AnalyticsCategory, type AuthUser } from '@/shared/types';
 import type { CreateUserPayload } from '@/entities/user/model/userTypes';
@@ -100,6 +101,13 @@ export default function UserManagement() {
   });
 
   const { data: payorsData } = useGetPayorsQuery({ page: 1, pageSize: 100 });
+  const { data: rolesData } = useGetRolesQuery({ page: 1, pageSize: 100 });
+  const dynamicRoles = useMemo(() => {
+    if (rolesData?.data && rolesData.data.length > 0) {
+      return rolesData.data.map((r) => r.name);
+    }
+    return Object.values(ROLES) as string[];
+  }, [rolesData]);
   const [createUser] = useCreateUserMutation();
   const [updateUser] = useUpdateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
@@ -441,8 +449,8 @@ export default function UserManagement() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">All Roles</SelectItem>
-              {Object.values(ROLES).map((role) => (
-                <SelectItem key={role} value={role}>{roleLabels[role]}</SelectItem>
+              {dynamicRoles.map((role) => (
+                <SelectItem key={role} value={role}>{roleLabels[role] || role.replace(/_/g, ' ')}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -583,8 +591,8 @@ export default function UserManagement() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(ROLES).map((role) => (
-                    <SelectItem key={role} value={role}>{roleLabels[role]}</SelectItem>
+                  {dynamicRoles.map((role) => (
+                    <SelectItem key={role} value={role}>{roleLabels[role] || role.replace(/_/g, ' ')}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

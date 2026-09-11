@@ -18,8 +18,13 @@ export interface CsvPayload {
 
 export function downloadCsv(payload: CsvPayload, filename: string) {
   const sep = csvSeparator();
+  // SECURITY (P2.3 / CSV formula injection): neutralize cells that start with
+  // = + - @ (Excel/LibreOffice/Sheets would execute them as formulas/macros).
+  // A leading apostrophe forces literal text interpretation in all major
+  // spreadsheet apps. \t and \r are also DDE injection triggers.
   const escape = (v: string | number) => {
-    const s = String(v);
+    let s = String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[;\n",]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const lines = [payload.headers.map(escape).join(sep), ...payload.rows.map((r) => r.map(escape).join(sep))];

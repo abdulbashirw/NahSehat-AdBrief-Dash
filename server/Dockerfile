@@ -40,6 +40,10 @@ COPY --from=builder /app/dist ./dist
 ENV PORT=8080
 ENV NODE_ENV=production
 
+# SECURITY (P2.5 / M6): run as the non-root 'node' user provided by the image.
+# The app only needs to read /app and listen on PORT (>1024) — no writes.
+USER node
+
 EXPOSE 8080
 
 # Health check (Cloud Run ignores this; useful for local Docker)

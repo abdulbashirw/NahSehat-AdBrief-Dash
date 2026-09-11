@@ -64,7 +64,6 @@ export default class ErrorBoundary extends Component<Props, State> {
       return;
     }
 
-    console.error('[ErrorBoundary]', error, errorInfo);
     this.setState({ errorInfo });
   }
 
@@ -88,18 +87,8 @@ export default class ErrorBoundary extends Component<Props, State> {
           </div>
           <h2 className="text-xl font-semibold text-[#1F2A37]">Something went wrong</h2>
           <p className="max-w-md text-center text-sm text-[#6B7280]">
-            {this.state.error?.message || 'An unexpected error occurred. Please try again.'}
+            An unexpected error occurred. Please try again.
           </p>
-          {this.state.errorInfo?.componentStack && (
-            <pre className="max-w-lg overflow-auto rounded bg-gray-100 p-3 text-xs text-gray-600">
-              {this.state.errorInfo.componentStack}
-            </pre>
-          )}
-          {this.state.error?.stack && (
-            <pre className="max-w-lg overflow-auto rounded bg-gray-100 p-3 text-xs text-gray-600">
-              {this.state.error.stack}
-            </pre>
-          )}
           <button
             onClick={this.handleRetry}
             className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#2E7D5B] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#245A47]"

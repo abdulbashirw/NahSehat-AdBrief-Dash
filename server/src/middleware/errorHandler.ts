@@ -18,14 +18,17 @@ export function errorHandler(
   const message = status === 500 ? 'Internal server error' : err.message;
 
   if (status >= 500) {
-    console.error(`[ERROR] ${status}: ${err.message}`, err.stack);
+    const logMessage = process.env.NODE_ENV === 'production'
+      ? `[ERROR] ${status}: internal server error`
+      : `[ERROR] ${status}: ${err.message}`;
+    console.error(logMessage, process.env.NODE_ENV === 'production' ? undefined : err.stack);
   }
 
   res.status(status).json({
     data: null,
     message,
     statusCode: status,
-    ...(err.details ? { details: err.details } : {}),
+    ...(status < 500 && err.details ? { details: err.details } : {}),
   });
 }
 

@@ -69,7 +69,7 @@ export const ROUTES: RouteConfig[] = [
     path: '/activity',
     label: 'nav.userActivity',
     icon: 'Activity',
-    roles: ['SUPER_ADMIN', 'ADMIN'],
+    roles: ['SUPER_ADMIN'],
   },
 
   // ── Settings — all authenticated users ──
@@ -99,5 +99,5 @@ export const DEFAULT_REDIRECTS: Record<string, string> = {
 /**
  * Roles that should use the TabLayout instead of AppLayout.
  */
-export const TAB_LAYOUT_ROLES = ['INDEMNITY', 'MANAGECARE', 'ADSCORE'] as const;
+export const TAB_LAYOUT_ROLES = ['ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE'] as const;
 export type TabLayoutRole = (typeof TAB_LAYOUT_ROLES)[number];

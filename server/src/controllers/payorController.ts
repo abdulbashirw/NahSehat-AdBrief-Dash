@@ -6,24 +6,30 @@ import { pool } from '../models/db';
 import { createError } from '../middleware/errorHandler';
 import type { AuthRequest } from '../middleware/auth';
 import type { Payor, PaginatedResponse, CreatePayorPayload, UpdatePayorPayload } from '../types';
+import { escapeLike } from '../utils/security';
 
 /** GET /api/v1/payors?page=&pageSize=&search= */
 export async function getPayors(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { page = 1, pageSize = 10, search } = req.query as any;
-    const offset = (Number(page) - 1) * Number(pageSize);
+    const raw = req.query as any;
+    // SECURITY (P3 / L7): clamp pagination — page ≥ 1, pageSize 1..100
+    const page = Math.max(Math.floor(Number(raw.page) || 1), 1);
+    const pageSize = Math.min(Math.max(Math.floor(Number(raw.pageSize) || 10), 1), 100);
+    const { search } = raw;
+    const offset = (page - 1) * pageSize;
 
     let where = '1=1';
     const params: any[] = [];
-    if (search) { where += ' AND (name LIKE ? OR code LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+    // SECURITY (P3 / L3): escape LIKE wildcards (%, _) dari input user
+    if (search) { where += ' AND (name LIKE ? OR code LIKE ?)'; params.push(`%${escapeLike(search)}%`, `%${escapeLike(search)}%`); }
 
     const [[countRow]] = await pool.query<any[]>(`SELECT COUNT(*) as total FROM payors WHERE ${where}`, params);
     const total = Number(countRow.total);
-    const totalPages = Math.ceil(total / Number(pageSize)) || 1;
+    const totalPages = Math.ceil(total / pageSize) || 1;
 
     const [rows] = await pool.query<any[]>(
       `SELECT * FROM payors WHERE ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      [...params, Number(pageSize), offset],
+      [...params, pageSize, offset],
     );
 
     const data: Payor[] = rows.map((r: any) => ({
@@ -37,7 +43,7 @@ export async function getPayors(req: AuthRequest, res: Response, next: NextFunct
       updatedAt: r.updated_at,
     }));
 
-    const result: PaginatedResponse<Payor> = { data, total, page: Number(page), pageSize: Number(pageSize), totalPages };
+    const result: PaginatedResponse<Payor> = { data, total, page, pageSize, totalPages };
     res.json(result);
   } catch (err) { next(err); }
 }

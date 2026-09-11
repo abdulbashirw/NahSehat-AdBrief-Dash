@@ -7,6 +7,7 @@
  * only queried for the detailed log endpoints.
  */
 import { pool } from './db';
+import { escapeLike } from '../utils/security';
 import crypto from 'crypto';
 
 /* ─────────────────────────────────────────────────────────────────
@@ -225,8 +226,9 @@ export async function getDetailedUsers(params: {
   const paramsArr: any[] = [];
 
   if (search) {
+    // SECURITY (P3 / L3): escape LIKE wildcards (%, _) dari input user
     where.push('(u.full_name LIKE ? OR u.username LIKE ?)');
-    paramsArr.push(`%${search}%`, `%${search}%`);
+    paramsArr.push(`%${escapeLike(search)}%`, `%${escapeLike(search)}%`);
   }
 
   if (status === 'ONLINE') {
@@ -452,8 +454,9 @@ export async function getAccessLogs(params: {
   const paramsArr: any[] = [`${startDate} 00:00:00`, `${endDate} 23:59:59`];
 
   if (search) {
+    // SECURITY (P3 / L3): escape LIKE wildcards (%, _) dari input user
     where.push('(username LIKE ? OR full_name LIKE ? OR menu_path LIKE ? OR endpoint LIKE ?)');
-    paramsArr.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    paramsArr.push(`%${escapeLike(search)}%`, `%${escapeLike(search)}%`, `%${escapeLike(search)}%`, `%${escapeLike(search)}%`);
   }
 
   const whereClause = where.join(' AND ');
@@ -511,8 +514,9 @@ export async function getLoginSessions(params: {
   const paramsArr: any[] = [`${startDate} 00:00:00`, `${endDate} 23:59:59`];
 
   if (search) {
+    // SECURITY (P3 / L3): escape LIKE wildcards (%, _) dari input user
     where.push('(username LIKE ? OR full_name LIKE ?)');
-    paramsArr.push(`%${search}%`, `%${search}%`);
+    paramsArr.push(`%${escapeLike(search)}%`, `%${escapeLike(search)}%`);
   }
 
   const whereClause = where.join(' AND ');

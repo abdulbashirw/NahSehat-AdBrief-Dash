@@ -28,10 +28,18 @@ import {
 import type { AggregationResult } from '../models/activityModel';
 import type { PaginatedResponse } from '../types';
 
+/* ── Helper: clamp pagination (P2.7 — resource consumption guard) ── */
+function clampPagination(rawPage: unknown, rawPageSize: unknown, defaultPageSize: number): { page: number; pageSize: number } {
+  const page = Math.max(Math.floor(Number(rawPage) || 1), 1);
+  const pageSize = Math.min(Math.max(Math.floor(Number(rawPageSize) || defaultPageSize), 1), 100);
+  return { page, pageSize };
+}
+
 /* ── Helper: resolve date range from query params ── */
 
 function resolveDateRange(query: any): { startDate: string; endDate: string } {
-  const days = Number(query.days) || 30;
+  // SECURITY (P2.7): clamp days — query range besar = beban DB berlebih.
+  const days = Math.min(Math.max(Number(query.days) || 30, 1), 365);
   const now = new Date();
   const past = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
   const fmt = (d: Date) => {
@@ -62,25 +70,26 @@ export async function getSummary(req: AuthRequest, res: Response, next: NextFunc
 export async function getUsers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const { startDate, endDate } = resolveDateRange(req.query);
-    const { page = 1, pageSize = 10, search = '', status = 'ALL', activityLevel = 'ALL', analyticsCategory = 'ALL' } = req.query as any;
+    const raw = req.query as any;
+    const { page, pageSize } = clampPagination(raw.page, raw.pageSize, 10);
 
     const result = await getDetailedUsers({
       startDate,
       endDate,
-      search: String(search),
-      status: String(status),
-      activityLevel: String(activityLevel),
-      analyticsCategory: String(analyticsCategory),
-      page: Number(page),
-      pageSize: Number(pageSize),
+      search: String(raw.search ?? ''),
+      status: String(raw.status ?? 'ALL'),
+      activityLevel: String(raw.activityLevel ?? 'ALL'),
+      analyticsCategory: String(raw.analyticsCategory ?? 'ALL'),
+      page,
+      pageSize,
     });
 
     const response: PaginatedResponse<typeof result.data[0]> = {
       data: result.data,
       total: result.total,
-      page: Number(page),
-      pageSize: Number(pageSize),
-      totalPages: Math.ceil(result.total / Number(pageSize)) || 1,
+      page,
+      pageSize,
+      totalPages: Math.ceil(result.total / pageSize) || 1,
     };
     res.json(response);
   } catch (err) { next(err); }
@@ -129,22 +138,23 @@ export async function getHeatmapData(req: AuthRequest, res: Response, next: Next
 export async function getLogs(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const { startDate, endDate } = resolveDateRange(req.query);
-    const { page = 1, pageSize = 20, search = '' } = req.query as any;
+    const raw = req.query as any;
+    const { page, pageSize } = clampPagination(raw.page, raw.pageSize, 20);
 
     const result = await getAccessLogs({
       startDate,
       endDate,
-      search: String(search),
-      page: Number(page),
-      pageSize: Number(pageSize),
+      search: String(raw.search ?? ''),
+      page,
+      pageSize,
     });
 
     const response: PaginatedResponse<typeof result.data[0]> = {
       data: result.data,
       total: result.total,
-      page: Number(page),
-      pageSize: Number(pageSize),
-      totalPages: Math.ceil(result.total / Number(pageSize)) || 1,
+      page,
+      pageSize,
+      totalPages: Math.ceil(result.total / pageSize) || 1,
     };
     res.json(response);
   } catch (err) { next(err); }
@@ -157,22 +167,23 @@ export async function getLogs(req: AuthRequest, res: Response, next: NextFunctio
 export async function getSessions(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const { startDate, endDate } = resolveDateRange(req.query);
-    const { page = 1, pageSize = 20, search = '' } = req.query as any;
+    const raw = req.query as any;
+    const { page, pageSize } = clampPagination(raw.page, raw.pageSize, 20);
 
     const result = await getLoginSessions({
       startDate,
       endDate,
-      search: String(search),
-      page: Number(page),
-      pageSize: Number(pageSize),
+      search: String(raw.search ?? ''),
+      page,
+      pageSize,
     });
 
     const response: PaginatedResponse<typeof result.data[0]> = {
       data: result.data,
       total: result.total,
-      page: Number(page),
-      pageSize: Number(pageSize),
-      totalPages: Math.ceil(result.total / Number(pageSize)) || 1,
+      page,
+      pageSize,
+      totalPages: Math.ceil(result.total / pageSize) || 1,
     };
     res.json(response);
   } catch (err) { next(err); }
@@ -266,6 +277,8 @@ export async function logPageView(req: AuthRequest, res: Response, next: NextFun
     const user = req.user;
     const startTime = Date.now();
 
+    // SECURITY (P2.3): module sudah di-whitelist oleh logPageViewSchema
+    // (zod enum) — nilai arbitrer dari user tidak pernah menyentuh DB.
     await logAccessEvent({
       userId: user?.id ?? null,
       username: user?.username ?? null,

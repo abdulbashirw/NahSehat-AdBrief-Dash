@@ -9,7 +9,7 @@
  *   Redirects unauthorized users to /dashboard (or their module default).
  */
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/entities/auth';
+import { useAuth, useCanAccess } from '@/entities/auth';
 import { DEFAULT_REDIRECTS } from '@/app/routes/routes';
 import type { Role } from '@/shared/types';
 
@@ -62,12 +62,17 @@ interface RoleGuardProps {
  */
 export function RoleGuard({ roles, children }: RoleGuardProps) {
   const { user } = useAuth();
+  const location = useLocation();
+  const canAccess = useCanAccess(location.pathname);
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!roles.includes(user.role as Role)) {
+  // Allow if SUPER_ADMIN, or role in allowed roles, or user has granular read permission
+  const isAllowed = user.role === 'SUPER_ADMIN' || roles.includes(user.role as Role) || canAccess;
+
+  if (!isAllowed) {
     // Redirect to role-specific default page
     const redirectPath = DEFAULT_REDIRECTS[user.role] || '/dashboard';
     return <Navigate to={redirectPath} replace />;

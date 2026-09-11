@@ -20,15 +20,7 @@ export async function testConnection(): Promise<void> {
       conn.release();
     }
   } catch (err: any) {
-    // Log detail error MySQL agar mudah diagnosa saat deploy.
-    const detail = {
-      code: err?.code,
-      errno: err?.errno,
-      sqlState: err?.sqlState,
-      sqlMessage: err?.sqlMessage,
-      message: err?.message,
-    };
-    console.error('❌ MySQL connection failed:', JSON.stringify(detail, null, 2));
+    console.error('MySQL connection failed');
     throw err;
   }
 }

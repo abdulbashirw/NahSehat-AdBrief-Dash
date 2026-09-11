@@ -49,7 +49,7 @@ async function aggregateToday(): Promise<void> {
       console.log(`[aggregationJob] ✅ Done in ${Date.now() - startedAt}ms — no data for ${today}`);
     }
   } catch (err) {
-    console.error(`[aggregationJob] ❌ Failed for ${today}:`, err);
+    console.error(`[aggregationJob] Failed for ${today}`);
   } finally {
     isRunning = false;
   }

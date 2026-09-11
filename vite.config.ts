@@ -4,9 +4,15 @@ import { defineConfig } from "vite"
 import { inspectAttr } from 'plugin-inspect-react-code'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: '/',
-  plugins: [inspectAttr(), react()],
+  plugins: [
+    ...(mode === 'development' ? [inspectAttr()] : []),
+    react(),
+  ],
+  build: {
+    sourcemap: false,
+  },
   server: {
     port: 5173,
     proxy: {
@@ -25,4 +31,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-});
+}));

@@ -14,11 +14,8 @@ import {
   Users,
   GitBranch,
   ArrowRight,
-  ShieldCheck,
   Zap,
-  TrendingUp,
   Award,
-  Sparkles,
   CheckCircle2,
   Clock,
   AlertTriangle,
@@ -90,10 +87,6 @@ export default function AdScoreLandingPage() {
           transition={{ duration: 0.4 }}
           className="mb-8 text-center sm:text-left"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/80 bg-blue-50/80 px-3.5 py-1 text-xs font-semibold text-blue-700 shadow-sm backdrop-blur-sm">
-            <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-            <span>AdMedika Smart Scoring Engine</span>
-          </div>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-[#1E293B] sm:text-4xl">
             {t('adScore.landing.title', 'AdScore Analytics')}
           </h1>
@@ -237,8 +230,8 @@ export default function AdScoreLandingPage() {
                     {isGood
                       ? 'Performa optimal, pelayanan lebih cepat dari batas SLA.'
                       : isModerate
-                      ? 'Performa sesuai SLA, pemrosesan transaksi standar.'
-                      : 'Pelayanan melebihi SLA, membutuhkan supervisi & monitoring.'}
+                        ? 'Performa sesuai SLA, pemrosesan transaksi standar.'
+                        : 'Pelayanan melebihi SLA, membutuhkan supervisi & monitoring.'}
                   </p>
                 </div>
               );

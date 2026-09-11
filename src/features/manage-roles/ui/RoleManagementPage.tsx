@@ -1,7 +1,9 @@
 /**
- * Role Management Page — International standard minimalist & professional design.
+ * Role Management Page — Master System Roles.
+ * Manages role definitions and provides direct configuration into Permission Matrix.
  */
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useGetRolesQuery,
   useCreateRoleMutation,
@@ -9,37 +11,17 @@ import {
   useDeleteRoleMutation,
 } from '@/entities/role/api/roleApi';
 import type { RoleWithPermissions } from '@/shared/types';
-import type { PermissionPayload } from '@/entities/role/model/roleTypes';
 import LoadingSpinner from '@/shared/components/loading/LoadingSpinner';
 import ApiError from '@/shared/components/error/ApiError';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/shared/ui/dialog';
-import { Shield, Edit2, Trash2, Search, CheckCircle2, ShieldCheck, Key } from 'lucide-react';
+import { Shield, Edit2, Trash2, Search, CheckCircle2, ShieldCheck, Key, ArrowRight } from 'lucide-react';
 import { useHasPermission } from '@/entities/auth';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 
-const MENU_ITEMS = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'indemnity', label: 'Indemnity' },
-  { key: 'indemnity-overview', label: 'Utilization Overview' },
-  { key: 'indemnity-claims-map', label: 'Claims Map' },
-  { key: 'indemnity-demographics', label: 'Demographics' },
-  { key: 'indemnity-diseases', label: 'Diseases' },
-  { key: 'managecare', label: 'Manage Care' },
-  { key: 'managecare-daily-monitoring', label: 'Daily Monitoring' },
-  { key: 'adscore', label: 'AdScore' },
-  { key: 'cms', label: 'CMS' },
-  { key: 'cms-users', label: 'User Management' },
-  { key: 'cms-roles', label: 'Role Management' },
-  { key: 'cms-payors', label: 'Payor Management' },
-  { key: 'cms-permissions', label: 'Permission Management' },
-  { key: 'settings', label: 'Settings' },
-];
-
-const PERMISSION_ACTIONS: PermissionPayload['action'][] = ['create', 'read', 'update', 'delete', 'export'];
-
 export default function RoleManagement() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -49,13 +31,9 @@ export default function RoleManagement() {
   const [form, setForm] = useState<{
     name: string;
     description: string;
-    accessibleMenus: string[];
-    permissions: PermissionPayload[];
   }>({
     name: '',
     description: '',
-    accessibleMenus: [],
-    permissions: [],
   });
 
   const { data, isLoading, isError, refetch } = useGetRolesQuery({ page, pageSize: 10, search });
@@ -66,48 +44,40 @@ export default function RoleManagement() {
   const canCreate = useHasPermission('cms-roles', 'create');
   const canUpdate = useHasPermission('cms-roles', 'update');
   const canDelete = useHasPermission('cms-roles', 'delete');
+  const canConfigurePermissions = useHasPermission('cms-permissions', 'read');
 
   const openCreateDialog = () => {
     setEditingRole(null);
-    setForm({ name: '', description: '', accessibleMenus: [], permissions: [] });
+    setForm({ name: '', description: '' });
     setDialogOpen(true);
   };
 
   const openEditDialog = (role: RoleWithPermissions) => {
     setEditingRole(role);
-    // Extract unique actions from existing permissions.
-    // The `menu` is a placeholder here — it will be expanded into a
-    // cross-product of accessibleMenus × actions at save time (handleSubmit).
-    const uniqueActions = Array.from(new Set(role.permissions.map((p) => p.action))) as PermissionPayload['action'][];
     setForm({
       name: role.name,
       description: role.description,
-      accessibleMenus: role.accessibleMenus,
-      permissions: uniqueActions.map((action) => ({ menu: '', action })),
     });
     setDialogOpen(true);
   };
 
   const handleSubmit = async () => {
     try {
-      // Expand the selected action privileges across every accessible menu
-      // to form proper per-menu { menu, action } permission pairs — this is
-      // the shape the backend expects (role_permissions table). The backend
-      // derives `accessibleMenus` from DISTINCT menu of these rows.
-      const selectedActions = form.permissions.map((p) => p.action);
-      const expandedPermissions = form.accessibleMenus.flatMap((menu) =>
-        selectedActions.map((action) => ({ menu, action })),
-      );
-      const payload = {
-        name: form.name,
-        description: form.description,
-        accessibleMenus: form.accessibleMenus,
-        permissions: expandedPermissions,
-      };
       if (editingRole) {
-        await updateRole({ id: editingRole.id, body: payload }).unwrap();
+        await updateRole({
+          id: editingRole.id,
+          body: {
+            name: form.name.trim(),
+            description: form.description.trim(),
+          },
+        }).unwrap();
       } else {
-        await createRole(payload).unwrap();
+        await createRole({
+          name: form.name.trim(),
+          description: form.description.trim(),
+          accessibleMenus: [],
+          permissions: [],
+        }).unwrap();
       }
       setDialogOpen(false);
       refetch();
@@ -126,27 +96,6 @@ export default function RoleManagement() {
     }
   };
 
-  const toggleMenu = (menuKey: string) => {
-    setForm((f) => ({
-      ...f,
-      accessibleMenus: f.accessibleMenus.includes(menuKey)
-        ? f.accessibleMenus.filter((m) => m !== menuKey)
-        : [...f.accessibleMenus, menuKey],
-    }));
-  };
-
-  const togglePermission = (action: PermissionPayload['action']) => {
-    setForm((f) => {
-      const exists = f.permissions.some((p) => p.action === action);
-      return {
-        ...f,
-        permissions: exists
-          ? f.permissions.filter((p) => p.action !== action)
-          : [...f.permissions, { menu: '', action }],
-      };
-    });
-  };
-
   if (isLoading) return <LoadingSpinner message="Loading role directory..." />;
   if (isError) return <ApiError onRetry={refetch} />;
 
@@ -163,7 +112,9 @@ export default function RoleManagement() {
           </div>
           <div>
             <h1 className="text-2xl font-extrabold text-[#1F2A37]">Role Management</h1>
-            <p className="text-xs text-[#6B7280]">Configure system roles, access policies, and operational privileges</p>
+            <p className="text-xs text-[#6B7280]">
+              Define master system roles and navigate to the Permission Matrix for granular access policies
+            </p>
           </div>
         </div>
 
@@ -201,7 +152,7 @@ export default function RoleManagement() {
             <div>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-700 font-bold border border-purple-200">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-[#2E7D5B] font-bold border border-emerald-200">
                     <Shield className="h-5 w-5" />
                   </div>
                   <div>
@@ -216,12 +167,12 @@ export default function RoleManagement() {
                       size="sm"
                       onClick={() => openEditDialog(role)}
                       className="h-8 w-8 p-0 text-[#4B5563] hover:bg-[#E7F4EE] hover:text-[#2E7D5B]"
-                      title="Edit Role"
+                      title="Edit Role Info"
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
                   )}
-                  {canDelete && (
+                  {canDelete && role.name !== 'SUPER_ADMIN' && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -237,8 +188,13 @@ export default function RoleManagement() {
 
               {/* Accessible Menus Tags */}
               <div className="mt-4">
-                <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-2">Accessible Modules</p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">Accessible Modules</p>
+                  <span className="text-[11px] text-gray-500 font-medium">
+                    {role.permissions.length} action privileges
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
                   {role.accessibleMenus.length > 0 ? (
                     role.accessibleMenus.map((menu) => (
                       <span key={menu} className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
@@ -247,27 +203,27 @@ export default function RoleManagement() {
                       </span>
                     ))
                   ) : (
-                    <span className="text-xs text-gray-400 italic">No module access assigned</span>
+                    <span className="text-xs text-gray-400 italic">No module access assigned yet</span>
                   )}
                 </div>
               </div>
+            </div>
 
-              {/* Action Permissions Tags */}
-              <div className="mt-4 border-t border-gray-100 pt-3">
-                <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-2">Permission Actions</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {role.permissions.length > 0 ? (
-                    role.permissions.map((p) => (
-                      <span key={`${p.menu}-${p.action}`} className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 border border-gray-200">
-                        <Key className="h-3 w-3 text-gray-500" />
-                        {p.action}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-xs text-gray-400 italic">No explicit actions configured</span>
-                  )}
-                </div>
-              </div>
+            {/* Matrix Quick Link Button */}
+            <div className="mt-5 border-t border-gray-100 pt-4 flex items-center justify-between">
+              <span className="text-xs text-gray-400 font-mono">ID: {role.id}</span>
+              {canConfigurePermissions && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate(`/cms/permissions?roleId=${role.id}`)}
+                  className="gap-1.5 text-xs font-semibold text-[#2E7D5B] border-[#2E7D5B]/30 hover:bg-[#E7F4EE] hover:text-[#245A47]"
+                >
+                  <Key className="h-3.5 w-3.5" />
+                  Configure in Matrix
+                  <ArrowRight className="h-3.5 w-3.5 ml-0.5" />
+                </Button>
+              )}
             </div>
           </div>
         ))}
@@ -308,11 +264,11 @@ export default function RoleManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[620px] max-h-[85vh] overflow-y-auto rounded-xl p-6">
+        <DialogContent className="sm:max-w-[480px] rounded-xl p-6">
           <DialogHeader className="pb-3 border-b border-gray-100">
             <DialogTitle className="text-lg font-bold text-[#1F2A37] flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-[#2E7D5B]" />
-              {editingRole ? 'Edit Role Configuration' : 'Create New System Role'}
+              {editingRole ? 'Edit Role Details' : 'Create New System Role'}
             </DialogTitle>
           </DialogHeader>
 
@@ -320,61 +276,40 @@ export default function RoleManagement() {
             <div>
               <label className="mb-1.5 block text-xs font-bold text-[#4B5563]">Role Title</label>
               <Input
-                placeholder="e.g. INDEMNITY_MANAGER"
+                placeholder="e.g. AUDITOR or INDEMNITY_MANAGER"
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="text-sm border-[#E5E8EC]"
+                disabled={editingRole?.name === 'SUPER_ADMIN'}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value.toUpperCase().replace(/\s+/g, '_') }))}
+                className="text-sm border-[#E5E8EC] uppercase font-semibold"
               />
+              <p className="mt-1 text-[11px] text-gray-400">Unique identifier for this role (e.g. CLAIMS_OFFICER)</p>
             </div>
 
             <div>
               <label className="mb-1.5 block text-xs font-bold text-[#4B5563]">Role Description</label>
               <Input
-                placeholder="Brief summary of duties and permissions"
+                placeholder="Brief summary of duties and responsibilities"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 className="text-sm border-[#E5E8EC]"
               />
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-[#4B5563]">Accessible Navigation Modules</label>
-              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto rounded-lg border border-[#E5E8EC] p-3 bg-gray-50/50">
-                {MENU_ITEMS.map((menu) => (
-                  <label key={menu.key} className="flex items-center gap-2 text-xs font-medium text-[#1F2A37] cursor-pointer hover:text-[#2E7D5B]">
-                    <input
-                      type="checkbox"
-                      checked={form.accessibleMenus.includes(menu.key)}
-                      onChange={() => toggleMenu(menu.key)}
-                      className="rounded border-gray-300 text-[#2E7D5B] focus:ring-[#2E7D5B]"
-                    />
-                    <span>{menu.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-[#4B5563]">Granted Action Privileges</label>
-              <div className="flex flex-wrap gap-3 rounded-lg border border-[#E5E8EC] p-3 bg-gray-50/50">
-                {PERMISSION_ACTIONS.map((action) => (
-                  <label key={action} className="flex items-center gap-2 text-xs font-medium text-[#1F2A37] cursor-pointer hover:text-[#2E7D5B]">
-                    <input
-                      type="checkbox"
-                      checked={form.permissions.some((p) => p.action === action)}
-                      onChange={() => togglePermission(action)}
-                      className="rounded border-gray-300 text-[#2E7D5B] focus:ring-[#2E7D5B]"
-                    />
-                    <span className="capitalize">{action}</span>
-                  </label>
-                ))}
-              </div>
+            <div className="rounded-lg bg-emerald-50/60 p-3 border border-emerald-100 text-xs text-emerald-900 flex items-start gap-2">
+              <Key className="h-4 w-4 text-[#2E7D5B] shrink-0 mt-0.5" />
+              <span>
+                Detailed navigation module permissions and action privileges are managed granularly in the <strong>Permission Matrix</strong>.
+              </span>
             </div>
           </div>
 
           <DialogFooter className="border-t border-gray-100 pt-3">
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="text-xs">Cancel</Button>
-            <Button onClick={handleSubmit} className="bg-[#2E7D5B] hover:bg-[#245A47] text-white text-xs font-semibold">
+            <Button
+              onClick={handleSubmit}
+              disabled={!form.name.trim()}
+              className="bg-[#2E7D5B] hover:bg-[#245A47] text-white text-xs font-semibold"
+            >
               {editingRole ? 'Save Changes' : 'Create Role'}
             </Button>
           </DialogFooter>
@@ -386,7 +321,7 @@ export default function RoleManagement() {
         open={!!deleteConfirm}
         onOpenChange={(open) => !open && setDeleteConfirm(null)}
         title="Delete Role"
-        description="Are you sure you want to delete this role? Users with this role will lose their access."
+        description="Are you sure you want to delete this role? Users assigned to this role will lose their access."
         confirmLabel="Delete"
         variant="danger"
         onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}

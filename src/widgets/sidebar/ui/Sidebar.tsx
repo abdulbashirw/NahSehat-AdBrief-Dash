@@ -10,7 +10,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/entities/auth';
-import { useHasAnyRole } from '@/entities/auth';
+import { useHasAnyRole, useCanAccessCallback } from '@/entities/auth';
 import { ROUTES } from '@/app/routes/routes';
 import type { RouteConfig, Role } from '@/shared/types';
 import {
@@ -90,11 +90,26 @@ export default function Sidebar({
     });
   };
 
-  // Filter routes for sidebar roles only, then by user role
+  const canAccess = useCanAccessCallback();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+  // Filter routes for sidebar roles only, then by user role or granular permissions
   const filteredRoutes = ROUTES.filter((route) => {
+    if (isSuperAdmin) return true;
     const roles = route.roles as Role[];
-    // Only show routes that the user has access to
-    return hasAnyRole(roles);
+    const hasRole = hasAnyRole(roles);
+    const hasPermission = canAccess(route.path);
+    if (!hasRole && !hasPermission) return false;
+
+    // If route has children, verify that at least one child is accessible
+    if (route.children && route.children.length > 0) {
+      return route.children.some((child) => {
+        const childRoles = child.roles as Role[] | undefined;
+        return (childRoles ? hasAnyRole(childRoles) : true) && canAccess(child.path);
+      });
+    }
+
+    return true;
   });
 
   // Auto-expand parent if current path is a child
@@ -213,6 +228,9 @@ export default function Sidebar({
                 expanded={expandedItems.has(route.path)}
                 onToggle={() => toggleExpand(route.path)}
                 currentPath={location.pathname}
+                canAccess={canAccess}
+                hasAnyRole={hasAnyRole}
+                isSuperAdmin={isSuperAdmin}
               />
             ))}
           </ul>
@@ -248,15 +266,28 @@ interface NavItemProps {
   expanded: boolean;
   onToggle: () => void;
   currentPath: string;
+  canAccess?: (path: string) => boolean;
+  hasAnyRole?: (roles: Role[]) => boolean;
+  isSuperAdmin?: boolean;
 }
 
-function NavItem({ route, collapsed, expanded, onToggle, currentPath }: NavItemProps) {
+function NavItem({ route, collapsed, expanded, onToggle, currentPath, canAccess, hasAnyRole, isSuperAdmin }: NavItemProps) {
   const { t } = useTranslation();
   const hasChildren = route.children && route.children.length > 0;
   const isActive = currentPath === route.path || currentPath.startsWith(route.path + '/');
   const Icon = ICON_MAP[route.icon ?? ''] ?? LayoutDashboard;
 
   if (hasChildren) {
+    const visibleChildren = route.children!.filter((child) => {
+      if (isSuperAdmin) return true;
+      const childRoles = child.roles as Role[] | undefined;
+      const hasRole = childRoles && hasAnyRole ? hasAnyRole(childRoles) : true;
+      const hasPerm = canAccess ? canAccess(child.path) : true;
+      return hasRole && hasPerm;
+    });
+
+    if (visibleChildren.length === 0) return null;
+
     return (
       <li>
         <button
@@ -278,7 +309,7 @@ function NavItem({ route, collapsed, expanded, onToggle, currentPath }: NavItemP
         </button>
         {expanded && !collapsed && (
           <ul className="mt-1 space-y-0.5 pl-6">
-            {route.children!.map((child) => (
+            {visibleChildren.map((child) => (
               <li key={child.path}>
                 <NavLink
                   to={child.path}

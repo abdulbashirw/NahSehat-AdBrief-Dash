@@ -54,7 +54,8 @@ FRONTEND_MEMORY="256Mi"
 FRONTEND_CPU="1"
 FRONTEND_MIN_INSTANCES="0"
 FRONTEND_MAX_INSTANCES="3"
-FRONTEND_PORT="80"
+# SECURITY (P2.5): frontend container is nginx-unprivileged → listens on 8080
+FRONTEND_PORT="8080"
 
 # External API URLs (third-party services — same for dev and prod)
 NAHSEHAT_API_V3="${VITE_NAHSEHAT_API_V3:-https://repi-api-336781009919.asia-southeast2.run.app/api/v3}"
@@ -481,8 +482,8 @@ echo ""
 echo "📋 CORS Status:"
 if [ "$DEPLOY_FRONTEND" = true ] && [ -n "$FRONTEND_URL}" ]; then
   echo "   ✅ Backend CORS auto-updated to allow: ${FRONTEND_URL}"
-  echo "   (If still getting CORS errors, also set CORS_ALLOW_CLOUD_RUN=true"
-  echo "    on the backend to auto-allow all *.run.app origins)"
+  echo "   (SECURITY: keep CORS_ALLOW_CLOUD_RUN unset/false in production —"
+  echo "    never allow all *.run.app origins; use explicit CORS_ORIGIN list)"
 else
   echo "   ⚠️  Frontend not deployed — CORS not auto-updated."
   echo "   If deploying frontend-only, run full deploy to auto-update CORS."

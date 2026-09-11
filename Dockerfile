@@ -37,8 +37,9 @@ RUN touch .env.production.local && \
 # Build the application
 RUN npm run build
 
-# Stage 2: Serve with nginx
-FROM nginx:alpine
+# Stage 2: Serve with nginx — unprivileged variant (P2.5 / M6):
+# runs as uid 101 (nginx), listens on 8080, no root process.
+FROM nginxinc/nginx-unprivileged:alpine
 
 # Copy custom nginx config
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
@@ -47,10 +48,10 @@ COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port
-EXPOSE 80
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

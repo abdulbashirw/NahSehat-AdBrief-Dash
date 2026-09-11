@@ -32,9 +32,16 @@ import settingsRoutes from './routes/settingsRoutes';
 import activityRoutes from './routes/activityRoutes';
 import { accessLogger } from './middleware/accessLogger';
 import { startAggregationJob } from './jobs/aggregationJob';
+import { globalLimiter } from './middleware/rateLimiter';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+/* ─── Proxy trust (Cloud Run LB = 1 hop) ─────────────────────────────
+ * SECURITY (P1.1): tanpa ini, req.ip = IP load balancer → rate limiter
+ * per-IP akan salah mengelompokkan semua user sebagai satu IP.
+ */
+app.set('trust proxy', 1);
 
 /* ─── Global Middleware ─── */
 app.use(helmet());
@@ -45,11 +52,15 @@ app.use(cors({
     if (!origin) return callback(null, true);
     if (corsConfig.origins.includes(origin)) return callback(null, true);
     if (corsConfig.allowCloudRun && /^https:\/\/[^/]+\.run\.app$/.test(origin)) return callback(null, true);
-    callback(new Error(`Origin ${origin} not allowed by CORS`));
+    // SECURITY (P2.6): reject silently — cors() turns an Error callback into a
+    // 500 + stack in logs; a plain `false` yields a clean CORS-less response.
+    return callback(null, false);
   },
   credentials: true,
 }));
-app.use(morgan('dev'));
+// SECURITY (P2.8): structured 'combined' format in production (less log
+// forging surface, includes real IP + referer); pretty 'dev' only in dev.
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 
 // Access logging — placed BEFORE route registrations so it runs on every
@@ -63,6 +74,9 @@ app.get('/health', (_req, res) => {
 });
 
 /* ─── API Routes ─── */
+// SECURITY (P1.1): global rate limit untuk semua route /api
+// (/health di luar /api sehingga tidak ikut ter-limit)
+app.use('/api', globalLimiter);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/roles', roleRoutes);
@@ -97,7 +111,7 @@ async function start() {
       console.log(`   API:    http://localhost:${PORT}/api/v1`);
     });
   } catch (err) {
-    console.error('❌ Failed to start server:', err);
+    console.error('Failed to start server');
     process.exit(1);
   }
 }

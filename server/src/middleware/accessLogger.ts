@@ -121,7 +121,7 @@ export function accessLogger(req: Request, res: Response, next: NextFunction): v
       sessionId: null, // session_id is set during login, stored in req by auth middleware if needed
     }).catch((err) => {
       // Silent fail — logging should never break the request
-      console.error('[accessLogger] Failed to log access event:', err);
+      console.error('[accessLogger] Failed to log access event');
     });
   });
 

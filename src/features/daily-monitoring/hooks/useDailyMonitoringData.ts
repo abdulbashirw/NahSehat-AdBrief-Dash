@@ -70,14 +70,18 @@ export function useDailyMonitoringData(): UseDailyMonitoringDataResult {
     const activeManageCare = allPayors.filter(
       (p) => p.category === 'MANAGE_CARE' && p.isActive,
     );
-    if (userPayorIds.length === 0) return activeManageCare;
-    return activeManageCare.filter((p) => userPayorIds.includes(p.id));
-  }, [payorsData, userPayorIds]);
+    if (isSuperAdmin && userPayorIds.length === 0) return activeManageCare;
+    const assignedPayorIds = new Set(userPayorIds.map(String));
+    return activeManageCare.filter((p) => assignedPayorIds.has(String(p.id)));
+  }, [isSuperAdmin, payorsData, userPayorIds]);
 
-  // ── Auto-select first payor if none selected (works even without PayorFilter) ──
+  // ── Keep the global selection within the user's current access ──
   useEffect(() => {
-    if (payorFilter.selectedPayorId === 'ALL' && manageCarePayors.length > 0) {
-      setSelectedPayorId(manageCarePayors[0].id);
+    const selectedPayorIsAllowed = manageCarePayors.some(
+      (payor) => payor.id === payorFilter.selectedPayorId,
+    );
+    if (!selectedPayorIsAllowed) {
+      setSelectedPayorId(manageCarePayors[0]?.id ?? 'ALL');
     }
   }, [manageCarePayors, payorFilter.selectedPayorId]);
 

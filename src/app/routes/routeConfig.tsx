@@ -77,14 +77,14 @@ export const routeConfig: RouteObject[] = [
         { path: 'process-flow', element: <ProcessFlow /> },
       ]),
       // ── CMS ──
-      roleRoute('cms', ['SUPER_ADMIN', 'ADMIN'], [
-        { path: 'users', element: <UserManagement /> },
+      roleRoute('cms', ['SUPER_ADMIN'], [
+        { path: 'users', element: <RoleGuard roles={['SUPER_ADMIN']}><UserManagement /></RoleGuard> },
         { path: 'roles', element: <RoleGuard roles={['SUPER_ADMIN']}><RoleManagement /></RoleGuard> },
-        { path: 'payors', element: <PayorManagement /> },
+        { path: 'payors', element: <RoleGuard roles={['SUPER_ADMIN']}><PayorManagement /></RoleGuard> },
         { path: 'permissions', element: <RoleGuard roles={['SUPER_ADMIN']}><PermissionManagement /></RoleGuard> },
       ]),
       // ── User Activity ──
-      roleRoute('activity', ['SUPER_ADMIN', 'ADMIN'], [
+      roleRoute('activity', ['SUPER_ADMIN'], [
         { index: true, element: <UserActivity /> },
       ]),
       // ── Settings ──

@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
-  GitBranch,
   Clock,
   Zap,
   CheckCircle2,
@@ -15,8 +14,6 @@ import {
   UserCheck,
   Stethoscope,
   ShieldCheck,
-  ArrowRight,
-  TrendingDown,
   Sparkles,
   AlertCircle,
 } from 'lucide-react';
@@ -209,7 +206,7 @@ export default function ProcessFlowPage() {
 
           {/* Steps Timeline Grid */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-5">
-            {existingSteps.map((item, idx) => {
+            {existingSteps.map((item) => {
               const Icon = item.icon;
               return (
                 <div
@@ -279,7 +276,7 @@ export default function ProcessFlowPage() {
 
           {/* AdScore Steps Grid */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
-            {adscoreSteps.map((item, idx) => {
+            {adscoreSteps.map((item) => {
               const Icon = item.icon;
               return (
                 <div

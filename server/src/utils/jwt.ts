@@ -9,6 +9,12 @@ export interface JwtPayload {
   id: string;
   username: string;
   role: string;
+  /**
+   * Token version (P1.3) — must match users.token_version in the DB.
+   * Tokens without this claim are treated as version 0 (backward
+   * compatible with tokens issued before the migration).
+   */
+  ver?: number;
 }
 
 export function signToken(payload: JwtPayload): string {

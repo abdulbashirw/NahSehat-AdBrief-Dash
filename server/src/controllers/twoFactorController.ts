@@ -19,6 +19,38 @@ import { verifyToken, signToken, buildAuthUser } from '../utils/jwt';
 import { createError } from '../middleware/errorHandler';
 import type { AuthRequest } from '../middleware/auth';
 import { twoFactorConfig } from '../config';
+import { blacklistToken, isTokenBlacklisted } from '../models/tokenBlacklist';
+
+/**
+ * SECURITY (P1.5): anti TOTP brute-force.
+ * Temp token 2FA valid 5 menit — tanpa batas percobaan, attacker bisa
+ * menebak kode 6-digit. Maksimal 5 percobaan per temp token; setelah itu
+ * temp token di-blacklist (semua percobaan berikutnya ditolak).
+ */
+const MAX_2FA_ATTEMPTS = 5;
+const twoFaAttempts = new Map<string, { count: number; expiresAt: number }>();
+
+function recordTwoFaFailure(tempToken: string): void {
+  const key = crypto.createHash('sha256').update(tempToken).digest('hex');
+  const now = Date.now();
+  const entry = twoFaAttempts.get(key);
+
+  // Temp token hanya berlaku 5 menit — counter ikut kedaluwarsa bersamanya
+  const expiresAt = now + 5 * 60 * 1000;
+  const current = entry && entry.expiresAt > now ? entry : { count: 0, expiresAt };
+  current.count += 1;
+  twoFaAttempts.set(key, current);
+
+  if (current.count >= MAX_2FA_ATTEMPTS) {
+    blacklistToken(tempToken); // temp token invalid untuk semua percobaan berikutnya
+    twoFaAttempts.delete(key);
+  }
+}
+
+function clearTwoFaAttempts(tempToken: string): void {
+  const key = crypto.createHash('sha256').update(tempToken).digest('hex');
+  twoFaAttempts.delete(key);
+}
 
 /** TOTP instance configured with crypto + base32 plugins (otplib v13 API). */
 const totp = new TOTP({ crypto: new NobleCryptoPlugin(), base32: new ScureBase32Plugin() });
@@ -93,8 +125,21 @@ export async function verify2FA(req: AuthRequest, res: Response, next: NextFunct
     if (user.two_factor_enabled) throw createError(400, 'Two-factor authentication is already enabled');
     if (!user.two_factor_secret) throw createError(400, 'No pending 2FA setup found. Please start setup again.');
 
-    const secret = decryptSecret(user.two_factor_secret);
-    const result = await totp.verify(token, { secret });
+    let secret: string;
+    try {
+      secret = decryptSecret(user.two_factor_secret);
+    } catch {
+      throw createError(401, 'Invalid verification code');
+    }
+    // SECURITY (P1.5): totp.verify melempar exception (bukan {valid:false})
+    // untuk input malformed (bukan 6 digit / bukan angka) — tanpa try/catch
+    // ini jadi 500 yang bisa dipicu user input.
+    let result: { valid?: boolean };
+    try {
+      result = await totp.verify(token, { secret });
+    } catch {
+      throw createError(401, 'Invalid verification code');
+    }
     if (!result.valid) throw createError(401, 'Invalid verification code');
 
     // Enable 2FA
@@ -139,6 +184,12 @@ export async function verify2FALogin(req: Request, res: Response, next: NextFunc
     const { tempToken, token } = req.body as { tempToken: string; token: string };
     if (!tempToken || !token) throw createError(400, 'Temp token and verification code are required');
 
+    // SECURITY (P1.5): temp token yang sudah diblacklist (5x gagal TOTP)
+    // harus ditolak di sini — tanpa ini, limit percobaan tidak efektif.
+    if (isTokenBlacklisted(tempToken)) {
+      throw createError(401, 'Invalid or expired temp token');
+    }
+
     // Verify temp token (catch JWT errors → 401, not 500)
     let decoded: any;
     try {
@@ -155,12 +206,37 @@ export async function verify2FALogin(req: Request, res: Response, next: NextFunc
       throw createError(400, 'Two-factor authentication is not enabled for this account');
     }
 
-    const secret = decryptSecret(user.two_factor_secret);
-    const result = await totp.verify(token, { secret });
-    if (!result.valid) throw createError(401, 'Invalid verification code');
+    let secret: string;
+    try {
+      secret = decryptSecret(user.two_factor_secret);
+    } catch {
+      // Secret korup / format lama — jangan biarkan jadi 500 (info leak)
+      throw createError(401, 'Invalid or expired temp token');
+    }
+    // SECURITY (P1.5): totp.verify melempar exception (bukan {valid:false})
+    // untuk input malformed (bukan 6 digit / bukan angka) — tanpa try/catch
+    // ini jadi 500 yang bisa dipicu user input.
+    let result: { valid?: boolean };
+    try {
+      result = await totp.verify(token, { secret });
+    } catch {
+      recordTwoFaFailure(tempToken);
+      throw createError(401, 'Invalid verification code');
+    }
+    if (!result.valid) {
+      // SECURITY (P1.5): hitung percobaan gagal — 5x gagal → temp token diblacklist
+      recordTwoFaFailure(tempToken);
+      throw createError(401, 'Invalid verification code');
+    }
+    clearTwoFaAttempts(tempToken);
 
-    // Issue the real token
-    const authToken = signToken({ id: user.id, username: user.username, role: user.role });
+    // Issue the real token (with token_version claim for instant revocation)
+    const authToken = signToken({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      ver: Number(user.token_version ?? 0),
+    });
 
     const [permRows] = await pool.execute(
       `SELECT rp.id, rp.menu, rp.action

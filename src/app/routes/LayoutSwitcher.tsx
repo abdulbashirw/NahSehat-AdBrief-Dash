@@ -9,7 +9,7 @@ import { usePageViewLogger } from '@/features/user-activity/hooks/usePageViewLog
 import AppLayout from '@/widgets/app-layout/ui/AppLayout';
 import TabLayout from '@/widgets/tab-layout/ui/TabLayout';
 
-const TAB_LAYOUT_ROLES = ['INDEMNITY', 'MANAGECARE', 'ADSCORE'];
+const TAB_LAYOUT_ROLES = ['ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE'];
 
 export function LayoutSwitcher() {
   const { user } = useAuth();

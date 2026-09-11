@@ -22,6 +22,7 @@ import {
 } from '@/features/indemnity-overview/store/periodFilterStore';
 import { useGetPayorsQuery } from '@/entities/payor/api/payorApi';
 import { useAppSelector } from '@/shared/store';
+import { useHasRole } from '@/entities/auth/model/useRbac';
 import RefreshProgress from '@/shared/components/loading/RefreshProgress';
 
 interface PeriodFilterProps {
@@ -37,25 +38,30 @@ export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterPr
   // ── Auth: get user's payorIds ──
   const user = useAppSelector((s) => s.auth.user);
   const userPayorIds = user?.payorIds ?? [];
+  const isSuperAdmin = useHasRole('SUPER_ADMIN');
 
   // ── Fetch all payors ──
   const { data: payorsData } = useGetPayorsQuery({ page: 1, pageSize: 999 });
 
   // ── Filter: only INDEMNITY payors that the user has access to ──
-  // If user has no payorIds (e.g. SUPER_ADMIN), show all active INDEMNITY payors
+  // Only SUPER_ADMIN without assignments can see all active INDEMNITY payors.
   const indemnityPayors = useMemo(() => {
     const allPayors = payorsData?.data ?? [];
     const activeIndemnity = allPayors.filter(
       (p) => p.category === 'INDEMNITY' && p.isActive,
     );
-    if (userPayorIds.length === 0) return activeIndemnity;
-    return activeIndemnity.filter((p) => userPayorIds.includes(p.id));
-  }, [payorsData, userPayorIds]);
+    if (isSuperAdmin && userPayorIds.length === 0) return activeIndemnity;
+    const assignedPayorIds = new Set(userPayorIds.map(String));
+    return activeIndemnity.filter((p) => assignedPayorIds.has(String(p.id)));
+  }, [isSuperAdmin, payorsData, userPayorIds]);
 
-  // ── Auto-select first payor if none selected ──
+  // ── Keep the global selection within the user's current access ──
   useEffect(() => {
-    if (filter.selectedPayorId === 'ALL' && indemnityPayors.length > 0) {
-      setSelectedPayorId(indemnityPayors[0].id);
+    const selectedPayorIsAllowed = indemnityPayors.some(
+      (payor) => payor.id === filter.selectedPayorId,
+    );
+    if (!selectedPayorIsAllowed) {
+      setSelectedPayorId(indemnityPayors[0]?.id ?? 'ALL');
     }
   }, [indemnityPayors, filter.selectedPayorId]);
 

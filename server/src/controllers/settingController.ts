@@ -39,6 +39,16 @@ export async function getSettings(req: AuthRequest, res: Response, next: NextFun
   } catch (err) { next(err); }
 }
 
+/* ── SECURITY (P2.2): clamp security-relevant settings ──────────────
+ * Tanpa ini, SUPER_ADMIN bisa set passwordMinLength=1 (melemahkan
+ * policy) atau maxLoginAttempts=0 (lockout DoS / unlimited attempts).
+ */
+const SETTING_CLAMPS: Record<string, { min: number; max: number }> = {
+  passwordMinLength: { min: 8, max: 128 },
+  maxLoginAttempts: { min: 3, max: 10 },
+  lockoutDurationMinutes: { min: 5, max: 1440 },
+};
+
 /** PUT /api/v1/settings/:id */
 export async function updateSetting(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -46,7 +56,16 @@ export async function updateSetting(req: AuthRequest, res: Response, next: NextF
     const { value } = req.body;
 
     const [existing] = await pool.execute('SELECT * FROM settings WHERE id = ?', [id]);
-    if ((existing as any[]).length === 0) throw createError(404, 'Setting not found');
+    const setting = (existing as any[])[0];
+    if (!setting) throw createError(404, 'Setting not found');
+
+    const clamp = SETTING_CLAMPS[setting.key];
+    if (clamp) {
+      const n = Number(value);
+      if (!Number.isInteger(n) || n < clamp.min || n > clamp.max) {
+        throw createError(400, `${setting.key} must be an integer between ${clamp.min} and ${clamp.max}`);
+      }
+    }
 
     await pool.execute('UPDATE settings SET value = ? WHERE id = ?', [value, id]);
 
@@ -56,6 +75,7 @@ export async function updateSetting(req: AuthRequest, res: Response, next: NextF
 
     const [rows] = await pool.execute('SELECT * FROM settings WHERE id = ?', [id]);
     const r = (rows as any[])[0];
+    // (r guaranteed to exist — we just updated it)
 
     res.json({
       id: String(r.id), key: r.key, value: r.value, category: r.category,

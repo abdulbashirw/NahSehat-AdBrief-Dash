@@ -6,6 +6,8 @@ import { pool } from '../models/db';
 import { createError } from '../middleware/errorHandler';
 import type { AuthRequest } from '../middleware/auth';
 import type { RoleWithPermissions, PaginatedResponse, CreateRolePayload, UpdateRolePayload, Role } from '../types';
+import { escapeLike } from '../utils/security';
+import { invalidatePermissionCache } from '../middleware/auth';
 
 /** Helper: fetch permissions for a role by role_id (UUID) */
 async function getPermissionsByRoleId(roleId: string) {
@@ -26,20 +28,25 @@ async function getPermissionsByRoleId(roleId: string) {
 /** GET /api/v1/roles?page=&pageSize=&search= */
 export async function getRoles(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { page = 1, pageSize = 10, search } = req.query as any;
-    const offset = (Number(page) - 1) * Number(pageSize);
+    const raw = req.query as any;
+    // SECURITY (P3 / L7): clamp pagination — page ≥ 1, pageSize 1..100
+    const page = Math.max(Math.floor(Number(raw.page) || 1), 1);
+    const pageSize = Math.min(Math.max(Math.floor(Number(raw.pageSize) || 10), 1), 100);
+    const { search } = raw;
+    const offset = (page - 1) * pageSize;
 
     let where = '1=1';
     const params: any[] = [];
-    if (search) { where += ' AND (r.name LIKE ? OR r.description LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+    // SECURITY (P3 / L3): escape LIKE wildcards (%, _) dari input user
+    if (search) { where += ' AND (r.name LIKE ? OR r.description LIKE ?)'; params.push(`%${escapeLike(search)}%`, `%${escapeLike(search)}%`); }
 
     const [[countRow]] = await pool.query<any[]>(`SELECT COUNT(*) as total FROM roles r WHERE ${where}`, params);
     const total = Number(countRow.total);
-    const totalPages = Math.ceil(total / Number(pageSize)) || 1;
+    const totalPages = Math.ceil(total / pageSize) || 1;
 
     const [rows] = await pool.query<any[]>(
       `SELECT r.* FROM roles r WHERE ${where} ORDER BY r.created_at DESC LIMIT ? OFFSET ?`,
-      [...params, Number(pageSize), offset],
+      [...params, pageSize, offset],
     );
 
     const data: RoleWithPermissions[] = [];
@@ -54,7 +61,7 @@ export async function getRoles(req: AuthRequest, res: Response, next: NextFuncti
       });
     }
 
-    const result: PaginatedResponse<RoleWithPermissions> = { data, total, page: Number(page), pageSize: Number(pageSize), totalPages };
+    const result: PaginatedResponse<RoleWithPermissions> = { data, total, page, pageSize, totalPages };
     res.json(result);
   } catch (err) { next(err); }
 }
@@ -157,6 +164,12 @@ export async function updateRole(req: AuthRequest, res: Response, next: NextFunc
       }
     }
 
+    // Invalidate permission cache
+    invalidatePermissionCache(String(role.name));
+    if (body.name !== undefined && body.name !== role.name) {
+      invalidatePermissionCache(String(body.name));
+    }
+
     const { permissions, accessibleMenus } = await getPermissionsByRoleId(id);
 
     res.json({
@@ -180,6 +193,8 @@ export async function deleteRole(req: AuthRequest, res: Response, next: NextFunc
 
     await pool.execute('DELETE FROM role_permissions WHERE role_id = ?', [req.params.id]);
     await pool.execute('DELETE FROM roles WHERE id = ?', [req.params.id]);
+
+    invalidatePermissionCache(String(role.name));
 
     res.json({ message: 'Role deleted' });
   } catch (err) { next(err); }
