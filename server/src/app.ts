@@ -98,24 +98,28 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 /* ─── Start Server ─── */
-async function start() {
-  try {
-    await testConnection();
-    // Start token blacklist periodic sweep
-    startBlacklistSweep();
-    // Start activity aggregation job (runs every hour + once on startup)
-    startAggregationJob();
-    app.listen(PORT, () => {
-      console.log(`🚀 NahSeHat Dashboard API running on port ${PORT}`);
-      console.log(`   Health: http://localhost:${PORT}/health`);
-      console.log(`   API:    http://localhost:${PORT}/api/v1`);
-    });
-  } catch (err) {
-    console.error('Failed to start server');
-    process.exit(1);
+const server = app.listen(PORT, () => {
+  console.log(`🚀 NahSeHat Dashboard API running on port ${PORT}`);
+  console.log(`   Health: http://localhost:${PORT}/health`);
+  console.log(`   API:    http://localhost:${PORT}/api/v1`);
+});
+
+async function initializeServices() {
+  while (true) {
+    try {
+      await testConnection();
+      // Start token blacklist periodic sweep
+      startBlacklistSweep();
+      // Start activity aggregation job (runs every hour + once on startup)
+      startAggregationJob();
+      return;
+    } catch (err) {
+      console.error('Database is unavailable; retrying in 5 seconds', err);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
   }
 }
 
-start();
+initializeServices();
 
 export default app;
