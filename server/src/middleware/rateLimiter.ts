@@ -8,7 +8,7 @@
  * NOTE: Cloud Run berada di belakang 1 hop proxy (LB) — app.ts mem-set
  * `trust proxy = 1` agar req.ip = IP client asli, bukan IP load balancer.
  */
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 const standardMessage = {
   data: null,
@@ -48,7 +48,10 @@ export const logLimiter = rateLimit({
   limit: 60,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  keyGenerator: (req) => (req as { user?: { id?: string } }).user?.id ?? req.ip ?? 'anonymous',
+  keyGenerator: (req) => {
+    const userId = (req as { user?: { id?: string } }).user?.id;
+    return userId ? `user:${userId}` : `ip:${ipKeyGenerator(req.ip ?? 'unknown')}`;
+  },
   message: {
     data: null,
     message: 'Too many log requests, please slow down',
