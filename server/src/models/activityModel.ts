@@ -16,9 +16,17 @@ import crypto from 'crypto';
  *  For public IPs, a future integration with MaxMind/IP-API can
  *  populate the ip_geolocation table and return "City, Region".
  * ─────────────────────────────────────────────────────────────── */
+function normalizeIp(ip: string): string {
+  const first = ip.split(',')[0]?.trim() ?? ip.trim();
+  const withoutBrackets = first.replace(/^\[(.*)\]$/, '$1');
+  return withoutBrackets.replace(/^::ffff:/, '').replace(/^::ffff:/, '');
+}
+
 function isPrivateIP(ip: string): boolean {
-  // Strip IPv6-mapped IPv4 prefix
-  const clean = ip.replace(/^::ffff:/, '');
+  const clean = normalizeIp(ip).toLowerCase();
+  if (clean === '::1' || clean === 'localhost' || clean.startsWith('fe80:') || clean.startsWith('fc') || clean.startsWith('fd')) {
+    return true;
+  }
   if (clean === '::1' || clean === '127.0.0.1') return true;
   const parts = clean.split('.');
   if (parts.length === 4) {
@@ -32,12 +40,13 @@ function isPrivateIP(ip: string): boolean {
 
 async function resolveGeolocation(ip: string | null): Promise<string | null> {
   if (!ip) return null;
-  if (isPrivateIP(ip)) return 'Local Network';
+  const normalizedIp = normalizeIp(ip);
+  if (isPrivateIP(normalizedIp)) return 'Local Network';
 
   // Check cache in ip_geolocation table
   const [rows] = await pool.query<any[]>(
-    'SELECT city, region FROM ip_geolocation WHERE ip_address = ?',
-    [ip],
+    'SELECT city, region FROM ip_geolocation WHERE ip_address IN (?, ?)',
+    [ip, normalizedIp],
   );
   if (rows.length > 0) {
     const { city, region } = rows[0];
@@ -46,10 +55,8 @@ async function resolveGeolocation(ip: string | null): Promise<string | null> {
     if (region) return region;
   }
 
-  // Not cached — return null for now.
-  // A future integration can call an external geolocation API here,
-  // cache the result in ip_geolocation, and return the location string.
-  return null;
+  // Keep the record useful when no external geolocation provider is configured.
+  return `IP: ${normalizedIp}`;
 }
 
 export interface ActivitySummary {
@@ -60,12 +67,21 @@ export interface ActivitySummary {
   avgLoginPerUser: number;
   mostActiveUser: string | null;
   mostActiveUserId: string | null;
+  mostActiveUserAccess: number;
 }
 
 export interface UserModuleStat {
   module: string;
   menuLabel: string;
   totalAccess: number;
+}
+
+export interface ModuleMenuStat {
+  menuLabel: string;
+  menuPath: string;
+  totalAccess: number;
+  uniqueUsers: number;
+  lastAccessed: string | null;
 }
 
 export interface DetailedUserRow {
@@ -98,6 +114,8 @@ export interface ModuleStat {
   menuPath: string;
   totalAccess: number;
   uniqueUsers: number;
+  lastAccessed: string | null;
+  menus: ModuleMenuStat[];
 }
 
 export interface HeatmapCell {
@@ -156,9 +174,12 @@ function computeActivityLevel(totalAccess: number, activeDays: number): Detailed
 export async function getActivitySummary(startDate: string, endDate: string): Promise<ActivitySummary> {
   // Total access in date range
   const [[accessRow]] = await pool.query<any[]>(
-    `SELECT COALESCE(SUM(total_access), 0) AS total
-       FROM user_activity_daily
-      WHERE activity_date BETWEEN ? AND ?`,
+    `SELECT COUNT(*) AS total
+       FROM access_logs
+      WHERE DATE(created_at) BETWEEN ? AND ?
+        AND action_type = 'page_view'
+        AND menu_path IS NOT NULL
+        AND menu_path NOT LIKE '/api/%'`,
     [startDate, endDate],
   );
   const totalAccess = Number(accessRow?.total ?? 0);
@@ -175,8 +196,11 @@ export async function getActivitySummary(startDate: string, endDate: string): Pr
   // Unique users with activity in date range
   const [[userRow]] = await pool.query<any[]>(
     `SELECT COUNT(DISTINCT user_id) AS total
-       FROM user_activity_daily
-      WHERE activity_date BETWEEN ? AND ? AND is_active_day = 1`,
+       FROM access_logs
+      WHERE DATE(created_at) BETWEEN ? AND ?
+        AND action_type = 'page_view'
+        AND menu_path IS NOT NULL
+        AND menu_path NOT LIKE '/api/%'`,
     [startDate, endDate],
   );
   const uniqueUsers = Number(userRow?.total ?? 0);
@@ -185,13 +209,22 @@ export async function getActivitySummary(startDate: string, endDate: string): Pr
   const avgAccessPerUser = uniqueUsers > 0 ? totalAccess / uniqueUsers : 0;
   const avgLoginPerUser = uniqueUsers > 0 ? totalLogins / uniqueUsers : 0;
 
-  // Most active user (by total_access_count on users table)
+  // Most active user within the selected date range.
   const [[topRow]] = await pool.query<any[]>(
-    `SELECT id, full_name
-       FROM users
-      WHERE total_access_count > 0
-      ORDER BY total_access_count DESC
+    `SELECT u.id, u.full_name, d.total_access
+       FROM users u
+       INNER JOIN (
+         SELECT user_id, COUNT(*) AS total_access
+           FROM access_logs
+          WHERE DATE(created_at) BETWEEN ? AND ?
+            AND action_type = 'page_view'
+            AND menu_path IS NOT NULL
+            AND menu_path NOT LIKE '/api/%'
+          GROUP BY user_id
+           ) d ON d.user_id = u.id
+          ORDER BY d.total_access DESC, u.full_name ASC, u.id ASC
       LIMIT 1`,
+    [startDate, endDate],
   );
 
   return {
@@ -202,6 +235,7 @@ export async function getActivitySummary(startDate: string, endDate: string): Pr
     avgLoginPerUser: Math.round(avgLoginPerUser * 100) / 100,
     mostActiveUser: topRow?.full_name ?? null,
     mostActiveUserId: topRow?.id ?? null,
+    mostActiveUserAccess: Number(topRow?.total_access ?? 0),
   };
 }
 
@@ -222,7 +256,9 @@ export async function getDetailedUsers(params: {
   const { startDate, endDate, search, status, activityLevel, analyticsCategory, page, pageSize } = params;
   const offset = (page - 1) * pageSize;
 
-  const where: string[] = ['u.total_access_count > 0'];
+  const where: string[] = [
+    '(COALESCE(d.total_access, 0) > 0 OR COALESCE(d.total_logins, 0) > 0)',
+  ];
   const paramsArr: any[] = [];
 
   if (search) {
@@ -244,39 +280,59 @@ export async function getDetailedUsers(params: {
 
   const whereClause = where.join(' AND ');
 
-  // Count total
-  const [[countRow]] = await pool.query<any[]>(
-    `SELECT COUNT(*) AS total FROM users u WHERE ${whereClause}`,
-    paramsArr,
-  );
-  const total = Number(countRow?.total ?? 0);
+  const activityWindow = `
+    SELECT
+      user_id,
+      COUNT(*) AS total_access,
+      COUNT(DISTINCT DATE(created_at)) AS active_days,
+      MIN(created_at) AS first_activity_at,
+      MAX(created_at) AS last_activity_at
+    FROM access_logs
+    WHERE DATE(created_at) BETWEEN ? AND ?
+      AND action_type = 'page_view'
+      AND menu_path IS NOT NULL
+      AND menu_path NOT LIKE '/api/%'
+    GROUP BY user_id
+  `;
 
-  // Fetch page
+  const loginWindow = `
+    SELECT user_id, COUNT(*) AS total_logins
+      FROM login_sessions
+     WHERE DATE(login_at) BETWEEN ? AND ?
+     GROUP BY user_id
+  `;
+
+  // Fetch all matching users first so computed activity levels are filtered
+  // before pagination.
+  const [[countRow]] = await pool.query<any[]>(
+    `SELECT COUNT(*) AS total
+       FROM users u
+       LEFT JOIN (${activityWindow}) d ON u.id = d.user_id
+       LEFT JOIN (${loginWindow}) l ON u.id = l.user_id
+      WHERE ${whereClause.replace(/d\.total_logins/g, 'l.total_logins')}`,
+    [startDate, endDate, startDate, endDate, ...paramsArr],
+  );
+
   const [rows] = await pool.query<any[]>(
     `SELECT
        u.id            AS user_id,
        u.username,
        u.full_name,
        u.analytics_category,
-       u.total_access_count,
-       u.total_login_count,
+       COALESCE(d.total_access, 0) AS total_access,
+      COALESCE(l.total_logins, 0) AS total_logins,
        u.last_ip_address,
        u.last_device_info,
        u.last_geolocation,
-       u.first_activity_at,
-       u.last_activity_at,
+       d.first_activity_at,
+       d.last_activity_at,
        COALESCE(d.active_days, 0) AS active_days
      FROM users u
-     LEFT JOIN (
-       SELECT user_id, COUNT(DISTINCT activity_date) AS active_days
-         FROM user_activity_daily
-        WHERE activity_date BETWEEN ? AND ?
-        GROUP BY user_id
-     ) d ON u.id = d.user_id
-     WHERE ${whereClause}
-     ORDER BY u.total_access_count DESC
-     LIMIT ? OFFSET ?`,
-    [...paramsArr, startDate, endDate, pageSize, offset],
+     LEFT JOIN (${activityWindow}) d ON u.id = d.user_id
+    LEFT JOIN (${loginWindow}) l ON u.id = l.user_id
+    WHERE ${whereClause.replace(/d\.total_logins/g, 'l.total_logins')}
+     ORDER BY d.total_access DESC, u.full_name ASC`,
+      [startDate, endDate, startDate, endDate, ...paramsArr],
   );
 
   // ── Fetch per-user module breakdown (grouped by module name) ──
@@ -293,6 +349,8 @@ export async function getDetailedUsers(params: {
        FROM access_logs al
        WHERE al.user_id IN (${placeholders})
          AND al.module IS NOT NULL
+         AND al.action_type = 'page_view'
+         AND al.menu_path NOT LIKE '/api/%'
          AND DATE(al.created_at) BETWEEN ? AND ?
        GROUP BY al.user_id, al.module
        ORDER BY al.user_id, total_access DESC`,
@@ -315,7 +373,7 @@ export async function getDetailedUsers(params: {
   }
 
   const data: DetailedUserRow[] = rows.map((r: any) => {
-    const totalAccess = Number(r.total_access_count ?? 0);
+    const totalAccess = Number(r.total_access ?? 0);
     const activeDays = Number(r.active_days ?? 0);
     const isOnline = r.last_activity_at && new Date(r.last_activity_at).getTime() >= Date.now() - 24 * 60 * 60 * 1000;
 
@@ -325,11 +383,11 @@ export async function getDetailedUsers(params: {
       fullName: r.full_name,
       analyticsCategory: r.analytics_category ?? null,
       totalAccess,
-      totalLogins: Number(r.total_login_count ?? 0),
+      totalLogins: Number(r.total_logins ?? 0),
       activeDays,
       ipAddress: r.last_ip_address ?? null,
       deviceInfo: r.last_device_info ?? null,
-      geolocation: r.last_geolocation ?? null,
+      geolocation: r.last_geolocation ?? (r.last_ip_address ? `IP: ${r.last_ip_address}` : null),
       firstActivityAt: r.first_activity_at ?? null,
       lastActivityAt: r.last_activity_at ?? null,
       status: isOnline ? 'ONLINE' : 'OFFLINE',
@@ -338,10 +396,12 @@ export async function getDetailedUsers(params: {
     };
   });
 
-  // Filter by activity level in JS (computed field, not in DB)
+  // Filter by activity level before pagination because the level is computed.
   const filtered = activityLevel === 'ALL' ? data : data.filter((d) => d.activityLevel === activityLevel);
+  const total = activityLevel === 'ALL' ? Number(countRow?.total ?? 0) : filtered.length;
+  const paged = filtered.slice(offset, offset + pageSize);
 
-  return { data: filtered, total: activityLevel === 'ALL' ? total : filtered.length };
+  return { data: paged, total };
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -389,23 +449,74 @@ export async function getModuleStats(startDate: string, endDate: string): Promis
   const [rows] = await pool.query<any[]>(
     `SELECT
        al.module,
+       COALESCE(al.menu_label, al.menu_path, al.module) AS menu_label,
+       al.menu_path,
        COUNT(*) AS total_access,
-       COUNT(DISTINCT al.user_id) AS unique_users
+       COUNT(DISTINCT al.user_id) AS unique_users,
+       MAX(al.created_at) AS last_accessed
      FROM access_logs al
      WHERE DATE(al.created_at) BETWEEN ? AND ?
        AND al.module IS NOT NULL
-     GROUP BY al.module
-     ORDER BY total_access DESC`,
+       AND al.menu_path IS NOT NULL
+       AND al.action_type = 'page_view'
+      AND al.menu_path NOT LIKE '/api/%'
+     GROUP BY al.module, al.menu_label, al.menu_path
+     ORDER BY total_access DESC, last_accessed DESC`,
     [startDate, endDate],
   );
+  const [moduleTotals] = await pool.query<any[]>(
+    `SELECT
+       module,
+       COUNT(DISTINCT user_id) AS unique_users,
+       MAX(created_at) AS last_accessed
+     FROM access_logs
+     WHERE DATE(created_at) BETWEEN ? AND ?
+       AND module IS NOT NULL
+       AND menu_path IS NOT NULL
+       AND action_type = 'page_view'
+       AND menu_path NOT LIKE '/api/%'
+     GROUP BY module`,
+    [startDate, endDate],
+  );
+  const moduleTotalsMap = new Map<string, { uniqueUsers: number; lastAccessed: string | null }>();
+  for (const row of moduleTotals) {
+    moduleTotalsMap.set(String(row.module), {
+      uniqueUsers: Number(row.unique_users ?? 0),
+      lastAccessed: row.last_accessed ?? null,
+    });
+  }
 
-  return rows.map((r: any) => ({
-    module: r.module,
-    menuLabel: MODULE_DISPLAY_NAMES[r.module] ?? r.module,
-    menuPath: '',
-    totalAccess: Number(r.total_access ?? 0),
-    uniqueUsers: Number(r.unique_users ?? 0),
-  }));
+  const moduleMap = new Map<string, ModuleStat>();
+
+  for (const row of rows) {
+    const module = String(row.module);
+    const menu: ModuleMenuStat = {
+      menuLabel: row.menu_label ?? row.menu_path ?? module,
+      menuPath: row.menu_path ?? '',
+      totalAccess: Number(row.total_access ?? 0),
+      uniqueUsers: Number(row.unique_users ?? 0),
+      lastAccessed: row.last_accessed ?? null,
+    };
+    const current = moduleMap.get(module);
+
+    if (current) {
+      current.menus.push(menu);
+      current.totalAccess += menu.totalAccess;
+    } else {
+      const totals = moduleTotalsMap.get(module);
+      moduleMap.set(module, {
+        module,
+        menuLabel: MODULE_DISPLAY_NAMES[module] ?? module,
+        menuPath: '',
+        totalAccess: menu.totalAccess,
+        uniqueUsers: totals?.uniqueUsers ?? 0,
+        lastAccessed: totals?.lastAccessed ?? menu.lastAccessed,
+        menus: [menu],
+      });
+    }
+  }
+
+  return Array.from(moduleMap.values()).sort((a, b) => b.totalAccess - a.totalAccess);
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -715,7 +826,11 @@ export async function runAggregation(startDate: string, endDate: string): Promis
          MAX(al.created_at),
          DATE(al.created_at)
        FROM access_logs al
-       WHERE DATE(al.created_at) = ? AND al.module IS NOT NULL AND al.menu_path IS NOT NULL
+       WHERE DATE(al.created_at) = ?
+         AND al.module IS NOT NULL
+         AND al.menu_path IS NOT NULL
+         AND al.action_type = 'page_view'
+         AND al.menu_path NOT LIKE '/api/%'
        GROUP BY al.module, al.menu_path, DATE(al.created_at)
        ON DUPLICATE KEY UPDATE
          total_access  = VALUES(total_access),

@@ -12,6 +12,7 @@ export interface ActivitySummary {
   avgLoginPerUser: number;
   mostActiveUser: string | null;
   mostActiveUserId: string | null;
+  mostActiveUserAccess: number;
 }
 
 /* ─── Detailed User Row ─── */
@@ -59,6 +60,16 @@ export interface ModuleStat {
   menuPath: string;
   totalAccess: number;
   uniqueUsers: number;
+  lastAccessed: string | null;
+  menus: ModuleMenuStat[];
+}
+
+export interface ModuleMenuStat {
+  menuLabel: string;
+  menuPath: string;
+  totalAccess: number;
+  uniqueUsers: number;
+  lastAccessed: string | null;
 }
 
 /* ─── Heatmap ─── */

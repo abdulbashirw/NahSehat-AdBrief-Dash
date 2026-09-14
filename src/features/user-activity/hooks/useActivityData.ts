@@ -37,28 +37,41 @@ export function useActivityData(params: UseActivityDataParams = {}) {
 
   const summary = useGetSummaryQuery({ days: params.days ?? 30 });
   const users = useGetActivityUsersQuery(queryParams);
+  const topUsers = useGetActivityUsersQuery({
+    ...queryParams,
+    page: 1,
+    pageSize: 5,
+    search: '',
+    status: 'ALL',
+    activityLevel: 'ALL',
+    analyticsCategory: '',
+  });
   const trend = useGetTrendQuery({ days: params.days ?? 30 });
   const modules = useGetModuleStatsQuery({ days: params.days ?? 30 });
   const heatmap = useGetHeatmapQuery({ days: params.days ?? 30 });
 
-  const isLoading = summary.isLoading || users.isLoading || trend.isLoading || modules.isLoading || heatmap.isLoading;
-  const isError = summary.isError || users.isError || trend.isError || modules.isError || heatmap.isError;
+  const isLoading = summary.isLoading || users.isLoading || topUsers.isLoading || trend.isLoading || modules.isLoading || heatmap.isLoading;
+  const isFetching = summary.isFetching || users.isFetching || topUsers.isFetching || trend.isFetching || modules.isFetching || heatmap.isFetching;
+  const isError = summary.isError || users.isError || topUsers.isError || trend.isError || modules.isError || heatmap.isError;
 
   const refresh = useCallback(() => {
     summary.refetch();
     users.refetch();
+    topUsers.refetch();
     trend.refetch();
     modules.refetch();
     heatmap.refetch();
-  }, [summary, users, trend, modules, heatmap]);
+  }, [summary, users, topUsers, trend, modules, heatmap]);
 
   return {
     summary: summary.data,
     users: users.data,
+    topUsers: topUsers.data,
     trend: trend.data?.data,
     modules: modules.data?.data,
     heatmap: heatmap.data?.data,
     isLoading,
+    isFetching,
     isError,
     refresh,
     // Expose individual refetch + loading for the user table (paginated)

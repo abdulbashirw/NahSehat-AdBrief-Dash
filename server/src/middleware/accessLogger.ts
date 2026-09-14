@@ -71,7 +71,6 @@ function resolveMenuPath(originalUrl: string): string | null {
 function resolveActionType(method: string, path: string): string {
   if (path.includes('/login')) return 'login';
   if (path.includes('/logout')) return 'logout';
-  if (method === 'GET') return 'page_view';
   if (method === 'POST' && path.includes('/export')) return 'export';
   if (method === 'POST') return 'api_call';
   if (method === 'PUT' || method === 'PATCH') return 'api_call';

@@ -34,7 +34,9 @@ import {
   Globe,
   LogIn,
   MapPin,
+  Maximize2,
   Monitor,
+  Minimize2,
   RefreshCw,
   Search,
   Sparkles,
@@ -205,11 +207,22 @@ function ActivityKpiCard({ kpi, index }: { kpi: KpiCardData; index: number }) {
         </div>
       </div>
 
-      <div className="mt-2 font-display text-[22px] font-extrabold tabular-nums tracking-tight text-[#1F2A37] xl:text-[24px]">
+      <div className={cn(
+        'mt-2 font-display font-extrabold tracking-tight text-[#1F2A37]',
+        kpi.icon === 'top-user'
+          ? 'line-clamp-2 min-h-[42px] text-[17px] leading-5 xl:text-[18px]'
+          : 'text-[22px] tabular-nums xl:text-[24px]',
+      )} title={kpi.value}>
         {kpi.value}
       </div>
 
-      <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-[#9CA3AF]">
+      {kpi.secondaryValue && (
+        <div className="mt-1 truncate text-[10px] font-bold tabular-nums text-[#E11D48]">
+          {kpi.secondaryValue}
+        </div>
+      )}
+
+      <div className={cn('flex items-center gap-1.5 text-[11px] font-medium text-[#9CA3AF]', kpi.secondaryValue ? 'mt-0.5' : 'mt-1')}>
         <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', theme.dotColor)} />
         <span className="truncate">{theme.sublabel}</span>
       </div>
@@ -295,6 +308,15 @@ function formatTimestamp(ts: string | null): string {
   );
 }
 
+function formatShortTimestamp(ts: string | null): string {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 function getInitials(name: string): string {
   if (!name) return 'U';
   return name
@@ -320,9 +342,10 @@ export default function UserActivityPage() {
   const [analyticsFilter, setAnalyticsFilter] = useState<'ALL' | AnalyticsCategory>('ALL');
   const [page, setPage] = useState(1);
   const [hoveredDonutIndex, setHoveredDonutIndex] = useState<number | null>(null);
+  const [isUsersTableExpanded, setIsUsersTableExpanded] = useState(false);
   const pageSize = 10;
 
-  const { summary, users, trend, modules, heatmap, isLoading, isError, refresh } = useActivityData({
+  const { summary, users, topUsers, trend, modules, heatmap, isLoading, isFetching, isError, refresh } = useActivityData({
     days,
     page,
     pageSize,
@@ -336,7 +359,86 @@ export default function UserActivityPage() {
   const trendData = useMemo(() => buildTrendData(trend), [trend]);
   const donutData = useMemo(() => buildDonutData(modules), [modules]);
   const heatmapGrid = useMemo(() => buildHeatmapGrid(heatmap), [heatmap]);
-  const topUsersBar = useMemo(() => buildTopUsersBar(users?.data), [users]);
+  const topUsersBar = useMemo(() => buildTopUsersBar(topUsers?.data), [topUsers]);
+
+  const moduleRows = useMemo(
+    () => (modules ?? []).filter((module) => module.totalAccess > 0),
+    [modules],
+  );
+
+  const moduleColumns: DataColumn<(typeof moduleRows)[number]>[] = useMemo(
+    () => [
+      {
+        key: 'module',
+        label: 'Modul',
+        minWidth: '120px',
+        value: (row) => row.module,
+        render: (row) => <span className="font-bold text-[#1F2A37]">{row.module}</span>,
+      },
+      {
+        key: 'menuLabel',
+        label: 'Menu',
+        minWidth: '300px',
+        value: (row) => row.menus.map((menu) => menu.menuLabel).join(', '),
+        render: (row) => (
+          <div className="flex flex-wrap gap-1">
+            {row.menus.map((menu) => (
+              <span
+                key={menu.menuPath}
+                className="inline-flex items-center gap-1 rounded-md border border-[#E5E8EC] bg-[#F8FAFC] px-1.5 py-0.5 text-[10px] font-semibold text-[#4B5563]"
+                title={menu.menuPath}
+              >
+                {menu.menuLabel}
+                <span className="rounded bg-white px-1 font-bold tabular-nums text-[#1D4ED8]">
+                  {formatNumber(menu.totalAccess)}
+                </span>
+              </span>
+            ))}
+          </div>
+        ),
+      },
+      {
+        key: 'totalAccess',
+        label: 'Total Akses',
+        minWidth: '120px',
+        align: 'right',
+        value: (row) => row.totalAccess,
+        render: (row) => (
+          <span className="font-bold tabular-nums text-[#1D4ED8]">{formatNumber(row.totalAccess)}</span>
+        ),
+      },
+      {
+        key: 'uniqueUsers',
+        label: 'User Unik',
+        minWidth: '100px',
+        align: 'right',
+        value: (row) => row.uniqueUsers,
+        render: (row) => (
+          <span className="font-semibold tabular-nums text-[#4B5563]">{formatNumber(row.uniqueUsers)}</span>
+        ),
+      },
+      {
+        key: 'accessPerUser',
+        label: 'Akses / User',
+        minWidth: '110px',
+        align: 'right',
+        value: (row) => row.uniqueUsers > 0 ? row.totalAccess / row.uniqueUsers : 0,
+        render: (row) => (
+          <span className="font-semibold tabular-nums text-[#4B5563]">
+            {formatNumber(row.uniqueUsers > 0 ? row.totalAccess / row.uniqueUsers : 0)}
+          </span>
+        ),
+      },
+      {
+        key: 'lastAccessed',
+        label: 'Akses Terakhir',
+        minWidth: '130px',
+        value: (row) => row.lastAccessed ?? '',
+        render: (row) => <span className="text-xs text-[#6B7280]">{formatShortTimestamp(row.lastAccessed)}</span>,
+      },
+    ],
+    [],
+  );
 
   // Total accesses across modules for Donut center
   const totalModuleAccess = useMemo(() => {
@@ -573,11 +675,25 @@ export default function UserActivityPage() {
   );
 
   // ── Loading & error states ──
-  if (isLoading) return <PageLoader />;
+  if (isLoading) return <PageLoader message="Memuat laporan aktivitas..." />;
   if (isError) return <ApiError onRetry={refresh} />;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="relative flex min-h-full flex-col gap-4" aria-busy={isFetching}>
+      {isFetching && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="pointer-events-auto absolute inset-0 z-30 flex items-start justify-center bg-white/45 pt-24 backdrop-blur-[1.5px]"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="sticky top-6 flex items-center gap-2.5 rounded-full border border-[#DBEAFE] bg-white/95 px-4 py-2 text-xs font-semibold text-[#1E3A6E] shadow-lg">
+            <RefreshCw className="h-3.5 w-3.5 animate-spin text-[#2563EB]" />
+            <span>Memperbarui laporan...</span>
+          </div>
+        </motion.div>
+      )}
       {/* ── Header Section ── */}
       <motion.div
         variants={sectionVariants}
@@ -612,9 +728,11 @@ export default function UserActivityPage() {
               <button
                 key={d}
                 onClick={() => {
+                  if (isFetching) return;
                   setDays(d);
                   setPage(1);
                 }}
+                disabled={isFetching}
                 className={cn(
                   'rounded-md px-2.5 py-1 text-xs font-semibold transition-all duration-150',
                   days === d
@@ -630,10 +748,11 @@ export default function UserActivityPage() {
           {/* Refresh button */}
           <button
             onClick={refresh}
+            disabled={isFetching}
             className="flex items-center gap-1.5 rounded-lg border border-[#E5E8EC] bg-white px-3 py-1.5 text-xs font-semibold text-[#4B5563] shadow-2xs transition-colors hover:bg-[#F9FAFB] hover:text-[#1F2A37]"
             title="Muat ulang data"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
@@ -1041,10 +1160,59 @@ export default function UserActivityPage() {
         </motion.div>
       </div>
 
-      {/* ── ROW 4: DAFTAR USER TERAKTIF ── */}
+      {/* ── ROW 4: MODULE ACCESS DETAIL ── */}
       <motion.div variants={sectionVariants} initial="hidden" animate="show">
         <SectionCard
+          title="Detail Modul Akses"
+          right={
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                {moduleRows.length} Menu
+              </span>
+              {exportEnabled && (
+                <ExportButton
+                  getPayload={() => ({
+                    headers: ['Modul', 'Menu', 'Path', 'Total Akses', 'User Unik', 'Akses / User', 'Akses Terakhir'],
+                    rows: moduleRows.map((module) => [
+                      module.module,
+                      module.menus.map((menu) => `${menu.menuLabel} (${menu.totalAccess})`).join('; '),
+                      module.menus.map((menu) => menu.menuPath).join('; '),
+                      module.totalAccess,
+                      module.uniqueUsers,
+                      module.uniqueUsers > 0 ? module.totalAccess / module.uniqueUsers : 0,
+                      module.lastAccessed ?? '',
+                    ]),
+                  })}
+                  filename="laporan-modul-akses"
+                />
+              )}
+            </div>
+          }
+        >
+          {moduleRows.length > 0 ? (
+            <DataTable
+              columns={moduleColumns}
+              rows={moduleRows}
+              rowKey={(row) => `${row.module}-${row.menuPath}`}
+              className="overflow-x-auto"
+            />
+          ) : (
+            <EmptyState message={t('activity.noData')} />
+          )}
+        </SectionCard>
+      </motion.div>
+
+      {/* ── ROW 4: DAFTAR USER TERAKTIF ── */}
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        animate="show"
+        className={isUsersTableExpanded ? 'fixed inset-0 z-50 bg-[#F4F6F8] p-3 sm:p-5' : undefined}
+      >
+        <SectionCard
           title={t('activity.userTable.title')}
+          className={isUsersTableExpanded ? 'h-full rounded-xl shadow-2xl' : undefined}
+          bodyClassName={isUsersTableExpanded ? 'min-h-0 overflow-hidden' : undefined}
           right={
             <div className="flex flex-wrap items-center gap-2">
               {/* Search in SectionCard header */}
@@ -1113,6 +1281,16 @@ export default function UserActivityPage() {
               </select>
 
               {/* Export Button */}
+              <button
+                type="button"
+                onClick={() => setIsUsersTableExpanded((expanded) => !expanded)}
+                className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2.5 text-[11px] font-semibold text-white transition-colors hover:bg-white/20"
+                title={isUsersTableExpanded ? 'Tutup tampilan penuh' : 'Buka tampilan penuh'}
+              >
+                {isUsersTableExpanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">{isUsersTableExpanded ? 'Tutup' : 'Full page'}</span>
+              </button>
+
               {exportEnabled && (
                 <ExportButton
                   getPayload={() => ({
@@ -1163,7 +1341,8 @@ export default function UserActivityPage() {
                 columns={columns}
                 rows={userRowsWithRank}
                 rowKey={(row) => row.userId}
-                className="overflow-x-auto"
+                className={isUsersTableExpanded ? 'min-h-0 flex-1 overflow-auto' : 'overflow-x-auto'}
+                maxHeight={isUsersTableExpanded ? undefined : undefined}
               />
 
               {/* Enhanced Pagination Controls */}

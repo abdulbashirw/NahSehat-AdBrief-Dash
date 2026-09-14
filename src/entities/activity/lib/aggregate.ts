@@ -21,6 +21,7 @@ export interface KpiCard {
   label: string;
   value: string;
   rawValue: number;
+  secondaryValue?: string;
   icon: 'access' | 'login' | 'users' | 'avg-access' | 'avg-login' | 'top-user';
   accent: 'blue' | 'purple' | 'cyan' | 'orange' | 'red' | 'green';
 }
@@ -71,8 +72,13 @@ export function buildKpiCards(summary: ActivitySummary | undefined): KpiCard[] {
     {
       key: 'mostActiveUser',
       label: 'User Paling Aktif',
-      value: summary.mostActiveUser ?? '—',
-      rawValue: 0,
+      value: summary.mostActiveUser
+        ? summary.mostActiveUser
+        : '—',
+      rawValue: summary.mostActiveUserAccess,
+      secondaryValue: summary.mostActiveUser
+        ? `${formatInt(summary.mostActiveUserAccess)} akses pada periode ini`
+        : undefined,
       icon: 'top-user',
       accent: 'green',
     },
@@ -128,15 +134,31 @@ const MODULE_COLORS: Record<string, string> = {
   adscore: '#16A34A',
 };
 
+const MODULE_LABELS: Record<string, string> = {
+  indemnity: 'Indemnity',
+  managecare: 'Manage Care',
+  cms: 'CMS',
+  settings: 'Settings',
+  auth: 'Auth',
+  dashboard: 'Dashboard',
+  adscore: 'AdScore',
+};
+
 export function buildDonutData(modules: ModuleStat[] | undefined): DonutSlice[] {
   if (!modules || modules.length === 0) return [];
-  return modules
-    .filter((m) => m.totalAccess > 0)
-    .map((m) => ({
-      name: m.menuLabel,
-      value: m.totalAccess,
-      color: MODULE_COLORS[m.module] ?? '#9CA3AF',
-    }))
+  const moduleTotals = new Map<string, { name: string; value: number; color: string }>();
+
+  for (const module of modules) {
+    if (module.totalAccess <= 0) continue;
+    const current = moduleTotals.get(module.module);
+    moduleTotals.set(module.module, {
+      name: current?.name ?? MODULE_LABELS[module.module] ?? module.module,
+      value: (current?.value ?? 0) + module.totalAccess,
+      color: current?.color ?? MODULE_COLORS[module.module] ?? '#9CA3AF',
+    });
+  }
+
+  return Array.from(moduleTotals.values())
     .sort((a, b) => b.value - a.value);
 }
 
