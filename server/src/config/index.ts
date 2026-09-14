@@ -83,12 +83,37 @@ function resolveSslCa(): string | undefined {
   return undefined;
 }
 
-let sslConfig: ({ rejectUnauthorized: true; ca?: string } | { rejectUnauthorized: false }) | undefined;
-if (sslMode === 'true') {
-  const ca = resolveSslCa();
-  sslConfig = { rejectUnauthorized: true, ...(ca ? { ca } : {}) };
-} else if (sslMode === 'no-verify') {
-  sslConfig = { rejectUnauthorized: false };
+// TLS protocol knobs (opsional) — untuk server MySQL lama:
+//   - MySQL < 5.6.46 / config TLS lama kadang cuma support TLSv1.0/1.1, sedangkan
+//     Node 20 default min = TLSv1.2 → handshake gagal:
+//     "The server requested an SSL/TLS level that is incompatible with the client
+//      SSL/TLS configuration"
+//     → set DB_TLS_MIN_VERSION='TLSv1' dan DB_TLS_CIPHERS='DEFAULT@SECLEVEL=0'
+//       (OpenSSL 3 menolak cipher TLSv1.0 pada security level default)
+//   - Server lama (mis. Aurora MySQL 5.6) bisa gagal negosiasi saat client
+//     menawarkan TLSv1.3 → set DB_TLS_MAX_VERSION='TLSv1.2'
+// mysql2 meneruskan ketiganya ke tls.createSecureContext (pass-through).
+type SslConfig = {
+  rejectUnauthorized: boolean;
+  ca?: string;
+  minVersion?: string;
+  maxVersion?: string;
+  ciphers?: string;
+};
+
+let sslConfig: SslConfig | undefined;
+if (sslMode === 'true' || sslMode === 'no-verify') {
+  const ca = sslMode === 'true' ? resolveSslCa() : undefined;
+  const minVersion = env.DB_TLS_MIN_VERSION?.trim() || undefined;
+  const maxVersion = env.DB_TLS_MAX_VERSION?.trim() || undefined;
+  const ciphers = env.DB_TLS_CIPHERS?.trim() || undefined;
+  sslConfig = {
+    rejectUnauthorized: sslMode === 'true',
+    ...(ca ? { ca } : {}),
+    ...(minVersion ? { minVersion } : {}),
+    ...(maxVersion ? { maxVersion } : {}),
+    ...(ciphers ? { ciphers } : {}),
+  };
 }
 
 export const dbConfig = socketPath
