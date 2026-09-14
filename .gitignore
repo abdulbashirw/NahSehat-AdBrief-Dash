@@ -11,7 +11,7 @@ build/
 .env.*.local
 
 # Cloud Run env vars (contains secrets — do NOT commit)
-env.cloud-run.yaml
+.env.cloud-run.yaml
 
 # Vite
 .vite/
