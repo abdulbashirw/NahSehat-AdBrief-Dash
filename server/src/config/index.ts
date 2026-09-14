@@ -44,16 +44,52 @@ const TWO_FACTOR_ENCRYPTION_KEY = requireEnv('TWO_FACTOR_ENCRYPTION_KEY', {
 
 const socketPath = env.DB_SOCKET_PATH?.trim() || undefined;
 
-// SSL untuk Cloud SQL TCP — Cloud SQL mewajibkan SSL/TLS pada koneksi TCP.
-// Set DB_SSL=true di env untuk mengaktifkan.
-//   DB_SSL=true      → SSL dengan verifikasi server cert (aman, Cloud SQL)
-//   DB_SSL=no-verify → SSL tanpa verifikasi cert (untuk testing/self-signed)
-//   tidak di-set     → no SSL (local XAMPP / Docker)
+// SSL untuk koneksi TCP — server MySQL (Cloud SQL / internal) yang mengaktifkan
+// TLS umumnya memakai self-signed cert / CA internal yang TIDAK ada di trust
+// store Node.js. Tanpa `ca`, handshake gagal:
+//   "unable to verify the first certificate" (HANDSHAKE_SSL_ERROR).
+//
+// Set DB_SSL=true di env untuk mengaktifkan SSL:
+//   DB_SSL=true          → SSL + verifikasi server cert (aman)
+//   DB_SSL=no-verify     → SSL tanpa verifikasi cert (testing/self-signed,
+//                          masih terenkripsi tapi rentan MITM)
+//   tidak di-set         → no SSL (local XAMPP / Docker)
+//
+// Untuk verifikasi penuh, sediakan CA server MySQL lewat salah satu:
+//   DB_SSL_CA       → isi PEM langsung di env (ganti \n baru line)
+//   DB_SSL_CA_PATH  → path file .pem di container (direkomendasikan)
+// Jika keduanya di-set, DB_SSL_CA_PATH menang.
+import fs from 'node:fs';
+
 const sslMode = env.DB_SSL?.trim().toLowerCase();
-const sslConfig =
-  sslMode === 'true' ? { rejectUnauthorized: true } :
-  sslMode === 'no-verify' ? { rejectUnauthorized: false } :
-  undefined;
+const sslCaInline = env.DB_SSL_CA?.trim() || undefined;
+const sslCaPath = env.DB_SSL_CA_PATH?.trim() || undefined;
+
+function resolveSslCa(): string | undefined {
+  if (sslCaPath) {
+    try {
+      return fs.readFileSync(sslCaPath, 'utf8');
+    } catch (err) {
+      throw new Error(
+        `[config] DB_SSL_CA_PATH is set but the file cannot be read: ${sslCaPath}. ` +
+          'Mount the CA certificate into the container or unset DB_SSL_CA_PATH.',
+      );
+    }
+  }
+  if (sslCaInline) {
+    // Mendukung PEM satu-baris (mis. env var CI/CD): "\n" literal → newline asli.
+    return sslCaInline.replace(/\\n/g, '\n');
+  }
+  return undefined;
+}
+
+let sslConfig: ({ rejectUnauthorized: true; ca?: string } | { rejectUnauthorized: false }) | undefined;
+if (sslMode === 'true') {
+  const ca = resolveSslCa();
+  sslConfig = { rejectUnauthorized: true, ...(ca ? { ca } : {}) };
+} else if (sslMode === 'no-verify') {
+  sslConfig = { rejectUnauthorized: false };
+}
 
 export const dbConfig = socketPath
   ? {
