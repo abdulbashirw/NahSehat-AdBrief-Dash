@@ -70,10 +70,10 @@ export function useDailyMonitoringData(): UseDailyMonitoringDataResult {
     const activeManageCare = allPayors.filter(
       (p) => p.category === 'MANAGE_CARE' && p.isActive,
     );
-    if (isSuperAdmin && userPayorIds.length === 0) return activeManageCare;
+    if ((isSuperAdmin || isAdmin) && userPayorIds.length === 0) return activeManageCare;
     const assignedPayorIds = new Set(userPayorIds.map(String));
     return activeManageCare.filter((p) => assignedPayorIds.has(String(p.id)));
-  }, [isSuperAdmin, payorsData, userPayorIds]);
+  }, [isSuperAdmin, isAdmin, payorsData, userPayorIds]);
 
   // ── Keep the global selection within the user's current access ──
   useEffect(() => {

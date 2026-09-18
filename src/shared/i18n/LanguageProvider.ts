@@ -12,9 +12,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetSettingsQuery } from '@/entities/settings/api/settingApi';
 import { useHasAnyRole } from '@/entities/auth/model/useRbac';
-import i18n, { localeToLang, type LangCode } from '@/shared/i18n/i18n';
-
-const LANG_STORAGE_KEY = 'nahsehat_lang';
+import i18n, { localeToLang, LANG_STORAGE_KEY, type LangCode } from '@/shared/i18n/i18n';
 
 export function useLanguageSync() {
   const { i18n } = useTranslation();
@@ -51,11 +49,11 @@ export function useLanguageSync() {
 
 /**
  * Persist language change to both i18next and localStorage.
- * Called from SettingsPage when user saves language.
+ * Called from SettingsPage and the login language switcher.
  */
 export function persistLanguageChange(lang: LangCode) {
   localStorage.setItem(LANG_STORAGE_KEY, lang);
   i18n.changeLanguage(lang);
 }
 
-export { LANG_STORAGE_KEY };
+export { LANG_STORAGE_KEY } from './i18n';

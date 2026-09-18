@@ -1,25 +1,20 @@
 /**
  * Indemnity — Demographics (Member & Claimants Demographics)
  *
- * Age and gender composition of active members versus claimants within
- * the currently selected period (W1–W4 / Month / Custom, max 31 days).
- *
- * Concept: "check for daily" — the selected period is treated as a single
- * snapshot. There is no first-half → second-half %Growth comparison.
- *
- * Data comes from the AdmDailyClaim API response — no year-based splitting.
+ * Content unchanged (age/gender heatmap, relationship bars, butterfly chart).
+ * Layout & style follow OverviewPage: live-clock header + rolling KPI cards.
  */
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import KpiCard from "@/shared/components/common/KpiCard";
+import { Activity, BadgeCheck, Receipt, UserCheck, Wallet } from "lucide-react";
+import BoardKpiCard from "@/shared/components/common/BoardKpiCard";
+import FilterBoardHeader from "@/shared/components/common/FilterBoardHeader";
 import SectionCard from "@/shared/components/common/SectionCard";
-import ExportButton from "@/shared/components/common/ExportButton";
 import { useExportEnabled } from "@/entities/settings/model/useSettings";
 import EmptyState from "@/shared/components/common/EmptyState";
 import ApiError from "@/shared/components/error/ApiError";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { useIndemnityData } from "@/features/indemnity-overview/hooks/useIndemnityData";
-import PeriodFilter from "@/features/indemnity-overview/components/PeriodFilter";
 import { AGE_BUCKETS, byMonth, byRelationship, kpiDeltas, kpiSummary } from "@/entities/claim/lib/aggregate";
 import type { RelationshipRow } from "@/entities/claim/lib/aggregate";
 import {
@@ -49,24 +44,20 @@ function heatColor(v: number, max: number): string {
 
 export default function Demographics() {
   const { t } = useTranslation();
-  const { data, isLoading, isFetching, lastUpdated, isError, refetch } = useIndemnityData();
+  const { data, isLoading, isFetching, isError, refetch } = useIndemnityData();
   const exportEnabled = useExportEnabled();
 
-  const filteredClaims = data?.claims ?? [];
-  const members = data?.members ?? [];
+  const filteredClaims = data?.claims;
+  const members = data?.members;
 
-  const kpis = useMemo(() => kpiSummary(filteredClaims, members), [filteredClaims, members]);
-  const deltas = useMemo(() => kpiDeltas(filteredClaims, members), [filteredClaims, members]);
-  const monthly = useMemo(() => byMonth(filteredClaims), [filteredClaims]);
-  const relationships = useMemo(() => byRelationship(members, filteredClaims), [members, filteredClaims]);
+  const kpis = useMemo(() => kpiSummary(filteredClaims ?? [], members ?? []), [filteredClaims, members]);
+  const deltas = useMemo(() => kpiDeltas(filteredClaims ?? [], members ?? []), [filteredClaims, members]);
+  const monthly = useMemo(() => byMonth(filteredClaims ?? []), [filteredClaims]);
+  const relationships = useMemo(() => byRelationship(members ?? [], filteredClaims ?? []), [members, filteredClaims]);
 
-  // Age × gender matrices for the selected period (single daily snapshot).
-  const memberMatrix = useMemo(
-    () => memberAgeGender(members),
-    [members],
-  );
+  const memberMatrix = useMemo(() => memberAgeGender(members ?? []), [members]);
   const claimantMatrix = useMemo(
-    () => claimantAgeGender(members, filteredClaims),
+    () => claimantAgeGender(members ?? [], filteredClaims ?? []),
     [members, filteredClaims],
   );
 
@@ -84,41 +75,120 @@ export default function Demographics() {
 
   const periode = "demographics";
 
+  const cards = useMemo(
+    () => [
+      {
+        id: "claimants",
+        label: t("demographics.claimants"),
+        value: formatNumber(kpis.claimants),
+        icon: UserCheck,
+        sublabel: t("demographics.claimantsSub"),
+        iconBg: "bg-[#FFF7ED]",
+        iconColor: "text-[#EA8C1F]",
+        dotColor: "bg-[#EA8C1F]",
+        topBorder: "border-t-[#EA8C1F]",
+        accent: "#EA8C1F",
+        delta: deltas.claimants,
+      },
+      {
+        id: "transactions",
+        label: t("demographics.transactions"),
+        value: formatNumber(kpis.transactions),
+        icon: Receipt,
+        sublabel: t("demographics.transactionsSub"),
+        iconBg: "bg-[#FFFBEB]",
+        iconColor: "text-[#D9A400]",
+        dotColor: "bg-[#D9A400]",
+        topBorder: "border-t-[#D9A400]",
+        accent: "#D9A400",
+        delta: deltas.transactions,
+      },
+      {
+        id: "avgTxn",
+        label: t("demographics.avgTxnPerClaimant"),
+        value: formatDecimal(kpis.avgTxnPerClaimant),
+        icon: Activity,
+        sublabel: t("demographics.avgTxnSub"),
+        iconBg: "bg-[#EFF6FF]",
+        iconColor: "text-[#2563EB]",
+        dotColor: "bg-[#2563EB]",
+        topBorder: "border-t-[#2563EB]",
+        accent: "#2563EB",
+      },
+      {
+        id: "avgApproved",
+        label: t("demographics.avgApprovedPerClaimant"),
+        value: formatIDR(kpis.avgApprovedPerClaimant),
+        icon: BadgeCheck,
+        sublabel: t("demographics.avgApprovedSub"),
+        iconBg: "bg-[#F5F3FF]",
+        iconColor: "text-[#7C3AED]",
+        dotColor: "bg-[#7C3AED]",
+        topBorder: "border-t-[#7C3AED]",
+        accent: "#7C3AED",
+      },
+      {
+        id: "billing",
+        label: t("demographics.billing"),
+        value: formatIDR(kpis.billing),
+        icon: Wallet,
+        sublabel: t("demographics.billingSub"),
+        iconBg: "bg-[#FFF1F2]",
+        iconColor: "text-[#9B2226]",
+        dotColor: "bg-[#9B2226]",
+        topBorder: "border-t-[#9B2226]",
+        accent: "#9B2226",
+        delta: deltas.billing,
+        spark: monthly.map((m) => m.billing),
+      },
+      {
+        id: "approved",
+        label: t("demographics.approved"),
+        value: formatIDR(kpis.approved),
+        icon: BadgeCheck,
+        sublabel: `${formatRatioPct(kpis.approvedPct)} ${t("demographics.ofBilling")}`,
+        iconBg: "bg-[#ECFDF5]",
+        iconColor: "text-[#0F9488]",
+        dotColor: "bg-[#0F9488]",
+        topBorder: "border-t-[#0F9488]",
+        accent: "#0F9488",
+        delta: deltas.approved,
+        spark: monthly.map((m) => m.approved),
+      },
+    ],
+    [t, kpis, deltas, monthly],
+  );
+
+  const exportPayload = () => ({
+    headers: [
+      t("demographics.ageGroup"),
+      t("demographics.memberFemale"), t("demographics.memberMale"), t("demographics.memberTotal"),
+      t("demographics.claimantsFemale"), t("demographics.claimantsMale"), t("demographics.claimantsTotal"),
+    ],
+    rows: AGE_BUCKETS.map((b, i) => {
+      const m = memberMatrix[i];
+      const c = claimantMatrix[i];
+      return [
+        b,
+        m.female, m.male, m.total,
+        c.female, c.male, c.total,
+      ] as (string | number)[];
+    }),
+  });
+
   if (isError) return <ApiError onRetry={refetch} />;
 
-  if (!isLoading && filteredClaims.length === 0) {
+  if (!isLoading && (filteredClaims?.length ?? 0) === 0) {
     return (
       <div className="flex h-full flex-col gap-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <PageTitle />
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
-            {exportEnabled && (
-              <div className="flex items-center gap-3">
-                <div className="w-px self-stretch bg-[#E5E8EC]" />
-                <ExportButton
-                  filename={`adbrief-demographics-${periode}.csv`}
-                  getPayload={() => ({
-                    headers: [
-                      t("demographics.ageGroup"),
-                      t("demographics.memberFemale"), t("demographics.memberMale"), t("demographics.memberTotal"),
-                      t("demographics.claimantsFemale"), t("demographics.claimantsMale"), t("demographics.claimantsTotal"),
-                    ],
-                    rows: AGE_BUCKETS.map((b, i) => {
-                      const m = memberMatrix[i];
-                      const c = claimantMatrix[i];
-                      return [
-                        b,
-                        m.female, m.male, m.total,
-                        c.female, c.male, c.total,
-                      ] as (string | number)[];
-                    }),
-                  })}
-                />
-              </div>
-            )}
-          </div>
-        </div>
+        <FilterBoardHeader
+          title={t("demographics.title")}
+          subtitle={t("demographics.subtitle")}
+          isFetching={isFetching}
+          exportEnabled={exportEnabled}
+          filename={`adbrief-demographics-${periode}.csv`}
+          getPayload={exportPayload}
+        />
         <div className="flex min-h-0 flex-1 flex-col">
           <SectionCard title={t("demographics.title")} className="h-full">
             <EmptyState />
@@ -127,57 +197,35 @@ export default function Demographics() {
       </div>
     );
   }
+
   const sumOf = (rows: AgeGenderCell[], key: "female" | "male") => rows.reduce((s, r) => s + r[key], 0);
   const sumTotal = (rows: AgeGenderCell[]) => rows.reduce((s, r) => s + r.total, 0);
 
   return (
-    <motion.div className="flex h-full flex-col gap-3 transition-opacity duration-300" style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }} initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <PageTitle />
-        <div className="flex items-center justify-end gap-2">
-          <PeriodFilter isFetching={isFetching} lastUpdated={lastUpdated} />
-          {exportEnabled && (
-            <>
-              <div className="w-px self-stretch bg-[#E5E8EC]" />
-              <ExportButton
-                filename={`adbrief-demographics-${periode}.csv`}
-                getPayload={() => ({
-                  headers: [
-                    t("demographics.ageGroup"),
-                    t("demographics.memberFemale"), t("demographics.memberMale"), t("demographics.memberTotal"),
-                    t("demographics.claimantsFemale"), t("demographics.claimantsMale"), t("demographics.claimantsTotal"),
-                  ],
-                  rows: AGE_BUCKETS.map((b, i) => {
-                    const m = memberMatrix[i];
-                    const c = claimantMatrix[i];
-                    return [
-                      b,
-                      m.female, m.male, m.total,
-                      c.female, c.male, c.total,
-                    ] as (string | number)[];
-                  }),
-                })}
-              />
-            </>
-          )}
-        </div>
-      </div>
+    <motion.div
+      className="flex h-full flex-col gap-3 transition-opacity duration-300"
+      style={{ opacity: isFetching && !isLoading ? 0.55 : 1 }}
+      initial="hidden"
+      animate="show"
+      variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+    >
+      <FilterBoardHeader
+        title={t("demographics.title")}
+        subtitle={t("demographics.subtitle")}
+        isFetching={isFetching}
+        exportEnabled={exportEnabled}
+        filename={`adbrief-demographics-${periode}.csv`}
+        getPayload={exportPayload}
+      />
 
-        {/* Section 1 — KPI row */}
-        <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <KpiCard index={0} loading={isLoading} label={t("demographics.claimants")} accent="#EA8C1F" value={kpis.claimants} format={formatNumber} delta={deltas.claimants} />
-          <KpiCard index={1} loading={isLoading} label={t("demographics.transactions")} accent="#D9A400" value={kpis.transactions} format={formatNumber} delta={deltas.transactions} />
-          <KpiCard index={2} loading={isLoading} label={t("demographics.avgTxnPerClaimant")} accent="#2563EB" value={kpis.avgTxnPerClaimant} format={formatDecimal} />
-          <KpiCard index={3} loading={isLoading} label={t("demographics.avgApprovedPerClaimant")} accent="#7C3AED" value={kpis.avgApprovedPerClaimant} format={formatIDR} />
-          <KpiCard index={4} loading={isLoading} label={t("demographics.billing")} accent="#9B2226" value={kpis.billing} format={formatIDR} delta={deltas.billing} spark={monthly.map((m) => m.billing)} />
-          <KpiCard index={5} loading={isLoading} label={t("demographics.approved")} accent="#0F9488" value={kpis.approved} format={formatIDR} delta={deltas.approved} subline={`${formatRatioPct(kpis.approvedPct)} ${t("demographics.ofBilling")}`} spark={monthly.map((m) => m.approved)} />
-        </div>
+      <motion.div variants={sectionVariants} className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
+        {cards.map((card, index) => (
+          <BoardKpiCard key={card.id} index={index} {...card} />
+        ))}
+      </motion.div>
 
-        {/* ── Row 2 & 3 — stacked, fill remaining viewport height ── */}
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
-        {/* Section 2 — Member heatmap table + Claimants Relationship side by side */}
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
-          {/* Member heatmap table */}
           <motion.div variants={sectionVariants} className="min-h-0">
             <SectionCard
               title={t("demographics.memberByAgeGender")}
@@ -189,7 +237,7 @@ export default function Demographics() {
                 <Skeleton className="h-full w-full" />
               ) : (
                 <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-[#E5E8EC]">
-                  <table className="w-full text-[10px] font-sans">
+                  <table className="w-full font-sans text-[10px]">
                     <thead>
                       <tr className="bg-[#F1F3F5] text-[11px] font-bold uppercase tracking-wide text-[#4B5563]">
                         <th className="px-4 py-0.5 text-left">{t("demographics.ageGroup")}</th>
@@ -236,7 +284,6 @@ export default function Demographics() {
             </SectionCard>
           </motion.div>
 
-          {/* Claimants Relationship */}
           <motion.div variants={sectionVariants} className="min-h-0">
             <SectionCard title={t("diseases.claimantsRelationship")} className="h-full" bodyClassName="flex min-h-0 flex-col p-4">
               {isLoading ? (
@@ -269,7 +316,6 @@ export default function Demographics() {
           </motion.div>
         </div>
 
-        {/* Section 3 — Claimants butterfly chart */}
         <motion.div variants={sectionVariants} className="min-h-0 flex-1">
           <SectionCard
             title={t("demographics.claimantsByAgeGender")}
@@ -315,20 +361,7 @@ export default function Demographics() {
             )}
           </SectionCard>
         </motion.div>
-        </div>
-
+      </div>
     </motion.div>
-  );
-}
-
-function PageTitle() {
-  const { t } = useTranslation();
-  return (
-    <div>
-      <h1 className="font-display text-[24px] font-extrabold text-[#1F2A37] md:text-[28px]">{t("demographics.title")}</h1>
-      <p className="mt-0.5 text-[13px] italic text-[#9CA3AF]">
-        {t("demographics.subtitle")}
-      </p>
-    </div>
   );
 }

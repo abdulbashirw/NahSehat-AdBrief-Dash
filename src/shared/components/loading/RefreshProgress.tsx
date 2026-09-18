@@ -16,6 +16,8 @@ import { cn } from '@/shared/lib/utils';
 interface RefreshProgressProps {
   isFetching: boolean;
   lastUpdated?: Date | null;
+  /** When set, replaces the "Updated HH:mm:ss" badge with a live clock. */
+  liveClock?: string | null;
 }
 
 /** Format a Date as "HH:mm:ss" (locale-agnostic) */
@@ -26,7 +28,7 @@ function formatTime(d: Date): string {
   return `${hh}:${mi}:${ss}`;
 }
 
-export default function RefreshProgress({ isFetching, lastUpdated }: RefreshProgressProps) {
+export default function RefreshProgress({ isFetching, lastUpdated, liveClock }: RefreshProgressProps) {
   return (
     <>
       {/* Top loading bar — fixed at viewport top, above all content.
@@ -50,8 +52,20 @@ export default function RefreshProgress({ isFetching, lastUpdated }: RefreshProg
 
       {/* "Last updated" badge — subtle, non-blocking.
           Hidden below lg to save horizontal space for the export button. */}
-      <div className="hidden items-center gap-2 lg:flex">
-        {isFetching ? (
+      <div className={cn(
+        'items-center gap-2',
+        liveClock != null && liveClock !== '' ? 'flex' : 'hidden lg:flex',
+      )}>
+        {liveClock != null && liveClock !== '' ? (
+          <span className="inline-flex items-center gap-2 rounded-lg bg-[#F4F6F8] px-2.5 py-1 text-[11px] font-bold tabular-nums text-[#4B5563]">
+            {isFetching ? (
+              <Loader2 className="h-3 w-3 animate-spin text-[#2E7D5B]" />
+            ) : (
+              <span className="h-2 w-2 animate-pulse rounded-full bg-[#2E7D5B]" />
+            )}
+            <span>{liveClock}</span>
+          </span>
+        ) : isFetching ? (
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#E7F4EE] px-2.5 py-1 text-[11px] font-semibold text-[#2E7D5B]">
             <Loader2 className="h-3 w-3 animate-spin" />
             <span className="animate-pulse">Refreshing…</span>

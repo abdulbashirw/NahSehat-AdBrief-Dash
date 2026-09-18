@@ -12,13 +12,15 @@
  *  - Form validation via react-hook-form + zod
  *  - Toast notifications via sonner
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   User,
   Lock,
@@ -27,47 +29,49 @@ import {
   Loader2,
   ShieldCheck,
   ArrowLeft,
-  Activity,
-  TrendingUp,
-  CircleDollarSign,
-  CheckCircle2,
   ArrowRight,
+  Globe,
 } from 'lucide-react';
 
 import { useLoginMutation, useVerify2FALoginMutation } from '@/entities/auth/api/authApi';
 import { setCredentials } from '@/entities/auth/model/authSlice';
 import { useAppDispatch } from '@/shared/store';
 import { useAuth } from '@/entities/auth';
+import { persistLanguageChange, type LangCode } from '@/shared/i18n';
+import { cn } from '@/shared/lib/utils';
 import type { AuthUser } from '@/shared/types';
 
 // ── Validation schema ──────────────────────────────────────────
-const loginSchema = z.object({
-  username: z
-    .string()
-    .min(1, 'Email atau username wajib diisi')
-    .min(3, 'Minimal 3 karakter')
-    .max(50, 'Maksimal 50 karakter'),
-  password: z
-    .string()
-    .min(1, 'Password wajib diisi')
-    .min(6, 'Password minimal 6 karakter')
-    .max(128, 'Password maksimal 128 karakter'),
-});
+function createLoginSchema(t: TFunction) {
+  return z.object({
+    username: z
+      .string()
+      .min(1, t('auth.emailRequired'))
+      .min(3, t('auth.minChars', { min: 3 }))
+      .max(50, t('auth.maxChars', { max: 50 })),
+    password: z
+      .string()
+      .min(1, t('auth.passwordRequired'))
+      .min(6, t('auth.passwordMin', { min: 6 }))
+      .max(128, t('auth.passwordMax', { max: 128 })),
+  });
+}
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = z.infer<ReturnType<typeof createLoginSchema>>;
 
-// ── AdBrief Logo Mark (uses official SVG asset) ─────────────────
-export function AdBriefLogoMark({
+export function BrandLogo({
+  src,
+  alt,
   className = 'w-16 h-16',
-  variant = 'dark',
 }: {
+  src: string;
+  alt: string;
   className?: string;
-  variant?: 'light' | 'dark';
 }) {
   return (
     <img
-      src={variant === 'light' ? '/logo-mark-light.svg' : '/logo-mark.svg'}
-      alt="AdBrief Logo"
+      src={src}
+      alt={alt}
       className={className}
       draggable={false}
     />
@@ -75,6 +79,9 @@ export function AdBriefLogoMark({
 }
 
 export default function Login() {
+  const { t, i18n } = useTranslation();
+  const currentLang: LangCode = i18n.language.startsWith('id') ? 'id' : 'en';
+
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorPending, setTwoFactorPending] = useState(false);
   const [tempToken, setTempToken] = useState('');
@@ -91,6 +98,9 @@ export default function Login() {
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
 
+  const tRef = useRef(t);
+  tRef.current = t;
+
   // Redirect authenticated users away from login
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -104,7 +114,8 @@ export default function Login() {
     formState: { errors },
     setFocus,
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: (values, context, options) =>
+      zodResolver(createLoginSchema(tRef.current))(values, context, options),
     defaultValues: { username: '', password: '' },
   });
 
@@ -122,8 +133,8 @@ export default function Login() {
         if ('requiresTwoFactor' in result && result.requiresTwoFactor) {
           setTempToken(result.tempToken);
           setTwoFactorPending(true);
-          toast.info('Verifikasi Dua Faktor Diperlukan', {
-            description: 'Masukkan 6 digit kode dari aplikasi autentikator Anda.',
+          toast.info(t('auth.twoFactorRequired'), {
+            description: t('auth.enterCodeDesc'),
           });
           return;
         }
@@ -142,18 +153,18 @@ export default function Login() {
         };
 
         dispatch(setCredentials({ token, user: authUser }));
-        toast.success('Login Berhasil', {
-          description: `Selamat datang kembali, ${authUser.fullName || authUser.username}!`,
+        toast.success(t('auth.loginSuccess'), {
+          description: t('auth.welcomeUser', { name: authUser.fullName || authUser.username }),
         });
         navigate(from, { replace: true });
       } catch (err: unknown) {
         const message =
           (err as { data?: { message?: string } })?.data?.message ||
-          'Username atau password salah. Silakan coba kembali.';
-        toast.error('Login Gagal', { description: message });
+          t('auth.invalidCredentials');
+        toast.error(t('auth.loginFailed'), { description: message });
       }
     },
-    [login, dispatch, navigate, from],
+    [login, dispatch, navigate, from, t],
   );
 
   // ── 2FA verification submit ──
@@ -161,24 +172,24 @@ export default function Login() {
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       if (twoFactorCode.length !== 6) {
-        toast.error('Kode Tidak Valid', { description: 'Masukkan 6 digit kode autentikasi.' });
+        toast.error(t('auth.invalidCode'), { description: t('auth.enterSixDigit') });
         return;
       }
       try {
         const result = await verify2FALogin({ tempToken, token: twoFactorCode }).unwrap();
         dispatch(setCredentials({ token: result.token, user: result.user }));
-        toast.success('Verifikasi Berhasil', {
-          description: `Selamat datang kembali, ${result.user.fullName || result.user.username}!`,
+        toast.success(t('auth.verificationSuccess'), {
+          description: t('auth.welcomeUser', { name: result.user.fullName || result.user.username }),
         });
         navigate(from, { replace: true });
       } catch (err: unknown) {
         const message =
           (err as { data?: { message?: string } })?.data?.message ||
-          'Kode verifikasi tidak sesuai atau sudah kedaluwarsa.';
-        toast.error('Verifikasi Gagal', { description: message });
+          t('auth.invalidVerificationCode');
+        toast.error(t('auth.verificationFailed'), { description: message });
       }
     },
-    [verify2FALogin, tempToken, twoFactorCode, dispatch, navigate, from],
+    [verify2FALogin, tempToken, twoFactorCode, dispatch, navigate, from, t],
   );
 
   const cancel2FA = useCallback(() => {
@@ -188,7 +199,33 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#F8FAFC] font-sans selection:bg-blue-200 overflow-x-hidden">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#F8FAFC] font-sans selection:bg-blue-200 overflow-x-hidden relative">
+      {/* Language switcher — available before login */}
+      <div className="fixed top-4 right-4 z-50">
+        <div
+          className="inline-flex items-center gap-0.5 rounded-full border border-slate-200/80 bg-white/90 p-0.5 shadow-sm backdrop-blur-md"
+          role="group"
+          aria-label={t('settings.language')}
+        >
+          <Globe className="ml-2 h-3.5 w-3.5 text-slate-400" aria-hidden />
+          {(['en', 'id'] as const).map((code) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => persistLanguageChange(code)}
+              aria-pressed={currentLang === code}
+              className={cn(
+                'rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide transition-colors cursor-pointer',
+                currentLang === code
+                  ? 'bg-[#2563EB] text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800',
+              )}
+            >
+              {code === 'en' ? t('auth.langEn') : t('auth.langId')}
+            </button>
+          ))}
+        </div>
+      </div>
       {/* ── LEFT HERO PANEL (EXECUTIVE HEALTHCARE VISUALS) ────────── */}
       <div className="lg:w-[56%] xl:w-[58%] w-full relative bg-gradient-to-br from-[#0B1528] via-[#0F264C] to-[#1E3A6E] flex flex-col justify-between p-8 sm:p-12 md:p-14 lg:p-16 text-white min-h-[520px] lg:min-h-screen select-none overflow-hidden">
         {/* ── Ambient Background Lighting & Grid Texture ── */}
@@ -336,7 +373,7 @@ export default function Login() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[#10B981]" />
             </span>
             <span className="text-xs font-semibold text-slate-200 tracking-wide">
-              AdMedika Enterprise Analytics
+              {t('auth.enterpriseBadge')}
             </span>
           </div>
         </div>
@@ -345,9 +382,10 @@ export default function Login() {
         <div className="relative z-10 my-auto py-8 max-w-xl">
           {/* Logo Cluster */}
           <div className="flex items-center gap-5 sm:gap-6">
-            <AdBriefLogoMark
-              variant="light"
-              className="w-32 sm:w-40 md:w-44 shrink-0 drop-shadow-[0_12px_32px_rgba(37,99,235,0.45)] transition-transform hover:scale-105 duration-300"
+            <BrandLogo
+              src="/Admedika-light.png"
+              alt="AdMedika Logo"
+              className="w-32 sm:w-40 md:w-44 shrink-0 object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 duration-300"
             />
             <div className="flex flex-col justify-center">
               <div className="flex items-center gap-2.5">
@@ -358,8 +396,9 @@ export default function Login() {
                   v2.0
                 </span>
               </div>
-              <p className="text-base sm:text-lg font-medium text-slate-300 mt-1.5 flex items-center gap-1.5">
-                powered by <span className="font-bold text-white tracking-wide">NahSehat</span>
+              <p className="text-sm sm:text-lg font-medium text-slate-300 mt-1.5 leading-snug">
+                {t('auth.poweredBy')}{' '}
+                <span className="font-bold text-white tracking-wide">AdMedika</span>
               </p>
             </div>
           </div>
@@ -367,99 +406,14 @@ export default function Login() {
           {/* Tagline */}
           <div className="mt-10 sm:mt-12 space-y-1.5">
             <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-white leading-tight tracking-tight">
-              Complex Data.
+              {t('auth.taglineLine1')}
             </h2>
             <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black bg-gradient-to-r from-blue-200 via-sky-100 to-emerald-200 bg-clip-text text-transparent leading-tight tracking-tight">
-              Clear Intelligence.
+              {t('auth.taglineLine2')}
             </h2>
             <p className="mt-4 text-sm sm:text-base text-slate-300/90 leading-relaxed font-normal max-w-lg">
-              Solusi terpadu monitoring utilisasi benefit kesehatan, analitik klaim real-time, dan manajemen risiko presisi enterprise AdMedika.
+              {t('auth.taglineDesc')}
             </p>
-          </div>
-
-          {/* ── Floating Executive Glass Metric Cards ── */}
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
-
-            {/* Card 1: Indemnity utilization */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              whileHover={{ y: -3, transition: { duration: 0.15 } }}
-              className="rounded-2xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-md shadow-lg transition-all"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 border border-amber-300/30 text-amber-200">
-                    <CircleDollarSign className="h-4 w-4" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-200 truncate">Indemnity</span>
-                </div>
-                <span className="shrink-0 text-[10px] font-bold text-amber-200 bg-amber-500/20 border border-amber-300/30 rounded-full px-2 py-0.5">
-                  Terkendali
-                </span>
-              </div>
-              <div className="mt-3">
-                <div className="text-lg font-extrabold text-white tracking-tight tabular-nums">87.4%</div>
-                <p className="text-[10px] text-slate-300 mt-0.5">Utilisasi benefit indemnity</p>
-              </div>
-            </motion.div>
-
-            {/* Card 2: SLA & Claims */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              whileHover={{ y: -3, transition: { duration: 0.15 } }}
-              className="rounded-2xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-md shadow-lg transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20 border border-emerald-400/30 text-emerald-300">
-                    <Activity className="h-4 w-4" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-200">Daily Monitoring</span>
-                </div>
-                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/20 rounded-full px-2 py-0.5">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Live SLA
-                </span>
-              </div>
-              <div className="mt-3">
-                <div className="text-lg font-extrabold text-white tracking-tight tabular-nums">
-                  99.85%
-                </div>
-                <p className="text-[10px] text-slate-300 mt-0.5">Akurasi audit klaim otomatis</p>
-              </div>
-            </motion.div>
-
-            {/* Card 3: Risk Scoring & Telemetry */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.35 }}
-              whileHover={{ y: -3, transition: { duration: 0.15 } }}
-              className="rounded-2xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-md shadow-lg transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20 border border-blue-400/30 text-blue-300">
-                    <TrendingUp className="h-4 w-4" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-200">AdScore Engine</span>
-                </div>
-                <span className="text-[10px] font-bold text-sky-200 bg-blue-500/20 border border-blue-400/30 rounded-full px-2 py-0.5">
-                  Predictive
-                </span>
-              </div>
-              <div className="mt-3">
-                <div className="text-lg font-extrabold text-white tracking-tight tabular-nums">
-                  24/7 Telemetri
-                </div>
-                <p className="text-[10px] text-slate-300 mt-0.5">Sinkronisasi real-time NahSehat</p>
-              </div>
-            </motion.div>
-
           </div>
         </div>
 
@@ -467,9 +421,9 @@ export default function Login() {
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-400 border-t border-white/10 pt-4 mt-4">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-emerald-400" />
-            <span>Enterprise Security & Data Privacy Protected</span>
+            <span>{t('auth.securityFooter')}</span>
           </div>
-          <span className="hidden sm:inline">AdMedika Part of Fullerton Health</span>
+          <span className="hidden sm:inline">{t('auth.companyFooter')}</span>
         </div>
       </div>
 
@@ -503,10 +457,10 @@ export default function Login() {
                       <ShieldCheck className="w-7 h-7" />
                     </div>
                     <h2 className="text-2xl font-extrabold text-[#0F172A] tracking-tight">
-                      Autentikasi 2FA
+                      {t('auth.twoFactorAuth')}
                     </h2>
                     <p className="text-xs font-medium text-slate-500 mt-2 leading-relaxed">
-                      Masukkan 6 digit kode verifikasi dari aplikasi authenticator Anda
+                      {t('auth.enterCode')}
                     </p>
                   </div>
 
@@ -535,7 +489,7 @@ export default function Login() {
                       className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#1E3A6E] via-[#2563EB] to-[#1D4ED8] hover:from-[#172E57] hover:via-[#1D4ED8] hover:to-[#1E40AF] text-white font-bold text-sm shadow-[0_10px_25px_-5px_rgba(37,99,235,0.4)] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-2"
                     >
                       {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                      <span>{isLoading ? 'Memverifikasi...' : 'Verifikasi & Masuk'}</span>
+                      <span>{isLoading ? t('common.verifying') : t('auth.verifyAndSignIn')}</span>
                     </button>
 
                     {/* Back to login */}
@@ -545,7 +499,7 @@ export default function Login() {
                       className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#2563EB] transition-colors cursor-pointer py-1.5"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Kembali ke halaman login</span>
+                      <span>{t('auth.backToLogin')}</span>
                     </button>
                   </form>
                 </motion.div>
@@ -559,15 +513,16 @@ export default function Login() {
                 >
                   {/* Header */}
                   <div className="text-center mb-8">
-                    <AdBriefLogoMark
-                      variant="dark"
-                      className="w-24 sm:w-28 mx-auto mb-4 drop-shadow-[0_4px_16px_rgba(15,23,42,0.08)] transition-transform hover:scale-105 duration-200"
+                    <BrandLogo
+                      src="/logo-mark.svg"
+                      alt="AdBrief Logo"
+                      className="w-24 h-auto mx-auto mb-3 object-contain drop-shadow-[0_4px_16px_rgba(15,23,42,0.08)]"
                     />
                     <h2 className="text-2xl font-extrabold text-[#0F172A] tracking-tight">
-                      Selamat Datang
+                      {t('auth.welcomeBack')}
                     </h2>
                     <p className="text-xs font-medium text-slate-500 mt-1.5">
-                      Masuk ke sistem analitik benefit AdBrief
+                      {t('auth.signInSubtitle')}
                     </p>
                   </div>
 
@@ -576,7 +531,7 @@ export default function Login() {
                     {/* Username Field */}
                     <div className="space-y-1.5">
                       <label htmlFor="username" className="block text-xs font-bold text-[#334155]">
-                        Username
+                        {t('auth.username')}
                       </label>
                       <div className="relative group">
                         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#2563EB] pointer-events-none transition-colors duration-200" />
@@ -584,7 +539,7 @@ export default function Login() {
                           id="username"
                           type="text"
                           autoComplete="username"
-                          placeholder="Masukkan username"
+                          placeholder={t('auth.usernamePlaceholder')}
                           aria-invalid={errors.username ? 'true' : undefined}
                           aria-describedby={errors.username ? 'username-error' : undefined}
                           className={`w-full rounded-xl border bg-slate-50/70 py-3 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 hover:border-slate-300 hover:bg-white ${errors.username
@@ -605,7 +560,7 @@ export default function Login() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <label htmlFor="password" className="block text-xs font-bold text-[#334155]">
-                          Kata Sandi
+                          {t('auth.password')}
                         </label>
                       </div>
                       <div className="relative group">
@@ -614,7 +569,7 @@ export default function Login() {
                           id="password"
                           type={showPassword ? 'text' : 'password'}
                           autoComplete="current-password"
-                          placeholder="Masukkan kata sandi"
+                          placeholder={t('auth.passwordPlaceholder')}
                           aria-invalid={errors.password ? 'true' : undefined}
                           aria-describedby={errors.password ? 'password-error' : undefined}
                           className={`w-full rounded-xl border bg-slate-50/70 py-3 pl-10 pr-10 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 hover:border-slate-300 hover:bg-white ${errors.password
@@ -627,7 +582,7 @@ export default function Login() {
                           type="button"
                           onClick={() => setShowPassword((v) => !v)}
                           className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none p-1 rounded-md transition-colors"
-                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                           tabIndex={0}
                         >
                           {showPassword ? (
@@ -653,11 +608,11 @@ export default function Login() {
                       {isLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Memproses Autentikasi...</span>
+                          <span>{t('auth.processingAuth')}</span>
                         </>
                       ) : (
                         <>
-                          <span>Masuk ke Dashboard</span>
+                          <span>{t('auth.signInToDashboard')}</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
@@ -671,7 +626,7 @@ export default function Login() {
           {/* Bottom Security Assurance */}
           <div className="mt-8 text-center">
             <p className="text-[11px] text-slate-400 mt-1">
-              © {new Date().getFullYear()} AdMedika NahSehat Healthcare System
+              {t('auth.copyright', { year: new Date().getFullYear() })}
             </p>
           </div>
         </div>

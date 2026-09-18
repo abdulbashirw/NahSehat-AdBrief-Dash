@@ -14,6 +14,18 @@ import id from './id.json';
 export const SUPPORTED_LANGS = ['en', 'id'] as const;
 export type LangCode = (typeof SUPPORTED_LANGS)[number];
 export const DEFAULT_LANG: LangCode = 'en';
+export const LANG_STORAGE_KEY = 'nahsehat_lang';
+
+function getStoredLang(): LangCode {
+  if (typeof window === 'undefined') return DEFAULT_LANG;
+  try {
+    const stored = window.localStorage.getItem(LANG_STORAGE_KEY);
+    if (stored === 'en' || stored === 'id') return stored;
+  } catch {
+    // private mode / blocked storage
+  }
+  return DEFAULT_LANG;
+}
 
 /** Map backend locale values (id-ID, en-US) to our i18n codes (id, en). */
 export function localeToLang(locale: string): LangCode {
@@ -31,7 +43,7 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
     id: { translation: id },
   },
-  lng: DEFAULT_LANG,
+  lng: getStoredLang(),
   fallbackLng: 'en',
   interpolation: {
     escapeValue: false, // React already escapes

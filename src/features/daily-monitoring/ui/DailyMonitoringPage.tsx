@@ -23,7 +23,7 @@
  */
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Cell,
   Pie,
@@ -188,12 +188,14 @@ interface KpiCardConfig {
   iconColor: string;
   dotColor: string;
   topBorder: string;
+  accent: string;
 }
 
 /* ─── Main Component ──────────────────────────────────────────── */
 
 export default function DailyMonitoring() {
   const { t } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const exportEnabled = useExportEnabled();
 
   // ── Data hook (ADOPT — replaces inline fetch logic) ──
@@ -290,6 +292,7 @@ export default function DailyMonitoring() {
       iconColor: 'text-[#2563EB]',
       dotColor: 'bg-[#2563EB]',
       topBorder: 'border-t-[#2563EB]',
+      accent: '#2563EB',
     },
     {
       id: 'C2',
@@ -301,6 +304,7 @@ export default function DailyMonitoring() {
       iconColor: 'text-[#0284C7]',
       dotColor: 'bg-[#0284C7]',
       topBorder: 'border-t-[#0284C7]',
+      accent: '#0284C7',
     },
     {
       id: 'C3',
@@ -312,6 +316,7 @@ export default function DailyMonitoring() {
       iconColor: 'text-[#059669]',
       dotColor: 'bg-[#059669]',
       topBorder: 'border-t-[#059669]',
+      accent: '#059669',
     },
     {
       id: 'C4',
@@ -323,6 +328,7 @@ export default function DailyMonitoring() {
       iconColor: 'text-[#6366F1]',
       dotColor: 'bg-[#6366F1]',
       topBorder: 'border-t-[#6366F1]',
+      accent: '#6366F1',
     },
     {
       id: 'C5',
@@ -334,6 +340,7 @@ export default function DailyMonitoring() {
       iconColor: 'text-[#E11D48]',
       dotColor: 'bg-[#E11D48]',
       topBorder: 'border-t-[#E11D48]',
+      accent: '#E11D48',
     },
   ];
 
@@ -534,7 +541,7 @@ export default function DailyMonitoring() {
 
       {/* ── ROW 1: KPI Cards (Minimalist, modern executive cards with Rolling Digits) ── */}
       <motion.div variants={sectionVariants} className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {cards.map((card) => {
+        {cards.map((card, index) => {
           const IconComp = card.icon;
           return (
             <motion.div
@@ -546,20 +553,56 @@ export default function DailyMonitoring() {
                 card.topBorder,
               )}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-[11px] font-bold uppercase tracking-wider text-[#6B7280]">
+              <motion.div
+                aria-hidden
+                className="pointer-events-none absolute -right-3 -top-2 h-[92px] w-[92px] overflow-hidden"
+                animate={
+                  reduceMotion
+                    ? undefined
+                    : { x: [0, 5, 0, -3, 0], y: [0, -4, 1, 3, 0], rotate: [0, 2.5, 0, -2, 0] }
+                }
+                transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut', delay: index * 0.55 }}
+              >
+                <IconComp
+                  strokeWidth={1.15}
+                  className="absolute left-1.5 top-1.5 h-full w-full"
+                  style={{ color: card.accent, opacity: 0.05 }}
+                />
+                <IconComp
+                  strokeWidth={1.15}
+                  className="relative h-full w-full"
+                  style={{ color: card.accent, opacity: 0.11 }}
+                />
+                {!reduceMotion && (
+                  <motion.span
+                    className="absolute inset-y-0 w-10 -skew-x-12 bg-gradient-to-r from-transparent via-white to-transparent"
+                    style={{ mixBlendMode: 'soft-light', opacity: 0.55 }}
+                    animate={{ x: [-40, 110] }}
+                    transition={{
+                      duration: 2.8,
+                      repeat: Infinity,
+                      repeatDelay: 7,
+                      ease: [0.4, 0, 0.2, 1],
+                      delay: index * 0.7 + 1.2,
+                    }}
+                  />
+                )}
+              </motion.div>
+
+              <div className="relative z-10 flex items-center gap-2">
+                <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', card.iconBg)}>
+                  <IconComp className={cn('h-3.5 w-3.5', card.iconColor)} strokeWidth={2.2} />
+                </div>
+                <span className="truncate text-[13px] font-extrabold uppercase tracking-wide text-[#1F2A37]">
                   {card.label}
                 </span>
-                <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110', card.iconBg)}>
-                  <IconComp className={cn('h-3.5 w-3.5', card.iconColor)} />
-                </div>
               </div>
 
-              <div className="mt-2 font-display text-[26px] font-extrabold tabular-nums tracking-tight text-[#1F2A37] xl:text-[28px]">
+              <div className="relative z-10 mt-2 font-display text-[26px] font-extrabold tabular-nums tracking-tight text-[#1F2A37] xl:text-[28px]">
                 <RollingCounter value={card.value} />
               </div>
 
-              <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-[#9CA3AF]">
+              <div className="relative z-10 mt-1 flex items-center gap-1.5 text-[11px] font-medium text-[#9CA3AF]">
                 <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', card.dotColor)} />
                 <span className="truncate">{card.sublabel}</span>
               </div>

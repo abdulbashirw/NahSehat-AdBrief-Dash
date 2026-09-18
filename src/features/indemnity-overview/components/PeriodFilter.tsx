@@ -7,7 +7,7 @@
  * Groups:
  *   ① Payor dropdown (filtered by INDEMNITY category + user access)
  *   ② Date picker (defaults to today)
- *   ③ Refresh status (last updated / refreshing)
+ *   ③ Refresh status (live clock or last updated / refreshing)
  *
  * Reads/writes global state from periodFilterStore.
  */
@@ -30,9 +30,11 @@ interface PeriodFilterProps {
   isFetching?: boolean;
   /** Timestamp of the most recent successful fetch — shown as "Updated HH:mm:ss". */
   lastUpdated?: Date | null;
+  /** When set, replaces the "Updated" badge with a live HH:mm:ss clock. */
+  liveClock?: string | null;
 }
 
-export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterProps) {
+export default function PeriodFilter({ isFetching, lastUpdated, liveClock }: PeriodFilterProps) {
   const filter = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   // ── Auth: get user's payorIds ──
@@ -109,7 +111,7 @@ export default function PeriodFilter({ isFetching, lastUpdated }: PeriodFilterPr
         </div>
 
         {/* ── Group 3: Refresh status ── */}
-        <RefreshProgress isFetching={!!isFetching} lastUpdated={lastUpdated} />
+        <RefreshProgress isFetching={!!isFetching} lastUpdated={lastUpdated} liveClock={liveClock} />
     </div>
   );
 }
