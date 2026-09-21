@@ -387,20 +387,6 @@ export default function Login() {
               alt="AdMedika Logo"
               className="w-32 sm:w-40 md:w-44 shrink-0 object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 duration-300"
             />
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-none">
-                  AdBrief
-                </h1>
-                <span className="rounded-md bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 text-xs font-bold text-emerald-300">
-                  v2.0
-                </span>
-              </div>
-              <p className="text-sm sm:text-lg font-medium text-slate-300 mt-1.5 leading-snug">
-                {t('auth.poweredBy')}{' '}
-                <span className="font-bold text-white tracking-wide">AdMedika</span>
-              </p>
-            </div>
           </div>
 
           {/* Tagline */}
@@ -514,9 +500,9 @@ export default function Login() {
                   {/* Header */}
                   <div className="text-center mb-8">
                     <BrandLogo
-                      src="/logo-mark.svg"
+                      src="/adbrief.png"
                       alt="AdBrief Logo"
-                      className="w-24 h-auto mx-auto mb-3 object-contain drop-shadow-[0_4px_16px_rgba(15,23,42,0.08)]"
+                      className="w-auto h-20 mx-auto mb-3 object-contain drop-shadow-[0_4px_16px_rgba(15,23,42,0.08)]"
                     />
                     <h2 className="text-2xl font-extrabold text-[#0F172A] tracking-tight">
                       {t('auth.welcomeBack')}

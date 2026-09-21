@@ -45,7 +45,7 @@
     "signInTo": "Sign in to your AdBrief account",
     "emailOrUsername": "Email or Username",
     "password": "Password",
-    "emailRequired": "Email or username is required",
+    "emailRequired": "Username is required",
     "minChars": "Must be at least {{min}} characters",
     "maxChars": "Must be at most {{max}} characters",
     "passwordRequired": "Password is required",
@@ -276,7 +276,8 @@
     "autoRotateTabsDesc": "Automatically switch between dashboard tabs",
     "autoRotateEnabled": "Auto-rotate is enabled",
     "autoRotateDisabled": "Auto-rotate is disabled",
-    "autoRotateInterval": "Rotation Interval (minutes)",
+    "autoRotateInterval": "Rotation Interval",
+    "autoRotateIntervalUnit": "minutes",
     "autoRotateIntervalDesc": "Time between automatic tab switches. Default: 2.5 minutes.",
     "autoRotateIntervalMin": "Min: 10 seconds (0.17 min)",
     "autoRotateIntervalMax": "Max: 30 minutes"

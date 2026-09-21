@@ -45,7 +45,7 @@
     "signInTo": "Masuk ke akun AdBrief Anda",
     "emailOrUsername": "Email atau Nama Pengguna",
     "password": "Kata Sandi",
-    "emailRequired": "Email atau nama pengguna wajib diisi",
+    "emailRequired": "Username wajib diisi",
     "minChars": "Minimal {{min}} karakter",
     "maxChars": "Maksimal {{max}} karakter",
     "passwordRequired": "Kata sandi wajib diisi",
@@ -276,7 +276,8 @@
     "autoRotateTabsDesc": "Beralih otomatis antar tab dashboard",
     "autoRotateEnabled": "Rotasi otomatis diaktifkan",
     "autoRotateDisabled": "Rotasi otomatis dinonaktifkan",
-    "autoRotateInterval": "Interval Rotasi (menit)",
+    "autoRotateInterval": "Interval Rotasi",
+    "autoRotateIntervalUnit": "menit",
     "autoRotateIntervalDesc": "Waktu antar perpindahan tab otomatis. Default: 2,5 menit.",
     "autoRotateIntervalMin": "Min: 10 detik (0,17 menit)",
     "autoRotateIntervalMax": "Maks: 30 menit"

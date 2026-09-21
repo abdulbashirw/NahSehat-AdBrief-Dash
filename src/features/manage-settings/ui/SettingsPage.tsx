@@ -1,7 +1,8 @@
 /**
  * Settings Page — role-aware tabs.
  *
- * SUPER_ADMIN: General, Application, Profile, Security
+ * SUPER_ADMIN: General, Application, Profile, Security, Display
+ * ADMIN / INDEMNITY: Profile, Security, Display
  * Other roles: Profile, Security only
  *
  * General & Application tabs call the settings API (SUPER_ADMIN only).
@@ -48,6 +49,11 @@ import { MIN_INTERVAL_SECONDS, MAX_INTERVAL_SECONDS } from '@/widgets/tab-layout
 
 type TabKey = 'general' | 'application' | 'profile' | 'security' | 'display';
 
+/** Store keeps seconds; the Display field is edited in minutes. */
+function formatIntervalMinutes(seconds: number): string {
+  return String(Number((seconds / 60).toFixed(2)));
+}
+
 export default function Settings() {
   const { t } = useTranslation();
   const hasAnyRole = useHasAnyRole();
@@ -62,12 +68,16 @@ export default function Settings() {
     setEnabled: setAutoRotateEnabled,
     setIntervalSeconds: setAutoRotateIntervalSeconds,
   } = useAutoRotateSettings();
-  // Display/edit interval in minutes (decimal). Convert to/from seconds.
-  const intervalMinutes = (autoRotateIntervalSeconds / 60).toFixed(2);
-  const handleIntervalChange = (minutesStr: string) => {
-    const minutes = parseFloat(minutesStr);
-    if (Number.isNaN(minutes)) return;
-    setAutoRotateIntervalSeconds(Math.round(minutes * 60));
+  // Draft string while the field is focused so typing "2." is not snapped to "2.00".
+  const [intervalDraft, setIntervalDraft] = useState<string | null>(null);
+  const intervalMinutesDisplay = intervalDraft ?? formatIntervalMinutes(autoRotateIntervalSeconds);
+
+  const commitIntervalMinutes = (raw: string) => {
+    const minutes = parseFloat(raw.replace(',', '.'));
+    if (Number.isFinite(minutes)) {
+      setAutoRotateIntervalSeconds(Math.round(minutes * 60));
+    }
+    setIntervalDraft(null);
   };
 
   // Only fetch settings for SUPER_ADMIN — backend returns 403 for other roles
@@ -346,7 +356,7 @@ export default function Settings() {
       : []),
     { key: 'profile' as const, label: t('settings.profile'), icon: User },
     { key: 'security' as const, label: t('settings.security'), icon: Shield },
-    ...(isIndemnity || isAdmin
+    ...(isSuperAdmin || isAdmin || isIndemnity
       ? [{ key: 'display' as const, label: t('settings.display'), icon: LayoutDashboard }]
       : []),
   ];
@@ -462,7 +472,7 @@ export default function Settings() {
             </Card>
           )}
 
-          {/* ── Display Settings (INDEMNITY only) ── */}
+          {/* ── Display Settings (SUPER_ADMIN, ADMIN, INDEMNITY) ── */}
           {activeTab === 'display' && (
             <Card>
               <CardHeader>
@@ -480,20 +490,36 @@ export default function Settings() {
                     <span className="text-sm text-[#6B7280]">{t('settings.autoRotateTabsDesc')}</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 items-center gap-4">
-                  <label className="text-sm font-medium text-[#1F2A37]">{t('settings.autoRotateInterval')}</label>
-                  <div className="col-span-2 space-y-1">
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.01"
-                      min={(MIN_INTERVAL_SECONDS / 60).toFixed(2)}
-                      max={(MAX_INTERVAL_SECONDS / 60).toFixed(2)}
-                      value={intervalMinutes}
-                      onChange={(e) => handleIntervalChange(e.target.value)}
-                      disabled={!autoRotateEnabled}
-                      className="w-32"
-                    />
+                <div className="grid grid-cols-3 items-start gap-4">
+                  <label htmlFor="rotation-interval" className="pt-2 text-sm font-medium leading-snug text-[#1F2A37]">
+                    {t('settings.autoRotateInterval')}
+                  </label>
+                  <div className="col-span-2 min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="rotation-interval"
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9]*[.,]?[0-9]*"
+                        min={MIN_INTERVAL_SECONDS / 60}
+                        max={MAX_INTERVAL_SECONDS / 60}
+                        value={intervalMinutesDisplay}
+                        onFocus={() => setIntervalDraft(formatIntervalMinutes(autoRotateIntervalSeconds))}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          if (next === '' || /^\d*[.,]?\d*$/.test(next)) {
+                            setIntervalDraft(next);
+                          }
+                        }}
+                        onBlur={(e) => commitIntervalMinutes(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                        }}
+                        disabled={!autoRotateEnabled}
+                        className="h-9 w-28 shrink-0"
+                      />
+                      <span className="text-sm text-[#6B7280]">{t('settings.autoRotateIntervalUnit')}</span>
+                    </div>
                     <p className="text-xs text-[#6B7280]">{t('settings.autoRotateIntervalDesc')}</p>
                     <p className="text-xs text-[#9CA3AF]">{t('settings.autoRotateIntervalMin')} · {t('settings.autoRotateIntervalMax')}</p>
                   </div>

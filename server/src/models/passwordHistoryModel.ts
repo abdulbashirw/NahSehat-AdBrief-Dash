@@ -8,29 +8,39 @@
  * Tabel: user_password_history (migration 005_password_history.sql).
  * Cleanup: baris > MAX_HISTORY per user dihapus saat insert (rolling window).
  */
+import crypto from 'crypto';
 import { pool } from './db';
 
 /** Berapa hash password terakhir yang dicek. */
 export const PASSWORD_HISTORY_DEPTH = 5;
 
 /**
+ * mysql2 `execute()` uses prepared statements. MySQL rejects bound
+ * parameters for LIMIT (ER_WRONG_ARGUMENTS). Interpolate the integer
+ * constant instead — never user input.
+ */
+const HISTORY_LIMIT_SQL = String(PASSWORD_HISTORY_DEPTH);
+
+/**
  * Record the PREVIOUS password hash into history (call BEFORE updating
  * users.password). Keeps only the most recent PASSWORD_HISTORY_DEPTH rows.
+ *
+ * `id` is a varchar(36) PK with no DB default — must be supplied here.
  */
 export async function recordPasswordChange(userId: string, oldHash: string): Promise<void> {
   await pool.execute(
-    'INSERT INTO user_password_history (user_id, password_hash) VALUES (?, ?)',
-    [userId, oldHash],
+    'INSERT INTO user_password_history (id, user_id, password_hash) VALUES (?, ?, ?)',
+    [crypto.randomUUID(), userId, oldHash],
   );
   await pool.execute(
     `DELETE FROM user_password_history
       WHERE user_id = ?
         AND id NOT IN (
           SELECT id FROM (
-            SELECT id FROM user_password_history WHERE user_id = ? ORDER BY created_at DESC LIMIT ?
+            SELECT id FROM user_password_history WHERE user_id = ? ORDER BY created_at DESC LIMIT ${HISTORY_LIMIT_SQL}
           ) AS keep
         )`,
-    [userId, userId, PASSWORD_HISTORY_DEPTH],
+    [userId, userId],
   );
 }
 
@@ -41,8 +51,8 @@ export async function recordPasswordChange(userId: string, oldHash: string): Pro
 export async function isPasswordReused(userId: string, newPassword: string): Promise<boolean> {
   const [rows] = await pool.execute(
     `SELECT password_hash FROM user_password_history
-      WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`,
-    [userId, PASSWORD_HISTORY_DEPTH],
+      WHERE user_id = ? ORDER BY created_at DESC LIMIT ${HISTORY_LIMIT_SQL}`,
+    [userId],
   );
   const hashes = (rows as any[]).map((r) => r.password_hash as string);
   for (const hash of hashes) {
