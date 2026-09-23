@@ -5,13 +5,13 @@ node_modules/
 dist/
 build/
 
-# Environment variables
+# Environment variables (secrets NEVER committed — use *.env.example as template)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Cloud Run env vars (contains secrets — do NOT commit)
-.env.cloud-run.yaml
+*.cloud-run.yaml
 
 # Vite
 .vite/
