@@ -7,6 +7,7 @@ import { createError } from '../middleware/errorHandler';
 import type { AuthRequest } from '../middleware/auth';
 import type { Payor, PaginatedResponse, CreatePayorPayload, UpdatePayorPayload } from '../types';
 import { escapeLike } from '../utils/security';
+import { bypassesPayorScope, isPayorAssigned, payorScopeSql } from '../utils/payorScope';
 
 /** GET /api/v1/payors?page=&pageSize=&search= */
 export async function getPayors(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -22,6 +23,12 @@ export async function getPayors(req: AuthRequest, res: Response, next: NextFunct
     const params: any[] = [];
     // SECURITY (P3 / L3): escape LIKE wildcards (%, _) dari input user
     if (search) { where += ' AND (name LIKE ? OR code LIKE ?)'; params.push(`%${escapeLike(search)}%`, `%${escapeLike(search)}%`); }
+
+    // SECURITY (P1a — LIDOR): non-SUPER_ADMIN hanya melihat payor yang
+    // di-assign ke user (user_payors). SUPER_ADMIN melihat semua.
+    if (!req.user) throw createError(401, 'Not authenticated');
+    const scope = payorScopeSql(req.user.role, req.user.id);
+    if (scope) { where += scope.sql; params.push(scope.param); }
 
     const [[countRow]] = await pool.query<any[]>(`SELECT COUNT(*) as total FROM payors WHERE ${where}`, params);
     const total = Number(countRow.total);
@@ -54,6 +61,13 @@ export async function getPayorById(req: AuthRequest, res: Response, next: NextFu
     const [rows] = await pool.execute('SELECT * FROM payors WHERE id = ?', [req.params.id]);
     const r = (rows as any[])[0];
     if (!r) throw createError(404, 'Payor not found');
+
+    // SECURITY (P1a — LIDOR): non-SUPER_ADMIN hanya boleh melihat payor
+    // miliknya. 404 (bukan 403) agar keberadaan payor tidak terbocorkan.
+    if (!bypassesPayorScope(req.user?.role)) {
+      const assigned = await isPayorAssigned(req.user!.id, String(r.id));
+      if (!assigned) throw createError(404, 'Payor not found');
+    }
 
     res.json({
       id: String(r.id), name: r.name, code: r.code, category: r.category, description: r.description,
@@ -96,6 +110,13 @@ export async function updatePayor(req: AuthRequest, res: Response, next: NextFun
 
     const [existing] = await pool.execute('SELECT id FROM payors WHERE id = ?', [id]);
     if ((existing as any[]).length === 0) throw createError(404, 'Payor not found');
+
+    // SECURITY (P1a — LIDOR): ADMIN hanya boleh meng-update payor miliknya.
+    // 404 (bukan 403) agar keberadaan payor tidak terbocorkan.
+    if (!bypassesPayorScope(req.user?.role)) {
+      const assigned = await isPayorAssigned(req.user!.id, String((existing as any[])[0].id));
+      if (!assigned) throw createError(404, 'Payor not found');
+    }
 
     const updates: string[] = [];
     const values: any[] = [];
