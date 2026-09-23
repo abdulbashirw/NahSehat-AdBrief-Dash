@@ -4,6 +4,7 @@
  * Lapisan pertahanan brute-force / resource-abuse:
  *   - globalLimiter : semua route /api — 300 req / 15 menit / IP
  *   - loginLimiter  : /auth/login & /auth/verify-2fa-login — 10 req / 15 menit / IP
+ *   - proxyLimiter  : /indemnity & /managecare proxy (P1c) — 30 req / menit / user
  *
  * NOTE: Cloud Run berada di belakang 1 hop proxy (LB) — app.ts mem-set
  * `trust proxy = 1` agar req.ip = IP client asli, bukan IP load balancer.
@@ -55,6 +56,27 @@ export const logLimiter = rateLimit({
   message: {
     data: null,
     message: 'Too many log requests, please slow down',
+    statusCode: 429,
+  },
+});
+
+/**
+ * Proxy limiter (P1c) — data-heavy relays to NahSehat API v3, keyed per
+ * user (runs AFTER authenticate, so req.user is available). Prevents the
+ * CMS server from being abused as a high-volume relay to the upstream API.
+ */
+export const proxyLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const userId = (req as { user?: { id?: string } }).user?.id;
+    return userId ? `user:${userId}` : `ip:${ipKeyGenerator(req.ip ?? 'unknown')}`;
+  },
+  message: {
+    data: null,
+    message: 'Too many requests, please slow down',
     statusCode: 429,
   },
 });

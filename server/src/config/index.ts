@@ -206,3 +206,30 @@ export const twoFactorConfig = {
 };
 
 export const port = Number(env.PORT) || 3001;
+
+// ── NahSehat API v3 proxy (P1c) ─────────────────────────────────────
+// The CMS server proxies whitelisted NahSehat API v3 endpoints so the
+// frontend never talks to the external API directly (no internal URLs in
+// the bundle, no user JWT leaving our perimeter, payor scoping enforced
+// server-side, upstream error bodies sanitized).
+//
+// Fail-soft: if unset, the proxy endpoints respond 503 but the rest of
+// the server keeps working. Set these in server/.env (dev) and
+// env.cloud-run.yaml (Cloud Run):
+//   NAHSEHAT_API_V3_BASE_URL — e.g. https://api.example.com  (no trailing slash)
+//   NAHSEHAT_API_V3_TOKEN    — service token issued by the NahSehat API v3
+//                              team (openssl rand -hex 32); validated by
+//                              the API v3 side (P1b)
+const NAHSEHAT_API_V3_BASE_URL = env.NAHSEHAT_API_V3_BASE_URL?.trim().replace(/\/+$/, '') || '';
+const NAHSEHAT_API_V3_TOKEN = env.NAHSEHAT_API_V3_TOKEN?.trim() || '';
+
+if (NAHSEHAT_API_V3_TOKEN.length > 0 && NAHSEHAT_API_V3_TOKEN.length < 32) {
+  throw new Error('[config] NAHSEHAT_API_V3_TOKEN is too weak (minimum 32 characters). Generate one with: openssl rand -hex 32');
+}
+
+export const nahsehatApiV3Config = {
+  baseUrl: NAHSEHAT_API_V3_BASE_URL,
+  token: NAHSEHAT_API_V3_TOKEN,
+  timeoutMs: Number(env.NAHSEHAT_API_V3_TIMEOUT_MS) || 30_000,
+};
+

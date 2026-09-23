@@ -141,6 +141,16 @@ export const aggregateSchema = z
   })
   .refine((v) => !v.startDate || !!v.endDate, { message: 'endDate required when startDate is provided' });
 
+/** ddmmyyyy date format used by NahSehat API v3 endpoints. */
+const ddmmyyyy = z.string().regex(/^\d{8}$/, 'date must be ddmmyyyy (8 digits)');
+
+/** Body for AdmDailyClaim & dailyMonitoring proxy endpoints. */
+export const adBriefRequestSchema = z.object({
+  start_date: ddmmyyyy,
+  end_date: ddmmyyyy,
+  payor_code: z.string().trim().min(1, 'payor_code required').max(50, 'payor_code too long'),
+});
+
 /* ── Query param clamps (pagination / date range) ─────────────────── */
 
 export const paginationQuerySchema = z.object({

@@ -8,9 +8,13 @@
  *   /api/v1/permissions/* — Permission management (CMS)
  *   /api/v1/payors/*     — Payor CRUD (CMS)
  *   /api/v1/settings/*   — App settings (CMS)
+ *   /api/v1/indemnity/*  — Proxy → NahSehat API v3 (P1c)
+ *   /api/v1/managecare/* — Proxy → NahSehat API v3 (P1c)
  *
  * Data from external services (Indemnity, ManageCare) is NOT stored here —
- * the frontend fetches directly from those APIs via RTK Query.
+ * the frontend fetches it via this server's proxy routes (P1c):
+ *   /api/v1/indemnity/*   → NahSehat API v3 (service token injected server-side)
+ *   /api/v1/managecare/*  → NahSehat API v3 (service token injected server-side)
  */
 import dotenv from 'dotenv';
 dotenv.config();
@@ -30,6 +34,8 @@ import permissionRoutes from './routes/permissionRoutes';
 import payorRoutes from './routes/payorRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import activityRoutes from './routes/activityRoutes';
+import indemnityRoutes from './routes/indemnityRoutes';
+import managecareRoutes from './routes/managecareRoutes';
 import { accessLogger } from './middleware/accessLogger';
 import { startAggregationJob } from './jobs/aggregationJob';
 import { globalLimiter } from './middleware/rateLimiter';
@@ -84,6 +90,10 @@ app.use('/api/v1/permissions', permissionRoutes);
 app.use('/api/v1/payors', payorRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/activity', activityRoutes);
+// SECURITY (P1c): proxy ke NahSehat API v3 — auth + payor scoping
+// di-enforce server-side; frontend tidak lagi memanggil API eksternal langsung.
+app.use('/api/v1/indemnity', indemnityRoutes);
+app.use('/api/v1/managecare', managecareRoutes);
 
 /* ─── 404 Handler ─── */
 app.use((_req, res) => {
@@ -98,7 +108,7 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 /* ─── Start Server ─── */
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`🚀 NahSeHat Dashboard API running on port ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/health`);
   console.log(`   API:    http://localhost:${PORT}/api/v1`);

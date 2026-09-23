@@ -31,12 +31,17 @@ export interface DailyMonitoringPayload {
   end_date: string;
 }
 
+/**
+ * ManageCare API — daily monitoring data via the CMS server's proxy
+ * route (P1c): /api/v1/managecare/dailyMonitoring (JWT auth + payor
+ * scoping enforced server-side).
+ */
 export const manageCareApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getDailyMonitoring: builder.query<DailyMonitoringResponse, DailyMonitoringPayload>({
       async queryFn(arg, _queryApi, _extraOptions, fetchWithBQ) {
         const result = await fetchWithBQ({
-          url: `${API_URLS.adbrief}/dailyMonitoring`,
+          url: `${API_URLS.cms}/managecare/dailyMonitoring`,
           method: 'POST',
           body: {
             payor_code: arg.payor_code,

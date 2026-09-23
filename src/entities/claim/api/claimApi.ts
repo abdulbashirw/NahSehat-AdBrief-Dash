@@ -1,8 +1,10 @@
 /**
  * Indemnity API service — RTK Query endpoints for AdmDailyClaim data.
  *
- * The /AdmDailyClaim endpoint accepts POST with { start_date, end_date, payor_code }
- * and returns raw entries which are transformed client-side into ClaimsApiResponse.
+ * Calls the CMS server's proxy route (P1c): /api/v1/indemnity/AdmDailyClaim
+ * accepts POST with { start_date, end_date, payor_code }, enforces JWT auth
+ * + payor scoping server-side, and returns raw entries which are transformed
+ * client-side into ClaimsApiResponse.
  *
  * All field values come directly from the API response structure — no client-side
  * derivation (e.g. ICD-10 group, provider type, birth date) is performed.
@@ -255,7 +257,7 @@ export const indemnityApi = api.injectEndpoints({
       async queryFn(arg, _queryApi, _extraOptions, fetchWithBQ) {
         // POST to AdmDailyClaim endpoint with request body
         const result = await fetchWithBQ({
-          url: `${API_URLS.adbrief}/AdmDailyClaim`,
+          url: `${API_URLS.cms}/indemnity/AdmDailyClaim`,
           method: 'POST',
           body: {
             start_date: arg.start_date,

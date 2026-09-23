@@ -15,11 +15,25 @@ export function bypassesPayorScope(role: string | undefined): boolean {
   return role === 'SUPER_ADMIN';
 }
 
-/** True if the payor is assigned to the user (user_payors table). */
+/** True if the payor (by id) is assigned to the user (user_payors table). */
 export async function isPayorAssigned(userId: string, payorId: string): Promise<boolean> {
   const [rows] = await pool.execute(
     'SELECT 1 FROM user_payors WHERE user_id = ? AND payor_id = ? LIMIT 1',
     [userId, payorId],
+  );
+  return (rows as any[]).length > 0;
+}
+
+/**
+ * True if the payor CODE is assigned to the user.
+ * Resolves payors.code → payors.id → user_payors (P1c proxy validation).
+ */
+export async function isPayorCodeAllowed(userId: string, code: string): Promise<boolean> {
+  const [rows] = await pool.execute(
+    `SELECT 1 FROM payors p
+     JOIN user_payors up ON up.payor_id = p.id
+     WHERE p.code = ? AND up.user_id = ? LIMIT 1`,
+    [code, userId],
   );
   return (rows as any[]).length > 0;
 }

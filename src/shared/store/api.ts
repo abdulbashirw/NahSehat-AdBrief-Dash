@@ -6,9 +6,9 @@
  *
  * Since different API domains use different base URLs:
  *   - Auth → VITE_BE_API
- *   - Indemnity → VITE_NAHSEHAT_API_V3
- *   - Manage Care → VITE_NAHSEHAT_API_V3
+ *   - Indemnity & Manage Care → VITE_BE_API (P1c: proxied server-side)
  *   - CMS → VITE_BE_API
+ *   - AdScore → VITE_NAHSEHAT_ADBRIEF_API_V3 (still direct — see P1c report)
  *
  * Each endpoint provides its full URL path. The baseUrl here is a fallback.
  */
