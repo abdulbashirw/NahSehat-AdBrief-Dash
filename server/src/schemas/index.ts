@@ -155,10 +155,13 @@ export const adBriefRequestSchema = z.object({
 });
 
 /** Body for the dailyMonitoring proxy endpoint (YYYY-MM-DD — matches FE
- *  useDailyMonitoringData, which sends the last-30-days range in ISO format). */
+ *  useDailyMonitoringData, which sends the last-30-days range in ISO format).
+ *  Dash-Daily-Monitoring (app terpisah) mengirim start_date/end_date KOSONG
+ *  ('' = semua data) — upstream API v3 menerimanya (terverifikasi live),
+ *  jadi string kosong diizinkan dan diteruskan apa adanya. */
 export const dailyMonitoringRequestSchema = z.object({
-  start_date: isoDate,
-  end_date: isoDate,
+  start_date: z.union([isoDate, z.literal('')]),
+  end_date: z.union([isoDate, z.literal('')]),
   payor_code: z.string().trim().min(1, 'payor_code required').max(50, 'payor_code too long'),
 });
 
