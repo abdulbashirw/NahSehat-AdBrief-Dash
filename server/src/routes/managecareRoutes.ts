@@ -8,7 +8,7 @@ import { proxyDailyMonitoring } from '../controllers/proxyController';
 import { authenticate, authorize } from '../middleware/auth';
 import { proxyLimiter } from '../middleware/rateLimiter';
 import { validateBody } from '../middleware/validate';
-import { adBriefRequestSchema } from '../schemas';
+import { dailyMonitoringRequestSchema } from '../schemas';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.use(authenticate);
 router.post(
   '/dailyMonitoring',
   proxyLimiter,
-  validateBody(adBriefRequestSchema),
+  validateBody(dailyMonitoringRequestSchema),
   authorize('SUPER_ADMIN', 'ADMIN', 'MANAGECARE'),
   proxyDailyMonitoring,
 );

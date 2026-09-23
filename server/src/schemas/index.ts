@@ -141,13 +141,24 @@ export const aggregateSchema = z
   })
   .refine((v) => !v.startDate || !!v.endDate, { message: 'endDate required when startDate is provided' });
 
-/** ddmmyyyy date format used by NahSehat API v3 endpoints. */
+/** ddmmyyyy date format used by the NahSehat API v3 AdmDailyClaim endpoint. */
 const ddmmyyyy = z.string().regex(/^\d{8}$/, 'date must be ddmmyyyy (8 digits)');
 
-/** Body for AdmDailyClaim & dailyMonitoring proxy endpoints. */
+/** YYYY-MM-DD date format used by the NahSehat API v3 dailyMonitoring endpoint. */
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD');
+
+/** Body for the AdmDailyClaim proxy endpoint (ddmmyyyy — matches FE useIndemnityData). */
 export const adBriefRequestSchema = z.object({
   start_date: ddmmyyyy,
   end_date: ddmmyyyy,
+  payor_code: z.string().trim().min(1, 'payor_code required').max(50, 'payor_code too long'),
+});
+
+/** Body for the dailyMonitoring proxy endpoint (YYYY-MM-DD — matches FE
+ *  useDailyMonitoringData, which sends the last-30-days range in ISO format). */
+export const dailyMonitoringRequestSchema = z.object({
+  start_date: isoDate,
+  end_date: isoDate,
   payor_code: z.string().trim().min(1, 'payor_code required').max(50, 'payor_code too long'),
 });
 
