@@ -308,6 +308,8 @@ export default function Settings() {
     try {
       await verify2FA({ token: twoFactorVerifyCode }).unwrap();
       setTwoFactorEnabled(true);
+      // Sync Redux agar status 2FA tidak stale saat user berpindah halaman
+      if (user) dispatch(updateUser({ ...user, twoFactorEnabled: true }));
       setTwoFactorDialogOpen(false);
       setTwoFactorSetupData(null);
       setTwoFactorVerifyCode('');
@@ -330,6 +332,8 @@ export default function Settings() {
     try {
       await disable2FA({ currentPassword: disable2FAPassword }).unwrap();
       setTwoFactorEnabled(false);
+      // Sync Redux agar status 2FA tidak stale saat user berpindah halaman
+      if (user) dispatch(updateUser({ ...user, twoFactorEnabled: false }));
       setDisable2FADialogOpen(false);
       setDisable2FAPassword('');
       toast.success(t('settings.twoFactorDisabled'));

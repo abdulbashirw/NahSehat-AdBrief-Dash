@@ -6,8 +6,8 @@
  *   - authenticating the end user (JWT) via `authenticate` middleware
  *   - enforcing payor scoping: payor_code must be assigned to the user
  *     (user_payors) unless the user is SUPER_ADMIN
- *   - injecting the SERVICE token server-side — the end-user JWT never
- *     leaves this server, and the service token never reaches the client
+ *   - forwarding the user's JWT to upstream — upstream validates using
+ *     the same JWT issued by this system
  *
  * SECURITY (pentest finding #4): upstream error bodies are NEVER forwarded
  * to the client (verbose error / schema disclosure). Details are logged
@@ -26,15 +26,16 @@ interface AdBriefBody {
   end_date: string;
 }
 
-/** True when the proxy has its upstream base URL + service token. */
+/** True when the proxy has its upstream base URL configured. */
 function isProxyConfigured(): boolean {
-  return Boolean(nahsehatApiV3Config.baseUrl && nahsehatApiV3Config.token);
+  return Boolean(nahsehatApiV3Config.baseUrl);
 }
 
 /** Forward a validated body to a whitelisted NahSehat API v3 endpoint. */
 async function forwardToNahsehat(
   endpoint: string,
   body: AdBriefBody,
+  userToken: string,
 ): Promise<{ status: number; payload: unknown }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), nahsehatApiV3Config.timeoutMs);
@@ -43,8 +44,8 @@ async function forwardToNahsehat(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Service token — machine-to-machine credential, never the user JWT.
-        Authorization: `Bearer ${nahsehatApiV3Config.token}`,
+        // Forward user's JWT — upstream validates with the same secret.
+        Authorization: `Bearer ${userToken}`,
       },
       body: JSON.stringify(body),
       signal: controller.signal,
@@ -80,9 +81,19 @@ async function proxyAdBrief(
       throw createError(503, 'Upstream service not configured');
     }
 
+    // Extract user's JWT from the Authorization header.
+    const authHeader = req.headers.authorization ?? '';
+    const userToken = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : authHeader;
+
+    if (!userToken) {
+      throw createError(401, 'Missing authorization token');
+    }
+
     let upstream: { status: number; payload: unknown };
     try {
-      upstream = await forwardToNahsehat(endpoint, { payor_code, start_date, end_date });
+      upstream = await forwardToNahsehat(endpoint, { payor_code, start_date, end_date }, userToken);
     } catch (err) {
       // AbortError → upstream timeout; everything else → generic 502.
       if ((err as Error).name === 'AbortError') {

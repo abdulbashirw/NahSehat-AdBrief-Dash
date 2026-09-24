@@ -16,6 +16,9 @@ export interface AuthRequest extends Request {
     role: string;
     /** Token version claim (P1.3) — checked against users.token_version. */
     ver?: number;
+    /** Standard JWT claims — always present at runtime (added by jsonwebtoken). */
+    iat?: number;
+    exp?: number;
   };
 }
 

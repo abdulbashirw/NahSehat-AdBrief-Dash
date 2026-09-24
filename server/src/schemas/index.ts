@@ -67,8 +67,7 @@ export const verify2FASetupSchema = z.object({
 });
 
 export const disable2FASchema = z.object({
-  token: z.string().regex(/^\d{6}$/, 'token must be a 6-digit code'),
-  password: z.string().min(1, 'password required').max(128),
+  currentPassword: z.string().min(1, 'currentPassword required').max(128),
 });
 
 /* ── Users ────────────────────────────────────────────────────────── */

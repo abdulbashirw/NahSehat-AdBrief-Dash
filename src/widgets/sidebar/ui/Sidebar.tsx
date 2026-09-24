@@ -37,6 +37,7 @@ import {
   Cog,
   TrendingUp,
   GitBranch,
+  Home,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -157,35 +158,35 @@ export default function Sidebar({
 
           {/* Logo area */}
           <div className={cn('relative z-10 flex items-center', collapsed ? '' : 'flex-1 gap-2.5')}>
-            {/* Logo mark */}
+            {/* Home button */}
             <a
-              href="/"
+              href="/dashboard"
+              title="Home"
+              aria-label="Home"
               className="group relative flex shrink-0 items-center justify-center transition-all duration-200 active:scale-[0.96]"
             >
               <div className={cn(
                 'flex items-center justify-center rounded-xl transition-all duration-300',
                 collapsed ? 'h-8 w-8' : 'h-9 w-9',
-                'bg-gradient-to-br from-[#2862E4]/[0.08] to-[#2D2A7A]/[0.04]',
-                'group-hover:from-[#2862E4]/[0.15] group-hover:to-[#2D2A7A]/[0.08]',
-                'group-hover:shadow-sm group-hover:shadow-[#2862E4]/[0.08]',
+                'border border-[#2862E4]/15 bg-gradient-to-br from-[#2862E4]/[0.08] to-[#2D2A7A]/[0.04] text-[#2862E4]',
+                'group-hover:border-[#2862E4]/30 group-hover:bg-[#2862E4] group-hover:text-white group-hover:shadow-[0_4px_12px_rgba(40,98,228,0.25)]',
               )}>
-                <img
-                  src="/logo-mark.svg"
-                  alt=""
-                  className={cn('w-auto transition-all duration-300', collapsed ? 'h-4' : 'h-[18px]')}
-                />
+                <Home className={cn('transition-transform duration-300 group-hover:scale-110', collapsed ? 'h-4 w-4' : 'h-[18px] w-[18px]')} />
               </div>
             </a>
 
-            {/* Logo text — expanded only */}
+            {/* Logo image — expanded only */}
             {!collapsed && (
               <a
-                href="/"
-                className="relative z-10 min-w-0 flex-1 transition-opacity duration-200 hover:opacity-80"
+                href="/dashboard"
+                className="relative z-10 min-w-0 flex-1 transition-opacity duration-200 hover:opacity-85"
+                title="AdBrief"
               >
-                <span className="block truncate font-display text-[24px] font-extrabold leading-none tracking-[0.01em] bg-gradient-to-r from-[#2862E4] to-[#2D2A7A] bg-clip-text text-transparent">
-                  AdBrief
-                </span>
+                <img
+                  src="/adbrief-only.png"
+                  alt="AdBrief"
+                  className="h-6 w-auto max-w-[125px] object-contain"
+                />
               </a>
             )}
           </div>

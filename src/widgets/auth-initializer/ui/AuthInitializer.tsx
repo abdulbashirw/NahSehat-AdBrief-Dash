@@ -12,6 +12,8 @@
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/shared/store';
 import { setCredentials, logout } from '@/entities/auth/model/authSlice';
+import { scheduleSessionExpiryTimer } from '@/entities/auth/model/sessionExpiry';
+import { startSessionRenewalPing, stopSessionRenewalPing } from '@/entities/auth/model/sessionRenewal';
 import { API_URLS } from '@/shared/store/api';
 
 const TOKEN_KEY = 'nahsehat_token';
@@ -24,9 +26,19 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!token) {
+      stopSessionRenewalPing();
       setValidated(true);
       return;
     }
+
+    // Schedule the client-side expiry timer before validation — covers the
+    // case where validation fails with a network error and setCredentials
+    // is never dispatched (see sessionExpiry.ts).
+    void scheduleSessionExpiryTimer();
+
+    // Sliding session — keep the token renewed while the tab stays visible
+    // (TV dashboards never log out; hidden idle tabs still expire).
+    startSessionRenewalPing();
 
     // If user data exists in Redux state (restored from localStorage),
     // we still validate the token with the backend to ensure it's not
@@ -50,7 +62,9 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
         if (data.valid && data.user) {
           // Token is valid — update user data from server response
           // (ensures role/permissions are up-to-date)
-          dispatch(setCredentials({ token, user: data.user }));
+          // Sliding session: the server may issue a fresh token when the
+          // presented one is past half its lifetime (see authController).
+          dispatch(setCredentials({ token: data.renewedToken ?? token, user: data.user }));
         } else {
           // Token validation returned invalid — clear local state
           localStorage.removeItem(TOKEN_KEY);

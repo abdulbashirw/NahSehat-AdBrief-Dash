@@ -19,7 +19,6 @@ import {
   BarChart3,
   Activity,
   LogOut,
-  Bell,
   Eye,
   Map,
   Users,
@@ -28,6 +27,7 @@ import {
   TrendingUp,
   Building2,
   GitBranch,
+  Home,
 } from 'lucide-react';
 
 /** Icon mapping for tab items */
@@ -97,22 +97,33 @@ export default function TabLayout() {
       {/* ── Animated background ── */}
       <DashboardBackground variant="fullscreen" />
 
+      {/* ── Brand accent gradient ── */}
+      <div className="relative z-30 h-[2px] shrink-0 bg-gradient-to-r from-[#2862E4] via-[#3B5ADB] to-[#2D2A7A]" />
+
       {/* ── Frosted-glass header ── */}
-      <header className="relative z-20 flex h-16 items-center justify-between border-b border-white/40 bg-white/60 px-4 shadow-[0_1px_12px_rgba(37,99,235,0.06)] backdrop-blur-xl lg:px-6">
+      <header className="relative z-20 flex h-16 items-center justify-between border-b border-white/40 bg-white/60 px-4 shadow-[0_1px_12px_rgba(40,98,228,0.06)] backdrop-blur-xl lg:px-6">
         {/* Left — Logo + Module Name */}
         <div className="flex items-center gap-3">
-          <div
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-br from-[#2563EB] to-[#06B6D4] shadow-[0_2px_10px_rgba(37,99,235,0.3)] transition-shadow hover:shadow-[0_4px_16px_rgba(37,99,235,0.4)]"
+          <button
+            type="button"
             onClick={() => navigate('/dashboard')}
-            title="NahSehat"
+            title="Home"
+            aria-label="Home"
+            className="group relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-[#2862E4]/15 bg-gradient-to-br from-[#2862E4]/[0.08] to-[#2D2A7A]/[0.04] text-[#2862E4] shadow-sm transition-all duration-300 hover:border-[#2862E4]/30 hover:bg-[#2862E4] hover:text-white hover:shadow-[0_4px_12px_rgba(40,98,228,0.25)] active:scale-95"
           >
-            <span className="text-sm font-bold text-white">AB</span>
-          </div>
-          <span className="text-lg font-bold text-[#1E293B]">AdBrief</span>
+            <Home className="h-[18px] w-[18px] transition-transform duration-300 group-hover:scale-110" />
+          </button>
+          <img
+            src="/adbrief-only.png"
+            alt="AdBrief"
+            onClick={() => navigate('/dashboard')}
+            className="h-6 w-auto cursor-pointer object-contain transition-opacity hover:opacity-85"
+            title="AdBrief"
+          />
           {moduleName && (
             <>
               <span className="text-[#94A3B8]">/</span>
-              <span className="bg-gradient-to-r from-[#2563EB] to-[#06B6D4] bg-clip-text text-sm font-semibold text-transparent">{moduleName}</span>
+              <span className="bg-gradient-to-r from-[#2862E4] to-[#2D2A7A] bg-clip-text text-sm font-semibold text-transparent">{moduleName}</span>
             </>
           )}
         </div>
@@ -129,7 +140,7 @@ export default function TabLayout() {
                 className={cn(
                   'flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-[#2563EB]/10 text-[#2563EB] shadow-[0_1px_6px_rgba(37,99,235,0.15)]'
+                    ? 'bg-[#2862E4]/10 text-[#2862E4] shadow-[0_1px_6px_rgba(40,98,228,0.15)]'
                     : 'text-[#475569] hover:bg-white/60 hover:text-[#1E293B]',
                 )}
               >
@@ -142,12 +153,8 @@ export default function TabLayout() {
 
         {/* Right — Notifications, User */}
         <div className="flex items-center gap-2">
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[#475569] transition-colors hover:bg-white/60" aria-label="Notifications">
-            <Bell className="h-[18px] w-[18px]" />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#EF4444] shadow-[0_0_6px_rgba(239,68,68,0.4)]" />
-          </button>
           <div className="flex items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-white/60">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2563EB] to-[#06B6D4] text-sm font-bold text-white shadow-[0_2px_8px_rgba(37,99,235,0.25)]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2862E4] to-[#2D2A7A] text-sm font-bold text-white shadow-[0_2px_8px_rgba(40,98,228,0.25)]">
               {user?.username?.charAt(0).toUpperCase() ?? 'U'}
             </div>
             <div className="hidden sm:block">
@@ -171,7 +178,7 @@ export default function TabLayout() {
           <Suspense
             fallback={
               <div className="flex h-64 items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#BFDBFE] border-t-[#2563EB]" />
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#BFDBFE] border-t-[#2862E4]" />
               </div>
             }
           >

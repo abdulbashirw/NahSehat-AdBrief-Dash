@@ -27,7 +27,7 @@ import {
   RefreshCw,
   Settings,
   Shield,
-  Sparkles,
+  LayoutGrid,
   TrendingUp,
   UserCog,
   Users,
@@ -187,8 +187,13 @@ export default function Dashboard() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Left: Branding & Welcome Message */}
             <div className="flex items-center gap-3.5">
-              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0F172A] via-[#1E3A8A] to-[#06B6D4] text-white shadow-md shadow-cyan-500/20">
-                <span className="font-mono text-base font-black tracking-wider">AB</span>
+              <div className="relative flex h-12 w-16 shrink-0 items-center justify-center">
+                <img
+                  src="/logo-mark.svg"
+                  alt="AdBrief"
+                  className="h-7 w-auto object-contain"
+                  draggable={false}
+                />
                 <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white">
                   <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                 </span>
@@ -241,8 +246,8 @@ export default function Dashboard() {
           {/* Section Header */}
           <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-[#2563EB] to-[#06B6D4] text-white shadow-xs">
-                <Sparkles className="h-4 w-4" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-[#2862E4] to-[#2D2A7A] text-white shadow-xs">
+                <LayoutGrid className="h-4 w-4" />
               </div>
               <div>
                 <h2 className="text-sm font-extrabold uppercase tracking-wider text-[#0F172A] sm:text-base">

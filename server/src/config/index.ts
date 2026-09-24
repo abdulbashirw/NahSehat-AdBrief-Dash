@@ -217,19 +217,13 @@ export const port = Number(env.PORT) || 3001;
 // the server keeps working. Set these in server/.env (dev) and
 // env.cloud-run.yaml (Cloud Run):
 //   NAHSEHAT_API_V3_BASE_URL — e.g. https://api.example.com  (no trailing slash)
-//   NAHSEHAT_API_V3_TOKEN    — service token issued by the NahSehat API v3
-//                              team (openssl rand -hex 32); validated by
-//                              the API v3 side (P1b)
+//
+// NOTE: no separate service token needed — upstream validates using the
+// same JWT issued by this system. The user's JWT is forwarded by the proxy.
 const NAHSEHAT_API_V3_BASE_URL = env.NAHSEHAT_API_V3_BASE_URL?.trim().replace(/\/+$/, '') || '';
-const NAHSEHAT_API_V3_TOKEN = env.NAHSEHAT_API_V3_TOKEN?.trim() || '';
-
-if (NAHSEHAT_API_V3_TOKEN.length > 0 && NAHSEHAT_API_V3_TOKEN.length < 32) {
-  throw new Error('[config] NAHSEHAT_API_V3_TOKEN is too weak (minimum 32 characters). Generate one with: openssl rand -hex 32');
-}
 
 export const nahsehatApiV3Config = {
   baseUrl: NAHSEHAT_API_V3_BASE_URL,
-  token: NAHSEHAT_API_V3_TOKEN,
   timeoutMs: Number(env.NAHSEHAT_API_V3_TIMEOUT_MS) || 30_000,
 };
 

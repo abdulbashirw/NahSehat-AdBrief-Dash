@@ -178,7 +178,16 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
-/** GET /api/v1/auth/validate */
+/**
+ * GET /api/v1/auth/validate
+ *
+ * SLIDING SESSION: if the presented token is older than half its lifetime
+ * (12h for a 24h JWT), the response includes `renewedToken` — a fresh copy
+ * signed with the same claims. Always-on clients (TV dashboards with
+ * auto-rotate + polling) swap it in and never expire, while idle sessions
+ * still expire at the full 24h. The old token stays valid until its own
+ * exp, so in-flight requests are never broken by the swap.
+ */
 export async function validateToken(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.user) throw createError(401, 'Not authenticated');
@@ -203,7 +212,25 @@ export async function validateToken(req: AuthRequest, res: Response, next: NextF
 
     const authUser = buildAuthUser(user, permRows as any[], (payorRows as any[]).map((p: any) => p.payor_id));
 
-    res.json({ valid: true, user: authUser });
+    // ── Sliding session renewal (see doc comment above) ──
+    let renewedToken: string | undefined;
+    const iat = req.user.iat;
+    const exp = req.user.exp;
+    if (typeof iat === 'number' && typeof exp === 'number') {
+      const ageSec = Math.floor(Date.now() / 1000) - iat;
+      const lifetimeSec = exp - iat;
+      if (lifetimeSec > 0 && ageSec > lifetimeSec / 2) {
+        renewedToken = signToken({
+          id: req.user.id,
+          username: req.user.username,
+          role: req.user.role,
+          ver: req.user.ver ?? 0,
+        });
+        console.info(`[auth] Sliding session: token renewed for user ${req.user.username}`);
+      }
+    }
+
+    res.json({ valid: true, user: authUser, ...(renewedToken ? { renewedToken } : {}) });
   } catch (err) {
     next(err);
   }

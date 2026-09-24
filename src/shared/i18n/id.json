@@ -55,6 +55,8 @@
     "welcomeUser": "Selamat datang, {{name}}!",
     "loginFailed": "Gagal masuk",
     "invalidCredentials": "Nama pengguna atau kata sandi salah. Silakan coba lagi.",
+    "sessionExpiredTitle": "Sesi berakhir",
+    "sessionExpiredDesc": "Demi keamanan, Anda telah dikeluarkan. Silakan masuk kembali.",
     "twoFactorAuth": "Autentikasi Dua Faktor",
     "enterCode": "Masukkan kode 6 digit dari aplikasi autentikator Anda",
     "twoFactorRequired": "Autentikasi dua faktor diperlukan",
@@ -87,7 +89,7 @@
   },
   "dashboard": {
     "welcome": "Selamat datang, {{name}}",
-    "overview": "Berikut ringkasan Dashboard NahSehat Anda",
+    "overview": "Berikut ringkasan Dashboard AdBrief Anda",
     "indemnityOverview": "Ringkasan Indemnity",
     "totalClaims": "TOTAL KLAIM",
     "totalIncurred": "TOTAL INCURRED",

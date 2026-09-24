@@ -55,6 +55,8 @@
     "welcomeUser": "Welcome back, {{name}}!",
     "loginFailed": "Login failed",
     "invalidCredentials": "Invalid username or password. Please try again.",
+    "sessionExpiredTitle": "Session expired",
+    "sessionExpiredDesc": "For security, you have been signed out. Please sign in again.",
     "twoFactorAuth": "Two-Factor Auth",
     "enterCode": "Enter the 6-digit code from your authenticator app",
     "twoFactorRequired": "Two-factor authentication required",
@@ -87,7 +89,7 @@
   },
   "dashboard": {
     "welcome": "Welcome, {{name}}",
-    "overview": "Here's an overview of your NahSehat Dashboard",
+    "overview": "Here's an overview of your AdBrief Dashboard",
     "indemnityOverview": "Indemnity Overview",
     "totalClaims": "TOTAL CLAIMS",
     "totalIncurred": "TOTAL INCURRED",

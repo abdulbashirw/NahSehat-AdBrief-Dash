@@ -7,6 +7,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { api } from './api';
 import authReducer from '@/entities/auth/model/authSlice';
+import { tokenExpiryListenerMiddleware } from '@/entities/auth/model/tokenExpiryListener';
 import dashboardReducer from './slices/dashboardSlice';
 
 export const store = configureStore({
@@ -16,7 +17,7 @@ export const store = configureStore({
     dashboard: dashboardReducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(api.middleware),
+    getDefaultMiddleware().concat(api.middleware, tokenExpiryListenerMiddleware.middleware),
   devTools: import.meta.env.VITE_ENV !== 'production',
 });
 
