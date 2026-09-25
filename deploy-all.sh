@@ -168,12 +168,21 @@ fi
 echo ""
 
 # ─── Check env.cloud-run.yaml ─────────────────────────
+# HARD REQUIREMENT (incident 2025-09: NAHSEHAT_API_V3_BASE_URL missing →
+# proxy endpoints 503 in production). Deploying without this file starts
+# the backend with NO env vars at all — the config layer fail-fasts, the
+# container never becomes ready, and the deploy fails with a confusing
+# gcloud error. Fail here instead, with a clear message.
 if [ "$DEPLOY_BACKEND" = true ]; then
   if [ ! -f "${SCRIPT_DIR}/env.cloud-run.yaml" ]; then
-    echo "⚠️  Warning: env.cloud-run.yaml not found."
-    echo "   Backend will deploy without database env vars."
-    echo "   Create it: cp env.cloud-run.yaml.example env.cloud-run.yaml"
+    echo "❌ ERROR: env.cloud-run.yaml not found — refusing to deploy the backend."
+    echo "   Deploying without it means the service starts with NO env vars"
+    echo "   (DB_*, JWT_SECRET, TWO_FACTOR_ENCRYPTION_KEY, CORS_ORIGIN,"
+    echo "   NAHSEHAT_API_V3_BASE_URL, ...) and the container cannot start."
     echo ""
+    echo "   Fix: cp env.cloud-run.yaml.example env.cloud-run.yaml"
+    echo "        # then fill in the REAL values and re-run this script"
+    exit 1
   fi
 fi
 

@@ -78,6 +78,12 @@ async function proxyAdBrief(
     }
 
     if (!isProxyConfigured()) {
+      // The client only sees a masked 503 (errorHandler masks ≥500 bodies),
+      // so log the actual cause for Cloud Run logs / incident triage.
+      console.error(
+        `[proxy] ${endpoint} 503: NAHSEHAT_API_V3_BASE_URL is not configured ` +
+          '(set it in env.cloud-run.yaml / server/.env, then redeploy)',
+      );
       throw createError(503, 'Upstream service not configured');
     }
 
