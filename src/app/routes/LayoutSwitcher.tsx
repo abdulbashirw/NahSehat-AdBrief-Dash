@@ -2,14 +2,14 @@
  * LayoutSwitcher — selects the appropriate layout based on user role.
  *
  * SUPER_ADMIN, ADMIN → AppLayout (sidebar + topbar)
- * INDEMNITY, MANAGECARE → TabLayout (header tabs, no sidebar)
+ * INDEMNITY, MANAGECARE, ADSCORE, ADSCORE_VERIFIER → TabLayout (header tabs, no sidebar)
  */
 import { useAuth } from '@/entities/auth';
 import { usePageViewLogger } from '@/features/user-activity/hooks/usePageViewLogger';
 import AppLayout from '@/widgets/app-layout/ui/AppLayout';
 import TabLayout from '@/widgets/tab-layout/ui/TabLayout';
 
-const TAB_LAYOUT_ROLES = ['ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE'];
+const TAB_LAYOUT_ROLES = ['ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE', 'ADSCORE_VERIFIER'];
 
 export function LayoutSwitcher() {
   const { user } = useAuth();

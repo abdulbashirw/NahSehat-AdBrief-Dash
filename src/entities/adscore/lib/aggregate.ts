@@ -5,7 +5,27 @@
  */
 import type { ScoreLevel } from '../model/adscoreTypes';
 import { SCORE_RANGES } from '../model/adscoreTypes';
-import type { AdScoreItem } from '../api/adscoreApi';
+
+/* ─── AdScore Item (inline — was in deleted adscoreApi.ts) ─── */
+
+export interface AdScoreHeader {
+  ProviderID?: string;
+  ProviderName?: string;
+  ProviderType?: string;
+  City?: string;
+  MemberName?: string;
+  MemberID?: string;
+  CorporateName?: string;
+  CorporateID?: string;
+  Score?: number;
+  ScoreLabel?: string;
+  [key: string]: unknown;
+}
+
+export interface AdScoreItem {
+  header: AdScoreHeader;
+  [key: string]: unknown;
+}
 
 /**
  * Determine score level from a numeric score (1-20).

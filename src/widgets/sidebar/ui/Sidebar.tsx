@@ -38,6 +38,9 @@ import {
   TrendingUp,
   GitBranch,
   Home,
+  ShieldCheck,
+  ClipboardCheck,
+  History,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -60,6 +63,9 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Key,
   TrendingUp,
   GitBranch,
+  ShieldCheck,
+  ClipboardCheck,
+  History,
 };
 
 
@@ -314,6 +320,7 @@ function NavItem({ route, collapsed, expanded, onToggle, currentPath, canAccess,
               <li key={child.path}>
                 <NavLink
                   to={child.path}
+                  end={child.path === route.path}
                   className={({ isActive }) =>
                     cn(
                       'block rounded-md px-3 py-1.5 text-sm font-medium transition-colors',

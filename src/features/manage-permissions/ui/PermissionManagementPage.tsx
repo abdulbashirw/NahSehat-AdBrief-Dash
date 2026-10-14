@@ -51,7 +51,19 @@ const BASE_MODULE_SECTIONS: ModuleSection[] = [
   },
   {
     group: 'AdScore Intelligence',
-    menus: [{ key: 'adscore', label: 'AdScore Analytics & Underwriting' }],
+    menus: [
+      { key: 'adscore', label: 'AdScore Hub / Landing' },
+      { key: 'adscore-member', label: 'Member & Corporate Analytics' },
+      { key: 'adscore-provider', label: 'Provider Analytics' },
+      { key: 'adscore-process-flow', label: 'Onboarding Process Flow' },
+    ],
+  },
+  {
+    group: 'AdScore Verification',
+    menus: [
+      { key: 'adscore-verification', label: 'Verification Queue' },
+      { key: 'adscore-verification-history', label: 'Verification History' },
+    ],
   },
   {
     group: 'CMS Administration',

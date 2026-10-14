@@ -227,3 +227,22 @@ export const nahsehatApiV3Config = {
   timeoutMs: Number(env.NAHSEHAT_API_V3_TIMEOUT_MS) || 30_000,
 };
 
+// ── AdBrief check-member service (gerbang upload data member) ───────
+// Registry keanggotaan AdMedika (AdBrief) — sumber kebenaran "apakah
+// identitas ini member AdMedika?". Kontrak terverifikasi live:
+//   POST {BASE_URL}/check-member  { member_name, dob: 'YYYY-MM-DD', gender: 'M'|'F' }
+//     HTTP 200 → { code:200, status:'OK',     message:'Success', data:true  }
+//     HTTP 404 → { code:404, status:'Failed', message:'Data Member Tidak Ada', data:false }
+//   (not-found dikirim sebagai HTTP 404 — respons VALID, bukan error)
+//
+// Fail-soft config: jika BASE_URL kosong, endpoint proxy & gerbang submit
+// merespons 503 (fail-closed — job tanpa validasi tidak boleh terbentuk),
+// tanpa menumbangkan sisa server. Set di server/.env (dev) dan
+// env.cloud-run.yaml (Cloud Run), tanpa trailing slash.
+const ADSCORE_CHECK_MEMBER_BASE_URL = env.ADSCORE_CHECK_MEMBER_BASE_URL?.trim().replace(/\/+$/, '') || '';
+
+export const adBriefCheckMemberConfig = {
+  baseUrl: ADSCORE_CHECK_MEMBER_BASE_URL,
+  timeoutMs: Number(env.ADSCORE_CHECK_MEMBER_TIMEOUT_MS) || 30_000,
+};
+

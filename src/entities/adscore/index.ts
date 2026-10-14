@@ -1,17 +1,10 @@
 /**
  * AdScore entity — public API.
+ *
+ * NOTE: External service call ke POST /api/v3/adScore (adhub.nahsehat.id)
+ * sudah dihapus karena tidak digunakan lagi. Halaman AdScore Provider
+ * sekarang sepenuhnya menggunakan demo/simulasi data.
  */
-export {
-  adscoreApi,
-  useGetAdScoreQuery,
-} from './api/adscoreApi';
-
-export type {
-  AdScoreHeader,
-  AdScoreItem,
-  AdScoreResponse,
-  AdScorePayload,
-} from './api/adscoreApi';
 
 export type {
   ScoreLevel,

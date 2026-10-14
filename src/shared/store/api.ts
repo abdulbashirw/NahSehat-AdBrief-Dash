@@ -8,7 +8,6 @@
  *   - Auth → VITE_BE_API
  *   - Indemnity & Manage Care → VITE_BE_API (P1c: proxied server-side)
  *   - CMS → VITE_BE_API
- *   - AdScore → VITE_NAHSEHAT_ADBRIEF_API_V3 (still direct — see P1c report)
  *
  * Each endpoint provides its full URL path. The baseUrl here is a fallback.
  */
@@ -24,7 +23,7 @@ import { forceSessionExpiredLogout } from '@/entities/auth/model/sessionExpiry';
  * membocorkan infrastruktur ke dalam bundle produksi.
  *
  * Pastikan .env.production / pipeline CI selalu set:
- *   VITE_BE_API, VITE_NAHSEHAT_API_V3, VITE_NAHSEHAT_ADBRIEF_API_V3
+ *   VITE_BE_API, VITE_NAHSEHAT_API_V3
  */
 const warnMissing = (key: string): string => {
   void key;
@@ -35,8 +34,9 @@ export const API_URLS = {
   auth: `${import.meta.env.VITE_BE_API || warnMissing('VITE_BE_API')}/auth`,
   indemnity: import.meta.env.VITE_NAHSEHAT_API_V3 || warnMissing('VITE_NAHSEHAT_API_V3'),
   manageCare: import.meta.env.VITE_NAHSEHAT_API_V3 || warnMissing('VITE_NAHSEHAT_API_V3'),
-  adbrief: import.meta.env.VITE_NAHSEHAT_ADBRIEF_API_V3 || warnMissing('VITE_NAHSEHAT_ADBRIEF_API_V3'),
   cms: import.meta.env.VITE_BE_API || warnMissing('VITE_BE_API'),
+  /** AdScore verification & member onboarding (DB-backed, same backend server). */
+  adscore: `${import.meta.env.VITE_BE_API || warnMissing('VITE_BE_API')}/adscore`,
 };
 
 const baseQuery = fetchBaseQuery({
@@ -81,6 +81,6 @@ const baseQueryWithAuthGuard: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithAuthGuard,
-  tagTypes: ['Auth', 'User', 'Role', 'Payor', 'Permission', 'Setting', 'Indemnity', 'ManageCare', 'Activity', 'AdScore'],
+  tagTypes: ['Auth', 'User', 'Role', 'Payor', 'Permission', 'Setting', 'Indemnity', 'ManageCare', 'Activity'],
   endpoints: () => ({}),
 });

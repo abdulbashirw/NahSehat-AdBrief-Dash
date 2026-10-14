@@ -24,7 +24,6 @@ import {
   FileCheck2,
   Stethoscope,
   Sparkles,
-  RefreshCw,
 } from 'lucide-react';
 import {
   PROVIDER_TYPES,
@@ -32,7 +31,6 @@ import {
   computeScoreLevel,
   getScoreRange,
   generateDemoScore,
-  useGetAdScoreQuery,
 } from '@/entities/adscore';
 
 export default function AdScoreProviderPage() {
@@ -51,12 +49,6 @@ export default function AdScoreProviderPage() {
     city: 'Jakarta',
   });
 
-  // API Call (in development, graceful fallback)
-  const { data: apiData, isFetching, refetch } = useGetAdScoreQuery(
-    { providerName: activeQuery.name, type: activeQuery.type, city: activeQuery.city },
-    { refetchOnMountOrArgChange: true }
-  );
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!providerName.trim()) return;
@@ -67,14 +59,9 @@ export default function AdScoreProviderPage() {
     });
   };
 
-  // Derive score deterministically or from API
+  // Derive score deterministically from search input (demo mode)
   const scoreResult = useMemo(() => {
-    let score = 17; // default initial demo
-    if (apiData?.data && apiData.data.length > 0 && apiData.data[0]?.header?.Score) {
-      score = Number(apiData.data[0].header.Score);
-    } else {
-      score = generateDemoScore(activeQuery.name + activeQuery.city);
-    }
+    const score = generateDemoScore(activeQuery.name + activeQuery.city);
     const range = getScoreRange(score);
     const level = computeScoreLevel(score);
 
@@ -143,7 +130,7 @@ export default function AdScoreProviderPage() {
         },
       ],
     };
-  }, [activeQuery, apiData]);
+  }, [activeQuery]);
 
   return (
     <div className="relative min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8">
@@ -176,17 +163,6 @@ export default function AdScoreProviderPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => refetch()}
-                disabled={isFetching}
-                className="flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/25 active:scale-95"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-                <span>Refresh Data</span>
-              </button>
-            </div>
           </div>
 
           {/* Decorative background glow */}

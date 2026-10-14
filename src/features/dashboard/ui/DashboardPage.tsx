@@ -5,7 +5,7 @@
  * - Ultra-Modern Glassmorphism & Framer-Motion Animations: Rich aesthetics with soft radiant glowing orbs,
  *   smooth elevation transitions, interactive hover dynamics, and sleek typography.
  * - Dynamic Role-Based Columns: Strictly conditionally renders INDEMNITY, MANAGECARE,
- *   ADSCORE, and CMS (Super Admin only) modules based on user RBAC privileges.
+ *   and ADSCORE modules based on user RBAC privileges.
  * - Redesigned Interactive Command Tiles: Pintasan Navigasi redesigned into modern command tiles
  *   with vivid gradient icon pods, launch pills, and responsive layout.
  * - Real Product Data: Bound to useIndemnityData, useDailyMonitoringData, and auth state.
@@ -20,6 +20,7 @@ import {
   ArrowRight,
   BarChart3,
   Building2,
+  ClipboardCheck,
   ChevronRight,
   Clock,
   Compass,
@@ -29,7 +30,6 @@ import {
   Shield,
   LayoutGrid,
   TrendingUp,
-  UserCog,
   Users,
   Zap,
 } from 'lucide-react';
@@ -76,12 +76,14 @@ export default function Dashboard() {
   const isIndemnityRole = useHasRole('INDEMNITY');
   const isManageCareRole = useHasRole('MANAGECARE');
   const isAdScoreRole = useHasRole('ADSCORE');
+  const isAdScoreVerifierRole = useHasRole('ADSCORE_VERIFIER');
   const canAccess = useCanAccessCallback();
 
   const showIndemnity = isSuperAdmin || isAdmin || isIndemnityRole || canAccess('/indemnity');
   const showManageCare = isSuperAdmin || isAdmin || isManageCareRole || canAccess('/managecare');
   const showAdScore = isSuperAdmin || isAdmin || isAdScoreRole || canAccess('/adscore');
   const showCms = isSuperAdmin; // Strictly Super Admin only as instructed
+  const showVerification = isSuperAdmin || isAdmin || isAdScoreVerifierRole || canAccess('/verifikasi');
   const showActivity = isSuperAdmin || canAccess('/activity');
 
   // ── Real Indemnity Claims Data ──
@@ -163,7 +165,7 @@ export default function Dashboard() {
   }, [user?.role]);
 
   // Count active modules to determine layout grid columns
-  const activeModuleCount = [showIndemnity, showManageCare, showAdScore, showCms].filter(Boolean).length;
+  const activeModuleCount = [showIndemnity, showManageCare, showAdScore].filter(Boolean).length;
 
   return (
     <div className="relative min-h-full">
@@ -273,7 +275,6 @@ export default function Dashboard() {
             animate="show"
             className={cn(
               'grid grid-cols-1 gap-5',
-              activeModuleCount === 4 && 'md:grid-cols-2 xl:grid-cols-4',
               activeModuleCount === 3 && 'md:grid-cols-3',
               activeModuleCount === 2 && 'md:grid-cols-2',
               activeModuleCount === 1 && 'md:grid-cols-1',
@@ -513,77 +514,6 @@ export default function Dashboard() {
               </motion.div>
             )}
 
-            {/* ─── MODULE 4: CMS (SUPER ADMIN ONLY) ─────────────────── */}
-            {showCms && (
-              <motion.div
-                variants={itemVariants}
-                whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-b from-white via-white/95 to-amber-50/20 p-5 shadow-[0_4px_20px_rgba(245,158,11,0.06)] backdrop-blur-xl transition-all duration-300 hover:border-amber-400 hover:shadow-[0_16px_36px_rgba(245,158,11,0.18)]"
-              >
-                {/* Radial Glow Orb */}
-                <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-amber-500/10 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-teal-500" />
-
-                <div>
-                  {/* Card Header */}
-                  <div className="mb-3.5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/80 text-amber-600 shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-gradient-to-br group-hover:from-amber-600 group-hover:to-orange-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-amber-500/25">
-                        <Shield className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-extrabold tracking-tight text-[#0F172A] group-hover:text-amber-700 transition-colors">
-                          {t('dashboard.cmsAdministration', 'CMS ADMINISTRASI')}
-                        </h3>
-                        <p className="text-[10.5px] font-medium text-[#64748B]">{t('dashboard.cmsSubtitle', 'Identitas & Hak Akses')}</p>
-                      </div>
-                    </div>
-                    <span className="rounded-full bg-amber-100/70 border border-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
-                      {t('dashboard.badgeSuperAdmin', 'Super Admin')}
-                    </span>
-                  </div>
-
-                  <p className="mb-4 text-xs text-slate-600 leading-relaxed">
-                    {t('dashboard.cmsDesc', 'Pusat kendali pengguna sistem, konfigurasi peran RBAC, penetapan payor, dan matriks izin.')}
-                  </p>
-
-                  {/* Administrative Features Panel */}
-                  <div className="space-y-2 rounded-xl border border-amber-100/80 bg-white/75 p-3.5 shadow-2xs backdrop-blur-sm text-xs">
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-50 text-amber-600 shrink-0">
-                        <UserCog className="h-3.5 w-3.5" />
-                      </div>
-                      <span className="font-medium truncate">{t('dashboard.manageUserAccounts', 'Kelola Akun & Identitas Pengguna')}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-md bg-teal-50 text-teal-600 shrink-0">
-                        <Shield className="h-3.5 w-3.5" />
-                      </div>
-                      <span className="font-medium truncate">{t('dashboard.rbacMatrix', 'Matriks Hak Akses & Peran RBAC')}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-50 text-blue-600 shrink-0">
-                        <Building2 className="h-3.5 w-3.5" />
-                      </div>
-                      <span className="font-medium truncate">{t('dashboard.payorConfiguration', 'Konfigurasi Payor Asuransi & Korporat')}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer Action */}
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <Link
-                    to="/cms/users"
-                    className="flex w-full items-center justify-between rounded-xl bg-gradient-to-r from-slate-100 to-amber-50/50 px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all duration-200 group-hover:from-amber-600 group-hover:to-orange-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-amber-600/20"
-                  >
-                    <span>{t('dashboard.manageCms', 'Kelola CMS Sistem')}</span>
-                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                  </Link>
-                </div>
-              </motion.div>
-            )}
           </motion.div>
         </section>
 
@@ -700,6 +630,37 @@ export default function Dashboard() {
                     </h4>
                     <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">
                       {t('dashboard.adScoreTileDesc', 'Provider SLA, member scoring & flow')}
+                    </p>
+                  </div>
+                </Link>
+              </motion.div>
+            )}
+
+            {/* 4. AdScore Verification Tile */}
+            {showVerification && (
+              <motion.div variants={itemVariants} whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }}>
+                <Link
+                  to="/verifikasi"
+                  className="group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/90 p-4 shadow-[0_2px_12px_rgba(15,23,42,0.03)] backdrop-blur-xl transition-all duration-300 hover:border-emerald-400 hover:bg-white hover:shadow-[0_12px_28px_rgba(16,185,129,0.15)]"
+                >
+                  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 transition-transform duration-300 group-hover:scale-110">
+                      <ClipboardCheck className="h-5 w-5" />
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 transition-colors group-hover:bg-emerald-50 group-hover:text-emerald-700">
+                      <span>{t('dashboard.tileOpen', 'Buka')}</span>
+                      <ChevronRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+                    </span>
+                  </div>
+
+                  <div className="mt-3">
+                    <h4 className="text-sm font-bold text-[#0F172A] transition-colors group-hover:text-emerald-700">
+                      {t('nav.verification', 'Verifikasi AdScore')}
+                    </h4>
+                    <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">
+                      {t('dashboard.verificationTileDesc', 'Antrean dan riwayat verifikasi member AdScore')}
                     </p>
                   </div>
                 </Link>

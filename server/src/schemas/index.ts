@@ -164,6 +164,22 @@ export const dailyMonitoringRequestSchema = z.object({
   payor_code: z.string().trim().min(1, 'payor_code required').max(50, 'payor_code too long'),
 });
 
+/** Body for the AdBrief check-member gate (registry keanggotaan AdMedika).
+ *  Field names follow the upstream contract verbatim: member_name / dob / gender. */
+export const checkMemberRequestSchema = z.object({
+  member_name: z.string().trim().min(1, 'member_name required').max(150, 'member_name too long (max 150)'),
+  dob: isoDate,
+  gender: z.enum(['M', 'F']),
+  // Fase 5: konteks pemanggilan — 'member-search' (aksi eksplisit Cari Data
+  // Member) di-audit; 'upload-precheck' (default, auto-check modal upload)
+  // tidak di-audit agar audit trail tidak membanjiri.
+  context: z.enum(['upload-precheck', 'member-search']).optional(),
+});
+
+/** Body for the AdBrief member-card-info proxy (Member Profile dashboard).
+ *  Kontrak upstream identik dengan check-member, tanpa field context. */
+export const memberCardInfoRequestSchema = checkMemberRequestSchema.omit({ context: true });
+
 /* ── Query param clamps (pagination / date range) ─────────────────── */
 
 export const paginationQuerySchema = z.object({

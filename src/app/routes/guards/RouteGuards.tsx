@@ -85,3 +85,43 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
 
   return <>{children}</>;
 }
+
+interface PermissionGuardProps {
+  children?: React.ReactNode;
+}
+
+/**
+ * Restricts access based on the granular permission matrix (menu + 'read').
+ *
+ * Maps the current path to its permission menu key (PATH_TO_MENU in useRbac)
+ * and requires the matching 'read' permission. SUPER_ADMIN always bypasses.
+ * Unknown paths default to accessible (same semantics as useCanAccess).
+ *
+ * Complements RoleGuard for routes whose availability is permission-driven —
+ * e.g. AdScore Provider / Process Flow, whose landing cards are gated by
+ * checkPermission(menu, 'read') in AdScoreLandingPage.
+ */
+export function PermissionGuard({ children }: PermissionGuardProps) {
+  const { user } = useAuth();
+  const location = useLocation();
+  const canAccess = useCanAccess(location.pathname);
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Allow if SUPER_ADMIN, or user has granular read permission for this path
+  const isAllowed = user.role === 'SUPER_ADMIN' || canAccess;
+
+  if (!isAllowed) {
+    // Redirect to role-specific default page (ADSCORE → /adscore hub, ADMIN → /dashboard)
+    const redirectPath = DEFAULT_REDIRECTS[user.role] || '/dashboard';
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  if (!children) {
+    return <Outlet />;
+  }
+
+  return <>{children}</>;
+}

@@ -36,6 +36,7 @@ import settingsRoutes from './routes/settingsRoutes';
 import activityRoutes from './routes/activityRoutes';
 import indemnityRoutes from './routes/indemnityRoutes';
 import managecareRoutes from './routes/managecareRoutes';
+import adScoreVerificationRoutes from './routes/adScoreVerificationRoutes';
 import { accessLogger } from './middleware/accessLogger';
 import { startAggregationJob } from './jobs/aggregationJob';
 import { globalLimiter } from './middleware/rateLimiter';
@@ -94,6 +95,7 @@ app.use('/api/v1/activity', activityRoutes);
 // di-enforce server-side; frontend tidak lagi memanggil API eksternal langsung.
 app.use('/api/v1/indemnity', indemnityRoutes);
 app.use('/api/v1/managecare', managecareRoutes);
+app.use('/api/v1/adscore', adScoreVerificationRoutes);
 
 /* ─── 404 Handler ─── */
 app.use((_req, res) => {

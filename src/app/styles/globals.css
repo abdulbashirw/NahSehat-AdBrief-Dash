@@ -294,6 +294,24 @@
   animation: refreshBarExit 0.4s ease-out forwards;
 }
 
+/* ── Stepper active-node pulse (Tracking Unggahan & Consent) ── */
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 9px rgba(79, 70, 229, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* ── Accessibility: Respect reduced motion ── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -311,7 +329,8 @@
   .animate-fade-in-up,
   .animate-fade-in-scale,
   .refresh-bar-slide,
-  .refresh-bar-exit {
+  .refresh-bar-exit,
+  .pulse-ring {
     animation: none !important;
   }
 }

@@ -23,24 +23,27 @@ export const ROLE_LABELS: Record<string, string> = {
   INDEMNITY: 'Indemnity',
   MANAGECARE: 'Manage Care',
   ADSCORE: 'AdScore',
+  ADSCORE_VERIFIER: 'AdScore Verifier',
 };
 
 /** Role-based menu access */
 export const ROLE_MENUS: Record<string, string[]> = {
-  SUPER_ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'cms', 'settings'],
-  ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'cms', 'settings'],
+  SUPER_ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'adscore-verification', 'cms', 'settings'],
+  ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'adscore-verification', 'cms', 'settings'],
   INDEMNITY: ['dashboard', 'indemnity'],
   MANAGECARE: ['dashboard', 'managecare'],
   ADSCORE: ['dashboard', 'adscore'],
+  ADSCORE_VERIFIER: ['dashboard', 'adscore-verification'],
 };
 
 /** Role-based permissions — maps role to accessible route keys */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
-  SUPER_ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'cms', 'settings'],
-  ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'cms', 'settings'],
+  SUPER_ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'adscore-verification', 'cms', 'settings'],
+  ADMIN: ['dashboard', 'indemnity', 'managecare', 'adscore', 'adscore-verification', 'cms', 'settings'],
   INDEMNITY: ['dashboard', 'indemnity'],
   MANAGECARE: ['dashboard', 'managecare'],
   ADSCORE: ['dashboard', 'adscore'],
+  ADSCORE_VERIFIER: ['dashboard', 'adscore-verification'],
 };
 
 /** Route paths */

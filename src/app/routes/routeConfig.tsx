@@ -11,7 +11,7 @@
 import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import AuthLayout from '@/widgets/auth-layout/ui/AuthLayout';
-import { ProtectedRoute, RoleGuard } from './guards/RouteGuards';
+import { ProtectedRoute, RoleGuard, PermissionGuard } from './guards/RouteGuards';
 import { LayoutSwitcher } from './LayoutSwitcher';
 import type { Role } from '@/shared/types';
 
@@ -38,6 +38,10 @@ const AdScoreLanding = lazy(() => import('@/features/adscore/ui/AdScoreLandingPa
 const AdScoreProvider = lazy(() => import('@/features/adscore-provider/ui/AdScoreProviderPage'));
 const AdScoreMember = lazy(() => import('@/features/adscore-member/ui/AdScoreMemberPage'));
 const ProcessFlow = lazy(() => import('@/features/adscore-process-flow/ui/ProcessFlowPage'));
+
+const VerifierQueue = lazy(() => import('@/features/adscore-verifier/ui/VerifierQueuePage'));
+const VerifierJobDetail = lazy(() => import('@/features/adscore-verifier/ui/VerifierJobDetailPage'));
+const VerifierHistory = lazy(() => import('@/features/adscore-verifier/ui/VerifierHistoryPage'));
 
 // ── Helper to create role-guarded routes ────────────────────────
 function roleRoute(path: string, roles: Role[], children: RouteObject[]): RouteObject {
@@ -72,9 +76,15 @@ export const routeConfig: RouteObject[] = [
       // ── AdScore ──
       roleRoute('adscore', ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'], [
         { index: true, element: <AdScoreLanding /> },
-        { path: 'provider', element: <AdScoreProvider /> },
+        { path: 'provider', element: <PermissionGuard><AdScoreProvider /></PermissionGuard> },
         { path: 'member', element: <AdScoreMember /> },
-        { path: 'process-flow', element: <ProcessFlow /> },
+        { path: 'process-flow', element: <PermissionGuard><ProcessFlow /></PermissionGuard> },
+      ]),
+      // ── AdScore Verifier — konsol operasional (bukan akses client ADSCORE) ──
+      roleRoute('verifikasi', ['SUPER_ADMIN', 'ADMIN', 'ADSCORE_VERIFIER'], [
+        { index: true, element: <VerifierQueue /> },
+        { path: 'jobs/:jobId', element: <VerifierJobDetail /> },
+        { path: 'riwayat', element: <VerifierHistory /> },
       ]),
       // ── CMS ──
       roleRoute('cms', ['SUPER_ADMIN'], [

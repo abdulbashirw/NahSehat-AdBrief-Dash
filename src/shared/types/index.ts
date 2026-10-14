@@ -13,6 +13,7 @@ export const ROLES = {
   INDEMNITY: 'INDEMNITY',
   MANAGECARE: 'MANAGECARE',
   ADSCORE: 'ADSCORE',
+  ADSCORE_VERIFIER: 'ADSCORE_VERIFIER',
 } as const;
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];

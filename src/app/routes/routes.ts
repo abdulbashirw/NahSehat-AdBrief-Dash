@@ -17,7 +17,7 @@ export const ROUTES: RouteConfig[] = [
     path: '/dashboard',
     label: 'nav.dashboard',
     icon: 'LayoutDashboard',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE', 'ADSCORE_VERIFIER'],
   },
 
   // ── Indemnity ──
@@ -62,6 +62,24 @@ export const ROUTES: RouteConfig[] = [
     label: 'nav.adScore',
     icon: 'TrendingUp',
     roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'],
+    children: [
+      { path: '/adscore', label: 'nav.adScoreHub', icon: 'TrendingUp', roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'] },
+      { path: '/adscore/member', label: 'nav.adScoreMember', icon: 'Users', roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'] },
+      { path: '/adscore/provider', label: 'nav.adScoreProvider', icon: 'Building2', roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'] },
+      { path: '/adscore/process-flow', label: 'nav.processFlow', icon: 'GitBranch', roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE'] },
+    ],
+  },
+
+  // ── AdScore Verification — internal ops (AdScore Verifier) ──
+  {
+    path: '/verifikasi',
+    label: 'nav.verification',
+    icon: 'ShieldCheck',
+    roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE_VERIFIER'],
+    children: [
+      { path: '/verifikasi', label: 'nav.verificationQueue', icon: 'ClipboardCheck', roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE_VERIFIER'] },
+      { path: '/verifikasi/riwayat', label: 'nav.verificationHistory', icon: 'History', roles: ['SUPER_ADMIN', 'ADMIN', 'ADSCORE_VERIFIER'] },
+    ],
   },
 
   // ── User Activity — admin only ──
@@ -77,7 +95,7 @@ export const ROUTES: RouteConfig[] = [
     path: '/settings',
     label: 'nav.settings',
     icon: 'Cog',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE', 'ADSCORE_VERIFIER'],
   },
 ];
 
@@ -94,10 +112,11 @@ export const DEFAULT_REDIRECTS: Record<string, string> = {
   INDEMNITY: '/indemnity/overview',
   MANAGECARE: '/managecare/daily-monitoring',
   ADSCORE: '/adscore',
+  ADSCORE_VERIFIER: '/verifikasi',
 };
 
 /**
  * Roles that should use the TabLayout instead of AppLayout.
  */
-export const TAB_LAYOUT_ROLES = ['ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE'] as const;
+export const TAB_LAYOUT_ROLES = ['ADMIN', 'INDEMNITY', 'MANAGECARE', 'ADSCORE', 'ADSCORE_VERIFIER'] as const;
 export type TabLayoutRole = (typeof TAB_LAYOUT_ROLES)[number];
