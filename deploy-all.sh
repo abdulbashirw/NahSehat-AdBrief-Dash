@@ -58,7 +58,7 @@ FRONTEND_MAX_INSTANCES="3"
 FRONTEND_PORT="8080"
 
 # External API URLs (third-party services — same for dev and prod)
-NAHSEHAT_API_V3="${VITE_NAHSEHAT_API_V3:-https://repi-api-336781009919.asia-southeast2.run.app/api/v3}"
+NAHSEHAT_API_V3="${VITE_NAHSEHAT_API_V3:-https://adhub.nahsehat.id/api/v3}"
 NAHSEHAT_ADBRIEF_API_V3="${VITE_NAHSEHAT_ADBRIEF_API_V3:-https://repi2-server-dev-336781009919.asia-southeast2.run.app/adbrief/nahsehat/api/v3}"
 
 # Deployment flags
